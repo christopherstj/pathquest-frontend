@@ -55,10 +55,7 @@ export const metadata: Metadata = {
 
 const rootContainerStyles: SxProps = {
     display: "grid",
-    gridTemplateColumns: {
-        xs: "1fr",
-        md: "80px 1fr",
-    },
+    gridTemplateColumns: "80px 1fr",
     width: "100vw",
     height: "100vh",
     backgroundColor: "background.default",
@@ -85,11 +82,11 @@ export default function RootLayout({
             label: "Home",
             icon: <Home />,
         },
-        {
-            href: "/about",
-            label: "About",
-            icon: <QuestionMark />,
-        },
+        // {
+        //     href: "/about",
+        //     label: "About",
+        //     icon: <QuestionMark />,
+        // },
     ];
     return (
         <html lang="en">
