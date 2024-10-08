@@ -41,7 +41,7 @@ const LinkButton = ({ href, label, icon }: Props) => {
 
     React.useEffect(() => {
         router.prefetch(href);
-    }, []);
+    }, [router, href]);
 
     return (
         <Box sx={containerStyles} onClick={redirect}>

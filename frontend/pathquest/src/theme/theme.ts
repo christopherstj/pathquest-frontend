@@ -1,6 +1,5 @@
 import { createTheme, responsiveFontSizes } from "@mui/material/styles";
 import createPalette, {
-    Palette,
     PaletteOptions,
 } from "@mui/material/styles/createPalette";
 

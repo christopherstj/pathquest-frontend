@@ -1,5 +1,3 @@
-import Image from "next/image";
-import styles from "./page.module.css";
 import { Grid2 as Grid, Typography } from "@mui/material";
 
 export default function Home() {
