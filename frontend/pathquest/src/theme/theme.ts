@@ -71,10 +71,15 @@ export const darkColors: PaletteOptions = {
 
 const baseTheme = createTheme({
     colorSchemes: {
-        light: false,
+        light: {
+            palette: createPalette(lightColors),
+        },
         dark: {
             palette: createPalette(darkColors),
         },
+    },
+    cssVariables: {
+        colorSchemeSelector: "class",
     },
     components: {
         MuiTypography: {

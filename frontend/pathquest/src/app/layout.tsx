@@ -5,6 +5,7 @@ import Contexts from "@/components/Contexts";
 import { Box, SxProps } from "@mui/material";
 import Sidebar from "@/components/layout/Sidebar";
 import { Home, QuestionMark } from "@mui/icons-material";
+import InitColorSchemeScript from "@mui/material/InitColorSchemeScript";
 
 const bicyclette = localFont({
     variable: "--font-bicyclette",
@@ -89,8 +90,9 @@ export default function RootLayout({
         // },
     ];
     return (
-        <html lang="en">
+        <html lang="en" suppressHydrationWarning>
             <body className={`${bicyclette.variable}`}>
+                <InitColorSchemeScript attribute="class" />
                 <Contexts>
                     <Box sx={rootContainerStyles}>
                         <Sidebar links={links} />
