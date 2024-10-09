@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import getGoogleIdToken from "@/auth/getGoogleIdToken";
 
+export const dynamic = "force-dynamic";
+
 export const GET = async () => {
     const token = await getGoogleIdToken();
 
