@@ -3,13 +3,26 @@ import StravaProvider from "next-auth/providers/strava";
 
 export const authOptions: AuthOptions = {
     pages: {
-        signIn: "/signin",
+        signIn: "/",
     },
     session: {
         strategy: "jwt",
     },
     jwt: {
         secret: process.env.NEXTAUTH_SECRET,
+    },
+    callbacks: {
+        async jwt({ token, user }) {
+            if (user) {
+                token = { ...token, user };
+            }
+            return token;
+        },
+        async session({ session, token }) {
+            // @ts-ignore
+            session.user = token.user;
+            return session;
+        },
     },
     providers: [
         StravaProvider({

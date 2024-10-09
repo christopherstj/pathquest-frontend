@@ -38,26 +38,26 @@ export const lightColors: PaletteOptions = {
 
 export const darkColors: PaletteOptions = {
     primary: {
-        base: "#2E8B57",
-        main: "#2E8B57",
+        base: "#004D40",
+        main: "#004D40",
         contrastText: "#FFFFFF",
-        container: "#123622",
-        onContainer: "#C8EDD2",
-        containerDim: "#1D5F3D",
-        onContainerDim: "#88BA97",
+        container: "#162320",
+        onContainer: "#A1F2DC",
+        containerDim: "#2A4843",
+        onContainerDim: "#85D6C1",
     },
     secondary: {
-        base: "#4682B4",
-        main: "#4682B4",
+        base: "#ADD8E6",
+        main: "#ADD8E6",
         contrastText: "#FFFFFF",
-        container: "#001D32",
-        onContainer: "#CEE5FF",
-        containerDim: "#0D4A73",
-        onContainerDim: "#9BCBFA",
+        container: "#182528",
+        onContainer: "#AFECFF",
+        containerDim: "#25393D",
+        onContainerDim: "#85D2E8",
     },
     tertiary: {
-        base: "#C71585",
-        main: "#C71585",
+        base: "#CB6EC5",
+        main: "#CB6EC5",
         contrastText: "#FFFFFF",
         container: "#380724",
         onContainer: "#FFD8E7",
@@ -65,7 +65,8 @@ export const darkColors: PaletteOptions = {
         onContainerDim: "#FEB0D2",
     },
     background: {
-        default: "#0F1511",
+        default: "#080C0B",
+        paper: "#2A302EFF",
     },
 };
 
@@ -84,8 +85,43 @@ const baseTheme = createTheme({
     components: {
         MuiTypography: {
             styleOverrides: {
+                h1: {
+                    fontFamily: "var(--font-raleway)",
+                },
+                h2: {
+                    fontFamily: "var(--font-raleway)",
+                },
+                h3: {
+                    fontFamily: "var(--font-raleway)",
+                },
+                h4: {
+                    fontFamily: "var(--font-raleway)",
+                },
+                h5: {
+                    fontFamily: "var(--font-raleway)",
+                },
+                h6: {
+                    fontFamily: "var(--font-raleway)",
+                },
+                body1: {
+                    fontFamily: "var(--font-merriweather-sans)",
+                },
+                body2: {
+                    fontFamily: "var(--font-merriweather-sans)",
+                },
+                caption: {
+                    fontFamily: "var(--font-merriweather-sans)",
+                },
+                button: {
+                    fontFamily: "var(--font-merriweather-sans)",
+                },
+            },
+        },
+        MuiButton: {
+            styleOverrides: {
                 root: {
-                    fontFamily: "var(--font-bicyclette)",
+                    textTransform: "none",
+                    fontFamily: "var(--font-merriweather-sans)",
                 },
             },
         },

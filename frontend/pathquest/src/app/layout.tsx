@@ -6,46 +6,16 @@ import { Box, SxProps } from "@mui/material";
 import Sidebar from "@/components/layout/Sidebar";
 import { Home, QuestionMark } from "@mui/icons-material";
 import InitColorSchemeScript from "@mui/material/InitColorSchemeScript";
+import { Raleway, Merriweather_Sans } from "next/font/google";
 
-const bicyclette = localFont({
-    variable: "--font-bicyclette",
-    src: [
-        {
-            path: "./fonts/Bicyclette-Thin.woff",
-            weight: "100 200",
-            style: "normal",
-        },
-        {
-            path: "./fonts/Bicyclette-Light.woff",
-            weight: "300",
-            style: "normal",
-        },
-        {
-            path: "./fonts/Bicyclette-Regular.woff",
-            weight: "400",
-            style: "normal",
-        },
-        {
-            path: "./fonts/Bicyclette-Italic.woff",
-            weight: "400",
-            style: "italic",
-        },
-        {
-            path: "./fonts/Bicyclette-Bold.woff",
-            weight: "500 600",
-            style: "normal",
-        },
-        {
-            path: "./fonts/Bicyclette-Black.woff",
-            weight: "700",
-            style: "normal",
-        },
-        {
-            path: "./fonts/Bicyclette-Ultra.woff",
-            weight: "800 900",
-            style: "normal",
-        },
-    ],
+const raleway = Raleway({
+    variable: "--font-raleway",
+    subsets: ["latin"],
+});
+
+const merriweatherSans = Merriweather_Sans({
+    variable: "--font-merriweather-sans",
+    subsets: ["latin"],
 });
 
 export const metadata: Metadata = {
@@ -64,7 +34,6 @@ const rootContainerStyles: SxProps = {
 
 const contentContainerStyles: SxProps = {
     width: "100%",
-    height: "100%",
     minHeight: "100vh",
     padding: {
         xs: "8px",
@@ -91,7 +60,9 @@ export default function RootLayout({
     ];
     return (
         <html lang="en" suppressHydrationWarning>
-            <body className={`${bicyclette.variable}`}>
+            <body
+                className={`${raleway.variable} ${merriweatherSans.variable}`}
+            >
                 <InitColorSchemeScript attribute="class" />
                 <Contexts>
                     <Box sx={rootContainerStyles}>

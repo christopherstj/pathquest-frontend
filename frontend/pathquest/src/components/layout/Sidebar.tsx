@@ -1,6 +1,7 @@
 import { Drawer, Stack, SxProps } from "@mui/material";
 import React from "react";
 import LinkButton from "./LinkButton";
+import UserButton from "./UserButton";
 
 const DRAWER_WIDTH = 80;
 
@@ -30,7 +31,8 @@ const Sidebar = (props: Props) => {
             variant="permanent"
             anchor="left"
         >
-            <Stack>
+            <Stack gap="8px">
+                <UserButton />
                 {props.links.map((link) => (
                     <LinkButton key={link.href} {...link} />
                 ))}
