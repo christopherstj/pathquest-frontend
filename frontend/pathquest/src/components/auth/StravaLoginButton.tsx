@@ -10,9 +10,7 @@ const buttonStyles: SxProps = {
     color: "primary.onContainer",
 };
 
-type Props = {};
-
-const StravaLoginButton = (props: Props) => {
+const StravaLoginButton = () => {
     const { data } = useSession();
 
     const logout = async () => {

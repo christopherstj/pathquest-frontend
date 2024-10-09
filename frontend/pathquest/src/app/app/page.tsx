@@ -4,9 +4,7 @@ import React from "react";
 import { Grid2 as Grid, Typography } from "@mui/material";
 import createUser from "@/actions/createUser";
 
-type Props = {};
-
-const page = async (props: Props) => {
+const page = async () => {
     const user = await getUser();
 
     if (!user.userFound && !user.error) {

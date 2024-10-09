@@ -19,7 +19,7 @@ export const authOptions: AuthOptions = {
             return token;
         },
         async session({ session, token }) {
-            // @ts-ignore
+            // @ts-expect-error User token assignment is handled by the jwt callback
             session.user = token.user;
             return session;
         },

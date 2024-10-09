@@ -2,12 +2,13 @@
 import getGoogleIdToken from "@/auth/getGoogleIdToken";
 import { useAuth } from "@/auth/useAuth";
 import getBackendUrl from "@/helpers/getBackendUrl";
+import { User } from "@/typeDefs/User";
 
 const backendUrl = getBackendUrl();
 
 const getUser = async (): Promise<{
     userFound: boolean;
-    user?: any;
+    user?: User;
     error?: string;
 }> => {
     const session = await useAuth();
