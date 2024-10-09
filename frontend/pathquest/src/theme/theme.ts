@@ -38,41 +38,42 @@ export const lightColors: PaletteOptions = {
 
 export const darkColors: PaletteOptions = {
     primary: {
-        base: "#9DCBFC",
-        main: "#9DCBFC",
+        base: "#2E8B57",
+        main: "#2E8B57",
         contrastText: "#FFFFFF",
-        container: "#134A74",
-        onContainer: "#CFE5FF",
-        containerDim: "#002844",
-        onContainerDim: "#6A94C0",
+        container: "#123622",
+        onContainer: "#C8EDD2",
+        containerDim: "#1D5F3D",
+        onContainerDim: "#88BA97",
     },
     secondary: {
-        base: "#FFB2BC",
-        main: "#FFB2BC",
+        base: "#4682B4",
+        main: "#4682B4",
         contrastText: "#FFFFFF",
-        container: "#72333E",
-        onContainer: "#FFD9DD",
-        containerDim: "#53001A",
-        onContainerDim: "#FF869A",
+        container: "#001D32",
+        onContainer: "#CEE5FF",
+        containerDim: "#0D4A73",
+        onContainerDim: "#9BCBFA",
     },
     tertiary: {
-        base: "#E8C26C",
-        main: "#E8C26C",
+        base: "#C71585",
+        main: "#C71585",
         contrastText: "#FFFFFF",
-        container: "#5B4300",
-        onContainer: "#FFDF9B",
-        containerDim: "#3F2E00",
-        onContainerDim: "#B28B26",
+        container: "#380724",
+        onContainer: "#FFD8E7",
+        containerDim: "#6D3350",
+        onContainerDim: "#FEB0D2",
     },
     background: {
-        default: "#101418",
+        default: "#0F1511",
     },
 };
 
 const baseTheme = createTheme({
     colorSchemes: {
-        light: {
-            palette: createPalette(lightColors),
+        light: false,
+        dark: {
+            palette: createPalette(darkColors),
         },
     },
     components: {

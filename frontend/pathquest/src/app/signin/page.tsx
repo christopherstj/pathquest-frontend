@@ -2,6 +2,7 @@
 import React from "react";
 import { Button, Grid2 as Grid, Typography } from "@mui/material";
 import { signIn, signOut, useSession } from "next-auth/react";
+import testApi from "@/actions/testApi";
 
 const Page = () => {
     const { data } = useSession();
@@ -17,9 +18,7 @@ const Page = () => {
     };
 
     const test = async () => {
-        const res = await fetch("/api/test", {
-            method: "GET",
-        });
+        const res = await testApi();
         setResponse(await res.json());
     };
 
@@ -34,19 +33,19 @@ const Page = () => {
                         <Button color="primary" onClick={logout}>
                             Logout
                         </Button>
+                        <Button color="primary" onClick={test}>
+                            Test
+                        </Button>
                     </>
                 ) : (
                     <Button color="primary" onClick={login}>
                         Login With Strava
                     </Button>
                 )}
-                <Button color="primary" onClick={test}>
-                    Test
-                </Button>
                 {response && (
-                    <pre style={{ color: "black" }}>
-                        {JSON.stringify(response, null, 2)}
-                    </pre>
+                    <Typography component="pre" color="primary.onContainer">
+                        {response ? JSON.stringify(response, null, 2) : ""}
+                    </Typography>
                 )}
             </Grid>
         </Grid>
