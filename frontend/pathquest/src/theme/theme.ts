@@ -71,14 +71,18 @@ export const darkColors: PaletteOptions = {
 };
 
 const baseTheme = createTheme({
-    colorSchemes: {
-        light: {
-            palette: createPalette(lightColors),
-        },
-        dark: {
-            palette: createPalette(darkColors),
-        },
+    palette: {
+        ...createPalette(darkColors),
+        mode: "dark",
     },
+    // colorSchemes: {
+    //     light: {
+    //         palette: createPalette(lightColors),
+    //     },
+    //     dark: {
+    //         palette: createPalette(darkColors),
+    //     },
+    // },
     cssVariables: {
         colorSchemeSelector: "class",
     },
