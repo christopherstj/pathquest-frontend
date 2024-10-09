@@ -3,12 +3,10 @@ import React from "react";
 import { Button, Grid2 as Grid, Typography } from "@mui/material";
 import { signIn, signOut, useSession } from "next-auth/react";
 
-type Props = {};
-
-const page = (props: Props) => {
+const Page = () => {
     const { data } = useSession();
 
-    const [response, setResponse] = React.useState<any>(null);
+    const [response, setResponse] = React.useState<object | null>(null);
 
     const login = async () => {
         const res = await signIn("strava");
@@ -55,4 +53,4 @@ const page = (props: Props) => {
     );
 };
 
-export default page;
+export default Page;

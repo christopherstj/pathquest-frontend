@@ -1,8 +1,7 @@
 import { NextResponse } from "next/server";
-import { NextApiRequest, NextApiResponse } from "next";
 import getGoogleIdToken from "@/auth/getGoogleIdToken";
 
-export const GET = async (req: NextApiRequest, res: NextApiResponse) => {
+export const GET = async () => {
     const token = await getGoogleIdToken();
 
     const apiRes = await fetch("https://pathquest-api.app/", {
