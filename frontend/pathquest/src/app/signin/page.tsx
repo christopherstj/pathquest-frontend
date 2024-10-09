@@ -19,7 +19,7 @@ const Page = () => {
 
     const test = async () => {
         const res = await testApi();
-        setResponse(await res.json());
+        setResponse(res);
     };
 
     return (
@@ -33,15 +33,15 @@ const Page = () => {
                         <Button color="primary" onClick={logout}>
                             Logout
                         </Button>
-                        <Button color="primary" onClick={test}>
-                            Test
-                        </Button>
                     </>
                 ) : (
                     <Button color="primary" onClick={login}>
                         Login With Strava
                     </Button>
                 )}
+                <Button color="primary" onClick={test}>
+                    Test
+                </Button>
                 {response && (
                     <Typography component="pre" color="primary.onContainer">
                         {response ? JSON.stringify(response, null, 2) : ""}

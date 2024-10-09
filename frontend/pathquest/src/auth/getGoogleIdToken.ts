@@ -1,8 +1,7 @@
 import { getVercelOidcToken } from "@vercel/functions/oidc";
-import { ExternalAccountClient, GoogleAuth } from "google-auth-library";
+import { ExternalAccountClient } from "google-auth-library";
 import jwt from "jsonwebtoken";
 
-const GCP_PROJECT_ID = process.env.GCP_PROJECT_ID;
 const GCP_PROJECT_NUMBER = process.env.GCP_PROJECT_NUMBER;
 const GCP_SERVICE_ACCOUNT_EMAIL = process.env.GCP_SERVICE_ACCOUNT_EMAIL;
 const GCP_WORKLOAD_IDENTITY_POOL_ID = process.env.GCP_WORKLOAD_IDENTITY_POOL_ID;
@@ -52,7 +51,8 @@ const getGoogleIdToken = async () => {
     if (existingToken !== "") {
         const decodedToken = jwt.decode(existingToken) as { exp: number };
 
-        if (decodedToken.exp * 1000 < Date.now()) {
+        if (decodedToken.exp * 1000 >= Date.now()) {
+            console.log("returning existing token");
             return existingToken;
         } else {
             const newToken = await getNewToken();

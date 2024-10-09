@@ -10,7 +10,7 @@ const testApi = async () => {
         return null;
     }
 
-    const token = getGoogleIdToken();
+    const token = await getGoogleIdToken();
 
     const apiRes = await fetch("https://pathquest-api.app/", {
         method: "GET",
@@ -20,9 +20,11 @@ const testApi = async () => {
         },
     });
 
-    const data = await apiRes.json();
+    if (!apiRes.ok) {
+        return null;
+    }
 
-    return data;
+    return await apiRes.json();
 };
 
 export default testApi;
