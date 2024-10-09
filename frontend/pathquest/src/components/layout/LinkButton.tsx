@@ -45,7 +45,9 @@ const LinkButton = ({ href, label, icon }: Props) => {
 
     return (
         <Box sx={containerStyles} onClick={redirect}>
-            <IconButton sx={iconButtonStyles(selected)}>{icon}</IconButton>
+            <IconButton sx={iconButtonStyles(selected)} color="primary">
+                {icon}
+            </IconButton>
             <Typography
                 variant="body2"
                 color="primary.onContainer"
