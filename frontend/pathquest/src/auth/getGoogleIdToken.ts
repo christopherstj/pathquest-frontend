@@ -46,6 +46,10 @@ export const getNewToken = async () => {
 };
 
 const getGoogleIdToken = async () => {
+    if (process.env.NODE_ENV === "development") {
+        return "";
+    }
+
     const existingToken = process.env.GOOGLE_ID_TOKEN ?? "";
 
     if (existingToken !== "") {
