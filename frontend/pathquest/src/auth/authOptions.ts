@@ -56,7 +56,7 @@ export const authOptions: AuthOptions = {
             clientSecret: process.env.STRAVA_CLIENT_SECRET ?? "",
             authorization: {
                 params: {
-                    scope: "read,write,activity:read,activity:read_all,activity:write",
+                    scope: "read,activity:read,activity:read_all,activity:write",
                 },
             },
             token: {
