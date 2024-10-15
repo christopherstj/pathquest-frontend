@@ -7,6 +7,7 @@ import Sidebar from "@/components/layout/Sidebar";
 import { Home, QuestionMark } from "@mui/icons-material";
 import InitColorSchemeScript from "@mui/material/InitColorSchemeScript";
 import { Raleway, Merriweather_Sans } from "next/font/google";
+import Nav from "@/components/layout/Nav";
 
 const raleway = Raleway({
     variable: "--font-raleway",
@@ -26,7 +27,10 @@ export const metadata: Metadata = {
 
 const rootContainerStyles: SxProps = {
     display: "grid",
-    gridTemplateColumns: "80px 1fr",
+    gridTemplateColumns: {
+        xs: "1fr",
+        md: "80px 1fr",
+    },
     width: "100vw",
     height: "100vh",
     backgroundColor: "background.default",
@@ -46,18 +50,6 @@ export default function RootLayout({
 }: Readonly<{
     children: React.ReactNode;
 }>) {
-    const links = [
-        {
-            href: "/",
-            label: "Home",
-            icon: <Home />,
-        },
-        // {
-        //     href: "/about",
-        //     label: "About",
-        //     icon: <QuestionMark />,
-        // },
-    ];
     return (
         <html lang="en" suppressHydrationWarning>
             <body
@@ -66,7 +58,7 @@ export default function RootLayout({
                 <InitColorSchemeScript attribute="class" />
                 <Contexts>
                     <Box sx={rootContainerStyles}>
-                        <Sidebar links={links} />
+                        <Nav />
                         <Box sx={contentContainerStyles}>{children}</Box>
                     </Box>
                 </Contexts>

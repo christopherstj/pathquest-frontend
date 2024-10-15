@@ -1,4 +1,6 @@
+import { useAuth } from "@/auth/useAuth";
 import { Metadata } from "next";
+import { redirect } from "next/navigation";
 import React from "react";
 
 export const metadata: Metadata = {
@@ -11,7 +13,13 @@ type Props = {
     children: React.ReactNode;
 };
 
-const layout = ({ children }: Props) => {
+const layout = async ({ children }: Props) => {
+    const session = await useAuth();
+
+    if (!session) {
+        redirect("/login");
+    }
+
     return <>{children}</>;
 };
 

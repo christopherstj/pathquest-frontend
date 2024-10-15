@@ -6,10 +6,19 @@ import React from "react";
 const containerStyles: SxProps = {
     display: "flex",
     flexDirection: "column",
+    alignItems: "center",
     gap: "4px",
     width: "100%",
     cursor: "pointer",
     padding: "8px",
+    maxWidth: {
+        xs: "72px",
+        md: "none",
+    },
+    flexBasis: {
+        xs: "72px",
+        md: "none",
+    },
     "&:hover": {
         ".MuiIconButton-root": {
             backgroundColor: "primary.containerDim",
@@ -35,7 +44,7 @@ const LinkButton = ({ href, label, icon }: Props) => {
     const pathname = usePathname();
     const router = useRouter();
 
-    const selected = pathname.startsWith(href);
+    const selected = pathname === href;
 
     const redirect = () => router.push(href);
 
@@ -49,7 +58,7 @@ const LinkButton = ({ href, label, icon }: Props) => {
                 {icon}
             </IconButton>
             <Typography
-                variant="body2"
+                variant="caption"
                 color="primary.onContainer"
                 textAlign="center"
             >

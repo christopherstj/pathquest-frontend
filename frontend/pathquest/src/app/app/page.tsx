@@ -10,7 +10,7 @@ const page = async () => {
     if (!user.userFound && !user.error) {
         await createUser();
     } else if (user.error) {
-        redirect("/");
+        redirect("/login");
     }
 
     return (

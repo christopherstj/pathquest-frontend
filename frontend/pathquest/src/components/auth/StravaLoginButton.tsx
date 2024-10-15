@@ -3,12 +3,15 @@ import React from "react";
 import { Button, SxProps } from "@mui/material";
 import { signIn, signOut, useSession } from "next-auth/react";
 import StravaIcon from "../common/customIcons/StravaIcon";
+import Image from "next/image";
+import stravaButton from "../../public/images/btn_strava_connectwith_light.svg";
 
-const buttonStyles: SxProps = {
+const buttonStyles = (outlined: boolean): SxProps => ({
     borderRadius: "24px",
-    borderColor: "primary.onContainer",
+    borderColor: outlined ? "primary.onContainer" : "transparent",
+    backgroundColor: outlined ? "transparent" : "white",
     color: "primary.onContainer",
-};
+});
 
 const StravaLoginButton = () => {
     const { data } = useSession();
@@ -27,7 +30,7 @@ const StravaLoginButton = () => {
     return data ? (
         <Button
             variant="outlined"
-            sx={buttonStyles}
+            sx={buttonStyles(true)}
             fullWidth
             startIcon={<StravaIcon sx={{ color: "primary.onContainer" }} />}
             onClick={logout}
@@ -37,12 +40,12 @@ const StravaLoginButton = () => {
     ) : (
         <Button
             variant="outlined"
-            sx={buttonStyles}
+            sx={buttonStyles(false)}
             fullWidth
-            startIcon={<StravaIcon sx={{ color: "primary.onContainer" }} />}
+            // startIcon={<StravaIcon sx={{ color: "primary.onContainer" }} />}
             onClick={login}
         >
-            Login with Strava
+            <Image src={stravaButton} height={48} alt="Log in with Strava" />
         </Button>
     );
 };

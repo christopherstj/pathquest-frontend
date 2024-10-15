@@ -1,4 +1,5 @@
 "use client";
+import { useIsMobile } from "@/helpers/useIsMobile";
 import { Landscape, Logout } from "@mui/icons-material";
 import {
     Box,
@@ -17,20 +18,32 @@ import { signOut, useSession } from "next-auth/react";
 import Link from "next/link";
 import React from "react";
 
-const fabStyles: SxProps = {
+const fabStyles = (isMobile: boolean): SxProps => ({
     width: "40px",
     height: "40px",
     borderRadius: "8px",
     margin: "0 auto",
     backgroundColor: "tertiary.base",
     color: "tertiary.onContainer",
-};
+    ...(isMobile && {
+        position: "fixed",
+        top: "8px",
+        right: "8px",
+    }),
+});
 
 const buttonStyles: SxProps = {
     borderRadius: "24px",
     height: "40px",
     width: "40px",
-    margin: "0 auto",
+    flexBasis: {
+        xs: "40px",
+        md: "none",
+    },
+    margin: {
+        xs: "0px",
+        md: "0 auto",
+    },
     border: "1px solid",
     borderColor: "primary.onContainer",
     color: "primary.onContainer",
@@ -40,21 +53,41 @@ const buttonStyles: SxProps = {
     cursor: "pointer",
     background: "transparent",
     transition: "background-color 0.2s",
+    fontSize: {
+        xs: "1rem",
+        md: "1.5rem",
+    },
     "&:hover": {
         backgroundColor: "primary.containerDim",
     },
 };
 
+const fixedContainerStyles: SxProps = {
+    position: "fixed",
+    top: "8px",
+    right: "8px",
+    padding: "4px",
+    backgroundColor: "primary.container",
+    borderRadius: "50%",
+    boxShadow: 3,
+    zIndex: 1,
+};
+
 const UserButton = () => {
     const { data } = useSession();
 
-    console.log(data);
+    const isMobile = useIsMobile();
 
     const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
 
     if (!data) {
-        return (
-            <Fab sx={fabStyles} LinkComponent={Link} href="/" size="small">
+        return isMobile === null ? null : (
+            <Fab
+                sx={fabStyles(!!isMobile)}
+                LinkComponent={Link}
+                href="/app"
+                size="small"
+            >
                 <Landscape />
             </Fab>
         );
@@ -79,14 +112,10 @@ const UserButton = () => {
 
     const firstLetter = name ? name[0].toUpperCase() : "";
 
-    return (
+    const internalDisplay = (
         <>
             <Box sx={buttonStyles} component="button" onClick={openPopover}>
-                <Typography
-                    variant="h6"
-                    fontSize="1.5rem"
-                    color="primary.onContainer"
-                >
+                <Typography variant="h6" color="primary.onContainer">
                     {firstLetter}
                 </Typography>
             </Box>
@@ -123,6 +152,12 @@ const UserButton = () => {
                 </List>
             </Popover>
         </>
+    );
+
+    return isMobile === null ? null : isMobile ? (
+        <Box sx={fixedContainerStyles}>{internalDisplay}</Box>
+    ) : (
+        internalDisplay
     );
 };
 

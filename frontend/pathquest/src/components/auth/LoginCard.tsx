@@ -20,13 +20,19 @@ const LoginCard = () => {
     return (
         <Paper sx={paperStyles}>
             <Image src={logo} alt="PathQuest logo" width={300} />
-            <Typography variant="h3" component="h1" color="primary.onContainer">
+            <Typography
+                variant="h2"
+                fontWeight="bold"
+                component="h1"
+                color="primary.onContainer"
+            >
                 PathQuest
             </Typography>
             <Typography
                 variant="body1"
                 component="h2"
                 color="primary.onContainerDim"
+                textAlign="center"
             >
                 Adventure awaits! Log in to start your journey.
             </Typography>

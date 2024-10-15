@@ -6,13 +6,19 @@ import { User } from "@/typeDefs/User";
 
 const backendUrl = getBackendUrl();
 
-const createUser = async (): Promise<User | null> => {
+const createUser = async (): Promise<{
+    success: boolean;
+    error?: string;
+}> => {
     const session = await useAuth();
 
     const user = session?.user;
 
     if (!user) {
-        return null;
+        return {
+            success: false,
+            error: "Unauthorized",
+        };
     }
 
     const token = await getGoogleIdToken();
@@ -34,9 +40,34 @@ const createUser = async (): Promise<User | null> => {
 
     if (!apiRes.ok) {
         console.error(await apiRes.text());
-        return null;
+        return {
+            success: false,
+            error: "Failed to create user",
+        };
     } else {
-        return await apiRes.json();
+        const historicalRes = await fetch(`${backendUrl}/historical-data`, {
+            method: "POST",
+            cache: "no-cache",
+            headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify({
+                userId: user.id.toString(),
+            }),
+        });
+
+        if (!historicalRes.ok) {
+            console.error(await historicalRes.text());
+            return {
+                success: false,
+                error: "Failed to trigger historical data",
+            };
+        } else {
+            return {
+                success: true,
+            };
+        }
     }
 };
 
