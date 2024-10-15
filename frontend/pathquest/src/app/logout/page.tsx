@@ -3,7 +3,7 @@ import React from "react";
 import { Grid2 as Grid, Typography } from "@mui/material";
 import { Metadata } from "next";
 import { signOut, useSession } from "next-auth/react";
-import { useRouter } from "next/router";
+import { useRouter } from "next/navigation";
 
 const page = () => {
     const { data } = useSession();
