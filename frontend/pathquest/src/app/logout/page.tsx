@@ -5,12 +5,6 @@ import { Metadata } from "next";
 import { signOut, useSession } from "next-auth/react";
 import { useRouter } from "next/router";
 
-export const metadata: Metadata = {
-    title: "PathQuest | Logout",
-    description:
-        "PathQuest is a modern adventure catalog and challenge tracker.",
-};
-
 const page = () => {
     const { data } = useSession();
 
