@@ -14,7 +14,6 @@ const titleContainerStyles: SxProps = {
     },
     justifyContent: "center",
     gap: "8px",
-    // width: "100%",
     height: {
         xs: "30vh",
         md: "auto",
@@ -25,7 +24,6 @@ const searchContainerStyles: SxProps = {
     display: "flex",
     flexDirection: "column",
     justifyContent: "center",
-    // alignItems: "center",
 };
 
 const textStyles: SxProps = {

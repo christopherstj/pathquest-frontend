@@ -28,7 +28,7 @@ const TextField = ({ sx, color, ...props }: TextFieldProps) => {
         ...textFieldStyles(
             !["primary", "secondary"].includes(color ?? "primary")
                 ? "primary"
-                : "secondary"
+                : (color as "primary" | "secondary")
         ),
         ...sx,
     };

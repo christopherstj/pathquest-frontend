@@ -1,10 +1,10 @@
 "use client";
-import getPeaks from "@/actions/getPeaks";
-import Peak from "@/typeDefs/Peak";
+import getChallenges from "@/actions/getChallenges";
+import Challenge from "@/typeDefs/Challenge";
 import { Box, LinearProgress, SxProps } from "@mui/material";
 import React from "react";
 import TextField from "../common/TextField";
-import PeakRow from "./PeakRow";
+import ChallengeRow from "./ChallengeRow";
 
 const containerStyles: SxProps = {
     display: "flex",
@@ -12,7 +12,7 @@ const containerStyles: SxProps = {
     padding: "4px",
     gap: "8px",
     borderRadius: "12px",
-    backgroundColor: "secondary.container",
+    backgroundColor: "primary.container",
     position: "relative",
     overflow: "hidden",
     width: "100%",
@@ -47,11 +47,12 @@ const resultListStyles: SxProps = {
 };
 
 type Props = {
-    initialPeaks: Peak[];
+    initialChallenges: Challenge[];
 };
 
-const PeaksSearch = ({ initialPeaks }: Props) => {
-    const [peaks, setPeaks] = React.useState<Peak[]>(initialPeaks);
+const ChallengesSearch = ({ initialChallenges }: Props) => {
+    const [challenges, setChallenges] =
+        React.useState<Challenge[]>(initialChallenges);
     const [search, setSearch] = React.useState("");
     const [loading, setLoading] = React.useState(false);
     const [timeoutId, setTimeoutId] = React.useState<NodeJS.Timeout | null>(
@@ -59,8 +60,8 @@ const PeaksSearch = ({ initialPeaks }: Props) => {
     );
 
     const getData = async () => {
-        const newPeaks = await getPeaks(1, 100, search);
-        setPeaks(newPeaks);
+        const newChallenges = await getChallenges(1, 100, search);
+        setChallenges(newChallenges);
     };
 
     React.useEffect(() => {
@@ -77,7 +78,7 @@ const PeaksSearch = ({ initialPeaks }: Props) => {
 
             setTimeoutId(id);
         } else {
-            setPeaks(initialPeaks);
+            setChallenges(initialChallenges);
             setLoading(false);
         }
     }, [search]);
@@ -86,14 +87,14 @@ const PeaksSearch = ({ initialPeaks }: Props) => {
         <Box sx={containerStyles}>
             {loading && (
                 <LinearProgress
-                    color="secondary"
+                    color="primary"
                     sx={{ position: "absolute", top: 0, left: 0, right: 0 }}
                 />
             )}
             <Box width="100%" padding="12px 4px 0px 4px">
                 <TextField
                     fullWidth
-                    color="secondary"
+                    color="primary"
                     label="Search"
                     size="small"
                     value={search}
@@ -104,12 +105,12 @@ const PeaksSearch = ({ initialPeaks }: Props) => {
                 />
             </Box>
             <Box sx={resultListStyles}>
-                {peaks.map((peak) => (
-                    <PeakRow peak={peak} key={peak.Id} />
+                {challenges.map((challenge) => (
+                    <ChallengeRow challenge={challenge} key={challenge.id} />
                 ))}
             </Box>
         </Box>
     );
 };
 
-export default PeaksSearch;
+export default ChallengesSearch;
