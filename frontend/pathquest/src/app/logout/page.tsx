@@ -1,30 +1,8 @@
-"use client";
 import React from "react";
-import { Grid2 as Grid, Typography } from "@mui/material";
-import { Metadata } from "next";
-import { signOut, useSession } from "next-auth/react";
-import { useRouter } from "next/navigation";
+import { Grid2 as Grid } from "@mui/material";
+import Logout from "@/components/auth/Logout";
 
 const page = () => {
-    const { data } = useSession();
-
-    const router = useRouter();
-
-    if (!data) {
-        return router.push("/login");
-    }
-
-    const logout = async () => {
-        await signOut({
-            redirect: true,
-            callbackUrl: "/login",
-        });
-    };
-
-    React.useEffect(() => {
-        logout();
-    }, []);
-
     return (
         <Grid container spacing={1} minHeight="100%">
             <Grid
@@ -33,9 +11,7 @@ const page = () => {
                 justifyContent="center"
                 alignItems="center"
             >
-                <Typography variant="h6" color="primary.onContainer">
-                    Logging out...
-                </Typography>
+                <Logout />
             </Grid>
         </Grid>
     );

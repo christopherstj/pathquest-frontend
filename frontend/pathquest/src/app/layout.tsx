@@ -1,10 +1,7 @@
 import type { Metadata } from "next";
-import localFont from "next/font/local";
 import "./globals.css";
 import Contexts from "@/components/Contexts";
 import { Box, SxProps } from "@mui/material";
-import Sidebar from "@/components/layout/Sidebar";
-import { Home, QuestionMark } from "@mui/icons-material";
 import InitColorSchemeScript from "@mui/material/InitColorSchemeScript";
 import { Raleway, Merriweather_Sans } from "next/font/google";
 import Nav from "@/components/layout/Nav";
@@ -12,11 +9,13 @@ import Nav from "@/components/layout/Nav";
 const raleway = Raleway({
     variable: "--font-raleway",
     subsets: ["latin"],
+    display: "swap",
 });
 
 const merriweatherSans = Merriweather_Sans({
     variable: "--font-merriweather-sans",
     subsets: ["latin"],
+    display: "swap",
 });
 
 export const metadata: Metadata = {
@@ -32,7 +31,7 @@ const rootContainerStyles: SxProps = {
         md: "80px 1fr",
     },
     width: "100vw",
-    height: "100vh",
+    minHeight: "100vh",
     backgroundColor: "background.default",
 };
 
@@ -41,6 +40,10 @@ const contentContainerStyles: SxProps = {
     minHeight: "100vh",
     padding: {
         xs: "8px",
+        md: "16px",
+    },
+    paddingBottom: {
+        xs: "72px",
         md: "16px",
     },
 };

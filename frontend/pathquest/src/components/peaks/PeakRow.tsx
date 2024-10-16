@@ -1,0 +1,70 @@
+import hexToRgb from "@/helpers/hexToRgb";
+import Peak from "@/typeDefs/Peak";
+import { Box, SxProps, Theme, Typography } from "@mui/material";
+import React from "react";
+
+const rowStyles: SxProps<Theme> = (theme) => ({
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+    gap: "12px",
+    padding: "8px",
+    borderRadius: "12px",
+    backgroundColor: "secondary.containerDim",
+    position: "relative",
+    overflow: "hidden",
+    minHeight: "54px",
+    width: {
+        xs: "100%",
+        md: "auto",
+    },
+    transition: "box-shadow 0.2s",
+    cursor: "pointer",
+    "&:hover": {
+        boxShadow: `0px 3px 3px -2px rgba(${hexToRgb(
+            theme.palette.secondary.base
+        )}, 0.2), 0px 3px 4px 0px rgba(${hexToRgb(
+            theme.palette.secondary.base
+        )}, 0.14), 0px 1px 8px 0px rgba(${hexToRgb(
+            theme.palette.secondary.base
+        )}, 0.12);`,
+    },
+});
+
+type Props = {
+    peak: Peak;
+};
+
+const PeakRow = ({ peak }: Props) => {
+    const color =
+        (peak.Altitude ?? 0) < 1000
+            ? "primary"
+            : (peak.Altitude ?? 0) < 3000
+            ? "secondary"
+            : "tertiary";
+
+    return (
+        <Box sx={rowStyles}>
+            <Typography
+                variant="body1"
+                fontWeight="bold"
+                color="secondary.onContainerDim"
+            >
+                {peak.Name}
+            </Typography>
+            <Box
+                sx={{
+                    backgroundColor: `${color}.onContainerDim`,
+                    padding: "8px",
+                    borderRadius: "8px",
+                }}
+            >
+                <Typography variant="body1" color={`${color}.containerDim`}>
+                    {peak.Altitude}m
+                </Typography>
+            </Box>
+        </Box>
+    );
+};
+
+export default PeakRow;

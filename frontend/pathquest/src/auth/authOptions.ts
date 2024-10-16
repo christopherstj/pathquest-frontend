@@ -5,7 +5,7 @@ const frontendUrl = process.env.NEXTAUTH_URL ?? "";
 
 export const authOptions: AuthOptions = {
     pages: {
-        signIn: "/",
+        signIn: "/login",
     },
     session: {
         strategy: "jwt",

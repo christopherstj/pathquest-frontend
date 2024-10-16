@@ -5,7 +5,7 @@ import UserButton from "./UserButton";
 
 const bottomNavStyles: SxProps = {
     position: "fixed",
-    bottom: 0,
+    bottom: "-1px",
     left: 0,
     right: 0,
     display: "flex",
@@ -14,6 +14,7 @@ const bottomNavStyles: SxProps = {
     backgroundColor: "primary.container",
     boxShadow: 3,
     padding: "0px 4px",
+    zIndex: 1,
 };
 
 type Props = {
