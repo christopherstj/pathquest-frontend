@@ -7,7 +7,6 @@ import TextField from "../common/TextField";
 import PeakRow from "./PeakRow";
 
 const containerStyles: SxProps = {
-    // flex: 1,
     display: "flex",
     flexDirection: "column",
     padding: "4px",
