@@ -7,10 +7,7 @@ import logo from "../../public/images/logo-no-background.svg";
 const backgroundStyles: SxProps<Theme> = (theme) => ({
     background: `radial-gradient(circle closest-side, ${theme.palette.primary.base}, ${theme.palette.background.default})`,
     height: "100%",
-    minHeight: {
-        xs: "50vh",
-        md: "75vh",
-    },
+    minHeight: "50vh",
     width: "100%",
     display: "flex",
     flexDirection: "column",
