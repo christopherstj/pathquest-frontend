@@ -7,14 +7,18 @@ export default function Home() {
     return (
         <Grid container spacing={1} minHeight="100%">
             <Grid
-                size={{ xs: 12 }}
+                size={{ xs: 12, md: 6 }}
                 display="flex"
                 justifyContent="center"
                 alignItems="center"
             >
                 <Header />
             </Grid>
-            <Grid size={{ xs: 12 }} display="flex" justifyContent="center">
+            <Grid
+                size={{ xs: 12, md: 5 }}
+                display="flex"
+                justifyContent="center"
+            >
                 <Description />
             </Grid>
         </Grid>

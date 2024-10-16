@@ -4,10 +4,15 @@ import React from "react";
 
 const containerStyles: SxProps = {
     width: "100%",
+    height: "100%",
     maxWidth: "500px",
     display: "flex",
     flexDirection: "column",
     alignItems: "center",
+    justifyContent: {
+        xs: "flex-start",
+        md: "center",
+    },
     gap: "16px",
 };
 

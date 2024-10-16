@@ -9,7 +9,7 @@ import PeakRow from "./PeakRow";
 const containerStyles: SxProps = {
     display: "flex",
     flexDirection: "column",
-    padding: "4px",
+    padding: "4px 4px 0px 4px",
     gap: "8px",
     borderRadius: "12px",
     backgroundColor: "secondary.container",
@@ -27,7 +27,7 @@ const resultListStyles: SxProps = {
     display: "flex",
     flexDirection: "column",
     gap: "12px",
-    padding: "4px",
+    padding: "4px 4px 0px 4px",
     height: {
         xs: "auto",
         md: "50vh",
