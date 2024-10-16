@@ -1,6 +1,7 @@
 import hexToRgb from "@/helpers/hexToRgb";
 import Peak from "@/typeDefs/Peak";
-import { Box, SxProps, Theme, Typography } from "@mui/material";
+import { Box, ButtonBase, SxProps, Theme, Typography } from "@mui/material";
+import Link from "next/link";
 import React from "react";
 
 const rowStyles: SxProps<Theme> = (theme) => ({
@@ -44,7 +45,11 @@ const PeakRow = ({ peak }: Props) => {
             : "tertiary";
 
     return (
-        <Box sx={rowStyles}>
+        <ButtonBase
+            sx={rowStyles}
+            LinkComponent={Link}
+            href={`/app/peaks/${peak.Id}`}
+        >
             <Typography
                 variant="body1"
                 fontWeight="bold"
@@ -63,7 +68,7 @@ const PeakRow = ({ peak }: Props) => {
                     {peak.Altitude}m
                 </Typography>
             </Box>
-        </Box>
+        </ButtonBase>
     );
 };
 
