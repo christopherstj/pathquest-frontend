@@ -16,7 +16,9 @@ const Nav = () => {
 
     const routes = getRoutes(!!data && pathname.startsWith("/app"));
 
-    return isMobile === null ? null : isMobile ? (
+    return isMobile === null ? (
+        <div />
+    ) : isMobile ? (
         <BottomNav links={routes} />
     ) : (
         <Sidebar links={routes} />
