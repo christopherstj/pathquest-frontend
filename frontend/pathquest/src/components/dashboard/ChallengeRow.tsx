@@ -1,5 +1,5 @@
 import hexToRgb from "@/helpers/hexToRgb";
-import Peak from "@/typeDefs/Peak";
+import ChallengeProgress from "@/typeDefs/ChallengeProgress";
 import { Box, ButtonBase, SxProps, Theme, Typography } from "@mui/material";
 import Link from "next/link";
 import React from "react";
@@ -33,56 +33,65 @@ const rowStyles: SxProps<Theme> = (theme) => ({
 });
 
 type Props = {
-    peak: Peak;
+    challenge: ChallengeProgress;
 };
 
-const PeakRow = ({ peak }: Props) => {
+const ChallengeRow = ({ challenge }: Props) => {
+    const percentComplete = (challenge.completed / challenge.total) * 100;
     const color =
-        (peak.Altitude ?? 0) < 1000
-            ? "primary"
-            : (peak.Altitude ?? 0) < 3000
+        percentComplete < 50
+            ? "tertiary"
+            : challenge.total < 80
             ? "secondary"
-            : "tertiary";
+            : "primary";
 
     return (
         <ButtonBase
             sx={rowStyles}
             LinkComponent={Link}
-            href={`/app/peaks/${peak.Id}`}
+            href={`/app/peaks/${challenge.id}`}
         >
-            <Box display="flex" flexDirection="column">
+            <Box
+                display="flex"
+                flexDirection="column"
+                justifyContent="space-between"
+                height="100%"
+            >
                 <Typography
                     variant="body1"
                     fontWeight="bold"
                     color="secondary.onContainerDim"
                 >
-                    {peak.Name}
+                    {challenge.name}
                 </Typography>
                 <Typography variant="caption" color="secondary.onContainerDim">
-                    {peak.Country ? `${peak.Country}` : ""}
-                    {peak.State ? ` | ${peak.State}` : ""}
-                    {peak.County ? ` | ${peak.County}` : ""}
+                    {challenge.region}
                 </Typography>
             </Box>
-            {peak.Altitude && (
-                <Box
-                    sx={{
-                        backgroundColor: `${color}.onContainerDim`,
-                        padding: "8px",
-                        borderRadius: "8px",
-                    }}
+            <Box
+                sx={{
+                    backgroundColor: `${color}.onContainerDim`,
+                    padding: "8px",
+                    borderRadius: "8px",
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "center",
+                    justifyContent: "center",
+                }}
+            >
+                <Typography
+                    variant="h6"
+                    color={`${color}.container`}
+                    fontWeight="bold"
                 >
-                    <Typography variant="body1" color={`${color}.containerDim`}>
-                        {peak.Altitude.toString().replace(
-                            /\B(?=(\d{3})+(?!\d))/g,
-                            ","
-                        )}
-                        m
-                    </Typography>
-                </Box>
-            )}
+                    {challenge.completed} / {challenge.total}
+                </Typography>
+                <Typography variant="caption" color={`${color}.containerDim`}>
+                    peaks
+                </Typography>
+            </Box>
         </ButtonBase>
     );
 };
 
-export default PeakRow;
+export default ChallengeRow;

@@ -1,4 +1,7 @@
+import getPeakSummits from "@/actions/getPeakSummits";
 import { useAuth } from "@/auth/useAuth";
+import ChallengeData from "@/state/ChallengeData";
+import PeaksData from "@/state/PeaksData";
 import { Metadata } from "next";
 import { redirect } from "next/navigation";
 import React from "react";
@@ -20,7 +23,11 @@ const layout = async ({ children }: Props) => {
         redirect("/login");
     }
 
-    return <>{children}</>;
+    return (
+        <PeaksData>
+            <ChallengeData>{children}</ChallengeData>
+        </PeaksData>
+    );
 };
 
 export default layout;

@@ -23,7 +23,7 @@ const Title = () => {
             <Typography
                 variant="h4"
                 component="h2"
-                color="primary.onContainerDim"
+                color="secondary.onContainerDim"
                 textAlign="center"
             >
                 Your modern adventure catalog and challenge tracker.
