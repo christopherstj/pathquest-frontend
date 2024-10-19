@@ -6,6 +6,7 @@ import UnclimbedPeakRow from "./UnclimbedPeakRow";
 import { useUser } from "@/state/UserContext";
 import toggleFavoritePeak from "@/actions/toggleFavoritePeak";
 import { useMessage } from "@/state/MessageContext";
+import FavoritedPeak from "@/typeDefs/FavoritedPeak";
 
 const containerStyles: SxProps = {
     borderRadius: "12px",
@@ -42,7 +43,11 @@ const listStyles: SxProps = {
     },
 };
 
-const UnclimbedPeaksList = () => {
+const UnclimbedPeaksList = ({
+    onRowClick,
+}: {
+    onRowClick: (lat: number, long: number) => void;
+}) => {
     const [{ unclimbedPeaks }, setPeaksState] = usePeaks();
     const [{ user }] = useUser();
     const [, dispatch] = useMessage();
@@ -60,10 +65,25 @@ const UnclimbedPeaksList = () => {
                 }
                 return peak;
             });
+
+            if (state.favoritePeaks) {
+                const newfavoritePeaks = newValue
+                    ? [
+                          newPeaks.find(
+                              (peak) => peak.Id === peakId
+                          ) as FavoritedPeak,
+                          ...state.favoritePeaks,
+                      ]
+                    : state.favoritePeaks.filter((peak) => peak.Id !== peakId);
+                return {
+                    ...state,
+                    unclimbedPeaks: newPeaks,
+                    favoritePeaks: newfavoritePeaks,
+                };
+            }
             return {
                 ...state,
                 unclimbedPeaks: newPeaks,
-                favoritePeaks: newPeaks.filter((peak) => peak.isFavorited),
             };
         });
 
@@ -85,10 +105,27 @@ const UnclimbedPeaksList = () => {
                     }
                     return peak;
                 });
+
+                if (state.favoritePeaks) {
+                    const newfavoritePeaks = !newValue
+                        ? [
+                              newPeaks.find(
+                                  (peak) => peak.Id === peakId
+                              ) as FavoritedPeak,
+                              ...state.favoritePeaks,
+                          ]
+                        : state.favoritePeaks.filter(
+                              (peak) => peak.Id !== peakId
+                          );
+                    return {
+                        ...state,
+                        unclimbedPeaks: newPeaks,
+                        favoritePeaks: newfavoritePeaks,
+                    };
+                }
                 return {
                     ...state,
                     unclimbedPeaks: newPeaks,
-                    favoritePeaks: newPeaks.filter((peak) => peak.isFavorited),
                 };
             });
         }
@@ -116,6 +153,7 @@ const UnclimbedPeaksList = () => {
                             .map((peak) => (
                                 <UnclimbedPeakRow
                                     onFavoriteClick={onFavoriteClick}
+                                    onRowClick={onRowClick}
                                     key={peak.Id}
                                     peak={peak}
                                     units={units}

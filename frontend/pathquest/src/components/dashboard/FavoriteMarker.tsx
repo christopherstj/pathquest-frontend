@@ -1,7 +1,7 @@
 import React from "react";
-import peakMarker from "../../public/images/peak-marker.svg";
+import peakMarker from "../../public/images/marker-tertiary.svg";
 
-const PeakMarker = () => {
+const FavoriteMarker = () => {
     const el = document.createElement("div");
     el.className = "marker";
     el.style.backgroundImage = `url(${peakMarker.src})`;
@@ -13,4 +13,4 @@ const PeakMarker = () => {
     return el;
 };
 
-export default PeakMarker;
+export default FavoriteMarker;

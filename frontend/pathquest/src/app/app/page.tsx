@@ -23,22 +23,6 @@ const page = async () => {
         <Grid container spacing={3} minHeight="100%">
             <Map />
             <Grid
-                size={{ xs: 12, md: 6, lg: 4 }}
-                display="flex"
-                flexDirection="column"
-                gap="16px"
-            >
-                <UnclimbedPeaksList />
-            </Grid>
-            <Grid
-                size={{ xs: 12, md: 6, lg: 4 }}
-                display="flex"
-                flexDirection="column"
-                gap="16px"
-            >
-                <FavoritePeaks />
-            </Grid>
-            <Grid
                 size={{ xs: 12, lg: 4 }}
                 display="flex"
                 flexDirection="column"

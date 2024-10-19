@@ -43,7 +43,11 @@ const listStyles: SxProps = {
     },
 };
 
-const FavoritePeaks = () => {
+const FavoritePeaks = ({
+    onRowClick,
+}: {
+    onRowClick: (lat: number, long: number) => void;
+}) => {
     const [{ favoritePeaks }, setPeaksState] = usePeaks();
     const [{ user }] = useUser();
     const [, dispatch] = useMessage();
@@ -129,16 +133,17 @@ const FavoritePeaks = () => {
             <Box sx={containerStyles}>
                 {favoritePeaks && favoritePeaks.length > 0 ? (
                     <List sx={listStyles}>
-                        {favoritePeaks.map((peak) => (
+                        {favoritePeaks.map((peak, index) => (
                             <UnclimbedPeakRow
                                 onFavoriteClick={onFavoriteClick}
-                                key={peak.Id}
+                                key={index}
                                 peak={{
                                     ...peak,
                                     distance: 0,
                                 }}
                                 units={units}
                                 rowColor="primary"
+                                onRowClick={onRowClick}
                             />
                         ))}
                     </List>

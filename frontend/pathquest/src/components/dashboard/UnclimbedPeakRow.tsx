@@ -16,6 +16,7 @@ type Props = {
     peak: UnclimbedPeak;
     units: "metric" | "imperial";
     onFavoriteClick: (peakId: string, newValue: boolean) => void;
+    onRowClick: (lat: number, long: number) => void;
     rowColor: "primary" | "secondary";
 };
 
@@ -23,6 +24,7 @@ const UnclimbedPeakRow = ({
     peak,
     units,
     onFavoriteClick,
+    onRowClick,
     rowColor,
 }: Props) => {
     const color =
@@ -38,7 +40,9 @@ const UnclimbedPeakRow = ({
                 paddingLeft: "0",
                 paddingRight: "0",
                 gap: "8px",
+                cursor: "pointer",
             }}
+            onClick={() => onRowClick(peak.Lat, peak.Long)}
         >
             <ListItemAvatar sx={{ minWidth: "32px" }}>
                 <IconButton

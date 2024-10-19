@@ -8,6 +8,17 @@ import PeakMarker from "./PeakMarker";
 import { useUser } from "@/state/UserContext";
 import metersToFt from "@/helpers/metersToFt";
 import PeaksSummitList from "./PeaksSummitList";
+import UnclimbedPeaksList from "./UnclimbedPeaksList";
+import FavoritePeaks from "./FavoritePeaks";
+import CompletedPopup from "./CompletedPopup";
+import FavoriteMarker from "./FavoriteMarker";
+import FavoritePopup from "./FavoritePopup";
+import UnclimbedMarker from "./UnclimbedMarker";
+import UnclimbedPopup from "./UnclimbedPopup";
+import toggleFavoritePeak from "@/actions/toggleFavoritePeak";
+import { useMessage } from "@/state/MessageContext";
+import FavoritedPeak from "@/typeDefs/FavoritedPeak";
+import getIsFavorited from "@/actions/getIsPeakFavorited";
 
 const containerStyles: SxProps = {
     height: {
@@ -18,22 +29,88 @@ const containerStyles: SxProps = {
     borderRadius: "8px",
     overflow: "hidden",
     ".mapboxgl-popup-tip": {
-        borderTopColor: "primary.container",
+        borderTopColor: "background.paper",
     },
     ".mapboxgl-popup-content": {
-        backgroundColor: "primary.container",
+        backgroundColor: "background.paper",
         borderRadius: "6px",
         padding: "12px 8px 8px 8px",
         fontFamily: "var(--font-merriweather-sans)",
-        ".link": {
+        ".link-primary": {
             color: "primary.onContainer",
             textDecoration: "none",
-            padding: "2px 4px",
-            borderRadius: "4px",
-            backgroundColor: "primary.containerDim",
+            fontFamily: "var(--font-merriweather-sans)",
+            padding: "4px 12px",
+            borderRadius: "8px",
+            border: "1px solid",
+            borderColor: "primary.onContainer",
+            width: "100%",
             "&:hover": {
                 textDecoration: "underline",
             },
+        },
+        ".tag-primary": {
+            color: "primary.onContainer",
+            backgroundColor: "primary.containerDim",
+            padding: "2px 4px",
+            borderRadius: "8px",
+            margin: "4px 0",
+        },
+        ".link-secondary": {
+            color: "secondary.onContainer",
+            textDecoration: "none",
+            fontFamily: "var(--font-merriweather-sans)",
+            padding: "4px 12px",
+            borderRadius: "8px",
+            border: "1px solid",
+            borderColor: "secondary.onContainer",
+            width: "100%",
+            "&:hover": {
+                textDecoration: "underline",
+            },
+        },
+        ".button-secondary": {
+            color: "secondary.onContainer",
+            fontWeight: "bold",
+            fontFamily: "var(--font-merriweather-sans)",
+            textDecoration: "none",
+            padding: "4px",
+            borderRadius: "12px",
+            width: "100%",
+            border: "1px solid",
+            borderColor: "secondary.onContainerDim",
+            backgroundColor: "transparent",
+            marginTop: "8px",
+            "&:hover": {
+                backgroundColor: "secondary.containerDim",
+            },
+        },
+        ".tag-secondary": {
+            color: "secondary.onContainer",
+            backgroundColor: "secondary.containerDim",
+            padding: "2px 4px",
+            borderRadius: "8px",
+            margin: "4px 0",
+        },
+        ".link-tertiary": {
+            color: "tertiary.onContainer",
+            textDecoration: "none",
+            fontFamily: "var(--font-merriweather-sans)",
+            padding: "4px 12px",
+            borderRadius: "8px",
+            border: "1px solid",
+            borderColor: "tertiary.onContainer",
+            width: "100%",
+            "&:hover": {
+                textDecoration: "underline",
+            },
+        },
+        ".tag-tertiary": {
+            color: "tertiary.onContainer",
+            backgroundColor: "tertiary.containerDim",
+            padding: "2px 4px",
+            borderRadius: "8px",
+            margin: "4px 0",
         },
     },
     ".mapboxgl-popup-close-button": {
@@ -43,8 +120,9 @@ const containerStyles: SxProps = {
 };
 
 const Map = () => {
-    const [peaks] = usePeaks();
+    const [peaks, setPeaksState] = usePeaks();
     const [{ user }] = useUser();
+    const [, dispatch] = useMessage();
 
     if (!user) return null;
 
@@ -52,51 +130,141 @@ const Map = () => {
 
     const theme = useTheme();
 
-    const { peakSummits } = peaks;
+    const { peakSummits, favoritePeaks, unclimbedPeaks } = peaks;
 
     const mapRef = React.useRef<any>(null);
     const mapContainerRef = React.useRef<any>(null);
 
+    console.log(unclimbedPeaks);
+
+    const onFavoriteClick = async (peakId: string, newValue: boolean) => {
+        if (newValue) {
+            const isFavorited = await getIsFavorited(peakId);
+
+            if (isFavorited) {
+                dispatch({
+                    type: "SET_MESSAGE",
+                    payload: {
+                        text: "Peak is already favorited",
+                        type: "error",
+                    },
+                });
+                return;
+            }
+        }
+
+        setPeaksState((state) => {
+            if (!state.unclimbedPeaks) return state;
+
+            const newPeaks = state.unclimbedPeaks.map((peak) => {
+                if (peak.Id === peakId) {
+                    return { ...peak, isFavorited: newValue };
+                }
+                return peak;
+            });
+
+            if (state.favoritePeaks) {
+                const newfavoritePeaks = newValue
+                    ? [
+                          newPeaks.find(
+                              (peak) => peak.Id === peakId
+                          ) as FavoritedPeak,
+                          ...state.favoritePeaks,
+                      ]
+                    : state.favoritePeaks.filter((peak) => peak.Id !== peakId);
+                return {
+                    ...state,
+                    unclimbedPeaks: newPeaks,
+                    favoritePeaks: newfavoritePeaks,
+                };
+            }
+            return {
+                ...state,
+                unclimbedPeaks: newPeaks,
+            };
+        });
+
+        const success = await toggleFavoritePeak(peakId, newValue);
+
+        if (!success) {
+            dispatch({
+                type: "SET_MESSAGE",
+                payload: {
+                    text: "Failed to update favorite status",
+                    type: "error",
+                },
+            });
+            setPeaksState((state) => {
+                if (!state.unclimbedPeaks) return state;
+                const newPeaks = state.unclimbedPeaks.map((peak) => {
+                    if (peak.Id === peakId) {
+                        return { ...peak, favorite: !newValue };
+                    }
+                    return peak;
+                });
+
+                if (state.favoritePeaks) {
+                    const newfavoritePeaks = !newValue
+                        ? [
+                              newPeaks.find(
+                                  (peak) => peak.Id === peakId
+                              ) as FavoritedPeak,
+                              ...state.favoritePeaks,
+                          ]
+                        : state.favoritePeaks.filter(
+                              (peak) => peak.Id !== peakId
+                          );
+                    return {
+                        ...state,
+                        unclimbedPeaks: newPeaks,
+                        favoritePeaks: newfavoritePeaks,
+                    };
+                }
+                return {
+                    ...state,
+                    unclimbedPeaks: newPeaks,
+                };
+            });
+        }
+    };
+
     const addMarkers = () => {
         if (mapRef.current) {
+            unclimbedPeaks?.forEach((peak) => {
+                if (peak.isFavorited) return;
+                const el = UnclimbedMarker();
+                new mapboxgl.Marker(el)
+                    .setLngLat([peak.Long, peak.Lat])
+                    .setPopup(
+                        new mapboxgl.Popup({ offset: 25 }).setDOMContent(
+                            UnclimbedPopup({
+                                peak,
+                                units,
+                                theme,
+                                onFavoriteClick,
+                            })
+                        )
+                    )
+                    .addTo(mapRef.current);
+            });
+            favoritePeaks?.forEach((peak) => {
+                const el = FavoriteMarker();
+                new mapboxgl.Marker(el)
+                    .setLngLat([peak.Long, peak.Lat])
+                    .setPopup(
+                        new mapboxgl.Popup({ offset: 25 }).setHTML(
+                            FavoritePopup({ peak, units, theme })
+                        )
+                    )
+                    .addTo(mapRef.current);
+            });
             peakSummits?.forEach((peak) => {
                 const el = PeakMarker();
                 new mapboxgl.Marker(el)
                     .setLngLat([peak.Long, peak.Lat])
                     .setPopup(
                         new mapboxgl.Popup({ offset: 25 }).setHTML(
-                            `
-                                <p style="font-size: 16px; color: ${
-                                    theme.palette.primary.onContainer
-                                }; margin-bottom: 8px">
-                                    ${peak.Name}
-                                </p>
-                                ${
-                                    peak.Altitude
-                                        ? `<p style="color: ${
-                                              theme.palette.primary
-                                                  .onContainerDim
-                                          }">
-                                        ${Math.round(
-                                            units === "metric"
-                                                ? peak.Altitude
-                                                : metersToFt(peak.Altitude)
-                                        )}${units === "metric" ? " m" : " ft"}
-                                    </p>    
-                                `
-                                        : ""
-                                }
-                                <p style="color: ${
-                                    theme.palette.primary.onContainerDim
-                                }">
-                                    ${peak.ascents.length} summit${
-                                peak.ascents.length > 1 ? "s" : ""
-                            }
-                                </p>
-                                <a href="/app/peaks/${peak.Id}" class="link">
-                                    View Peak
-                                </a>
-                            `
+                            CompletedPopup({ peak, units, theme })
                         )
                     )
                     .addTo(mapRef.current);
@@ -145,6 +313,22 @@ const Map = () => {
                 gap="16px"
             >
                 <PeaksSummitList onRowClick={onRowClick} />
+            </Grid>
+            <Grid
+                size={{ xs: 12, md: 6, lg: 4 }}
+                display="flex"
+                flexDirection="column"
+                gap="16px"
+            >
+                <UnclimbedPeaksList onRowClick={onRowClick} />
+            </Grid>
+            <Grid
+                size={{ xs: 12, md: 6, lg: 4 }}
+                display="flex"
+                flexDirection="column"
+                gap="16px"
+            >
+                <FavoritePeaks onRowClick={onRowClick} />
             </Grid>
         </>
     );
