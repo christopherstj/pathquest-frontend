@@ -116,7 +116,7 @@ const FavoritePeaks = () => {
         <>
             <Box width="100%">
                 <Typography variant="h4" color="primary.onContainer">
-                    Ongoing Challenges
+                    Your Favorite Peaks
                 </Typography>
                 <Divider
                     sx={{

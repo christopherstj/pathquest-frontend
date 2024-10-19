@@ -58,7 +58,7 @@ const IncompleteChallenges = () => {
         <>
             <Box width="100%">
                 <Typography variant="h4" color="secondary.onContainer">
-                    Nearby Goals
+                    Ongoing Challenges
                 </Typography>
                 <Divider
                     sx={{
