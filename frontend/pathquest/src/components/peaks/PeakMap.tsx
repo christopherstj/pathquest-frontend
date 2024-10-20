@@ -1,8 +1,6 @@
 import React from "react";
 
-type Props = {};
-
-const PeakMap = (props: Props) => {
+const PeakMap = () => {
     return <div>PeakMap</div>;
 };
 
