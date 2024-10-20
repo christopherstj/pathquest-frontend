@@ -31,6 +31,7 @@ const getIsFavorited = async (peakId: string): Promise<boolean> => {
         return false;
     } else {
         const data = await response.json();
+        console.log(data);
         return data.isFavorited;
     }
 };

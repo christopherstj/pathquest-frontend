@@ -19,6 +19,7 @@ import toggleFavoritePeak from "@/actions/toggleFavoritePeak";
 import { useMessage } from "@/state/MessageContext";
 import FavoritedPeak from "@/typeDefs/FavoritedPeak";
 import getIsFavorited from "@/actions/getIsPeakFavorited";
+import UnclimbedPeak from "@/typeDefs/UnclimbedPeak";
 
 const containerStyles: SxProps = {
     height: {
@@ -112,6 +113,22 @@ const containerStyles: SxProps = {
             borderRadius: "8px",
             margin: "4px 0",
         },
+        ".button-tertiary": {
+            color: "tertiary.onContainer",
+            fontWeight: "bold",
+            fontFamily: "var(--font-merriweather-sans)",
+            textDecoration: "none",
+            padding: "4px",
+            borderRadius: "12px",
+            width: "100%",
+            border: "1px solid",
+            borderColor: "tertiary.onContainerDim",
+            backgroundColor: "transparent",
+            marginTop: "8px",
+            "&:hover": {
+                backgroundColor: "tertiary.containerDim",
+            },
+        },
     },
     ".mapboxgl-popup-close-button": {
         right: "4px",
@@ -124,6 +141,25 @@ const Map = () => {
     const [{ user }] = useUser();
     const [, dispatch] = useMessage();
 
+    const [markers, setMarkers] = React.useState<{
+        completed: {
+            peakId: string;
+            marker: mapboxgl.Marker;
+        }[];
+        favorite: {
+            peakId: string;
+            marker: mapboxgl.Marker;
+        }[];
+        unclimbed: {
+            peakId: string;
+            marker: mapboxgl.Marker;
+        }[];
+    }>({
+        completed: [],
+        favorite: [],
+        unclimbed: [],
+    });
+
     if (!user) return null;
 
     const { units } = user;
@@ -135,54 +171,141 @@ const Map = () => {
     const mapRef = React.useRef<any>(null);
     const mapContainerRef = React.useRef<any>(null);
 
-    console.log(unclimbedPeaks);
-
-    const onFavoriteClick = async (peakId: string, newValue: boolean) => {
-        if (newValue) {
-            const isFavorited = await getIsFavorited(peakId);
-
-            if (isFavorited) {
-                dispatch({
-                    type: "SET_MESSAGE",
-                    payload: {
-                        text: "Peak is already favorited",
-                        type: "error",
-                    },
-                });
-                return;
-            }
-        }
+    const onFavoriteClick = async (
+        peakId: string,
+        newValue: boolean,
+        openPopup: boolean = true
+    ) => {
+        const newMarkers = {
+            ...markers,
+        };
 
         setPeaksState((state) => {
+            console.log("here");
             if (!state.unclimbedPeaks) return state;
 
-            const newPeaks = state.unclimbedPeaks.map((peak) => {
-                if (peak.Id === peakId) {
-                    return { ...peak, isFavorited: newValue };
-                }
-                return peak;
-            });
+            if (newValue) {
+                const editedPeak = state.unclimbedPeaks.find(
+                    (peak) => peak.Id === peakId
+                );
 
-            if (state.favoritePeaks) {
-                const newfavoritePeaks = newValue
-                    ? [
-                          newPeaks.find(
-                              (peak) => peak.Id === peakId
-                          ) as FavoritedPeak,
-                          ...state.favoritePeaks,
-                      ]
-                    : state.favoritePeaks.filter((peak) => peak.Id !== peakId);
+                if (!editedPeak) return state;
+
+                const unclimbedMarker = markers.unclimbed.find(
+                    (marker) => marker.peakId === peakId
+                );
+
+                if (unclimbedMarker) {
+                    if (openPopup) unclimbedMarker.marker.togglePopup();
+                    unclimbedMarker.marker.remove();
+                }
+
+                newMarkers.unclimbed = markers.unclimbed.filter(
+                    (marker) => marker.peakId !== peakId
+                );
+                const newMarker = new mapboxgl.Marker(FavoriteMarker())
+                    .setLngLat([editedPeak.Long, editedPeak.Lat])
+                    .setPopup(
+                        new mapboxgl.Popup({
+                            offset: 25,
+                        }).setDOMContent(
+                            FavoritePopup({
+                                peak: editedPeak,
+                                units,
+                                theme,
+                                onUnfavoriteClick: onFavoriteClick,
+                            })
+                        )
+                    )
+                    .addTo(mapRef.current);
+
+                if (openPopup) newMarker.togglePopup();
+
+                newMarkers.favorite = [
+                    ...markers.favorite,
+                    {
+                        peakId,
+                        marker: newMarker,
+                    },
+                ];
+
                 return {
                     ...state,
-                    unclimbedPeaks: newPeaks,
-                    favoritePeaks: newfavoritePeaks,
+                    unclimbedPeaks: state.unclimbedPeaks.map((peak) => {
+                        if (peak.Id === peakId) {
+                            return { ...peak, isFavorited: true };
+                        }
+                        return peak;
+                    }),
+                    favoritePeaks: [
+                        {
+                            ...editedPeak,
+                            isFavorited: true,
+                        },
+                        ...(state.favoritePeaks ?? []),
+                    ],
+                };
+            } else {
+                const editedPeak = state.favoritePeaks?.find(
+                    (peak) => peak.Id === peakId
+                );
+
+                if (!editedPeak) return state;
+
+                const favoriteMarker = markers.favorite.find(
+                    (marker) => marker.peakId === peakId
+                );
+                if (openPopup) favoriteMarker?.marker.togglePopup();
+                favoriteMarker?.marker.remove();
+
+                newMarkers.favorite = markers.favorite.filter(
+                    (marker) => marker.peakId !== peakId
+                );
+
+                const newMarker = new mapboxgl.Marker(UnclimbedMarker())
+                    .setLngLat([editedPeak.Long, editedPeak.Lat])
+                    .setPopup(
+                        new mapboxgl.Popup({
+                            offset: 25,
+                        }).setDOMContent(
+                            UnclimbedPopup({
+                                peak: {
+                                    ...editedPeak,
+                                    distance: 0,
+                                },
+                                units,
+                                theme,
+                                onFavoriteClick,
+                            })
+                        )
+                    )
+                    .addTo(mapRef.current);
+                if (openPopup)
+                    newMarker.togglePopup(),
+                        (newMarkers.unclimbed = [
+                            ...markers.unclimbed,
+                            {
+                                peakId,
+                                marker: newMarker,
+                            },
+                        ]);
+
+                return {
+                    ...state,
+                    unclimbedPeaks: state.unclimbedPeaks.map((peak) => {
+                        if (peak.Id === peakId) {
+                            return { ...peak, isFavorited: false };
+                        }
+                        return peak;
+                    }),
+                    favoritePeaks: (state.favoritePeaks ?? []).filter(
+                        (peak) => peak.Id !== peakId
+                    ),
                 };
             }
-            return {
-                ...state,
-                unclimbedPeaks: newPeaks,
-            };
         });
+
+        setMarkers(newMarkers);
 
         const success = await toggleFavoritePeak(peakId, newValue);
 
@@ -196,44 +319,144 @@ const Map = () => {
             });
             setPeaksState((state) => {
                 if (!state.unclimbedPeaks) return state;
-                const newPeaks = state.unclimbedPeaks.map((peak) => {
-                    if (peak.Id === peakId) {
-                        return { ...peak, favorite: !newValue };
-                    }
-                    return peak;
-                });
 
-                if (state.favoritePeaks) {
-                    const newfavoritePeaks = !newValue
-                        ? [
-                              newPeaks.find(
-                                  (peak) => peak.Id === peakId
-                              ) as FavoritedPeak,
-                              ...state.favoritePeaks,
-                          ]
-                        : state.favoritePeaks.filter(
-                              (peak) => peak.Id !== peakId
-                          );
+                if (newValue) {
+                    const editedPeak = state.favoritePeaks?.find(
+                        (peak) => peak.Id === peakId
+                    );
+
+                    if (!editedPeak) return state;
+
+                    const favoriteMarker = markers.favorite.find(
+                        (marker) => marker.peakId === peakId
+                    );
+                    if (openPopup) favoriteMarker?.marker.togglePopup();
+                    favoriteMarker?.marker.remove();
+
+                    newMarkers.favorite = markers.favorite.filter(
+                        (marker) => marker.peakId !== peakId
+                    );
+                    newMarkers.unclimbed = [
+                        ...markers.unclimbed,
+                        {
+                            peakId,
+                            marker: new mapboxgl.Marker(UnclimbedMarker())
+                                .setLngLat([editedPeak.Long, editedPeak.Lat])
+                                .setPopup(
+                                    new mapboxgl.Popup({
+                                        offset: 25,
+                                    }).setDOMContent(
+                                        UnclimbedPopup({
+                                            peak: {
+                                                ...editedPeak,
+                                                distance: 0,
+                                            },
+                                            units,
+                                            theme,
+                                            onFavoriteClick,
+                                        })
+                                    )
+                                )
+                                .addTo(mapRef.current),
+                        },
+                    ];
+
                     return {
                         ...state,
-                        unclimbedPeaks: newPeaks,
-                        favoritePeaks: newfavoritePeaks,
+                        unclimbedPeaks: state.unclimbedPeaks.map((peak) => {
+                            if (peak.Id === peakId) {
+                                return { ...peak, isFavorited: false };
+                            }
+                            return peak;
+                        }),
+                        favoritePeaks: (state.favoritePeaks ?? []).filter(
+                            (peak) => peak.Id !== peakId
+                        ),
+                    };
+                } else {
+                    const editedPeak = state.unclimbedPeaks.find(
+                        (peak) => peak.Id === peakId
+                    );
+
+                    if (!editedPeak) return state;
+
+                    const unclimbedMarker = markers.unclimbed.find(
+                        (marker) => marker.peakId === peakId
+                    );
+                    if (openPopup) unclimbedMarker?.marker.togglePopup();
+                    unclimbedMarker?.marker.remove();
+
+                    newMarkers.unclimbed = markers.unclimbed.filter(
+                        (marker) => marker.peakId !== peakId
+                    );
+                    newMarkers.favorite = [
+                        ...markers.favorite,
+                        {
+                            peakId,
+                            marker: new mapboxgl.Marker(FavoriteMarker())
+                                .setLngLat([editedPeak.Long, editedPeak.Lat])
+                                .setPopup(
+                                    new mapboxgl.Popup({
+                                        offset: 25,
+                                    }).setDOMContent(
+                                        FavoritePopup({
+                                            peak: editedPeak,
+                                            units,
+                                            theme,
+                                            onUnfavoriteClick: onFavoriteClick,
+                                        })
+                                    )
+                                )
+                                .addTo(mapRef.current),
+                        },
+                    ];
+
+                    return {
+                        ...state,
+                        unclimbedPeaks: state.unclimbedPeaks.map((peak) => {
+                            if (peak.Id === peakId) {
+                                return { ...peak, isFavorited: true };
+                            }
+                            return peak;
+                        }),
+                        favoritePeaks: [
+                            {
+                                ...editedPeak,
+                                favorite: true,
+                            },
+                            ...(state.favoritePeaks ?? []),
+                        ],
                     };
                 }
-                return {
-                    ...state,
-                    unclimbedPeaks: newPeaks,
-                };
             });
+            setMarkers(newMarkers);
         }
     };
 
     const addMarkers = () => {
         if (mapRef.current) {
+            const newMarkers: {
+                completed: {
+                    peakId: string;
+                    marker: mapboxgl.Marker;
+                }[];
+                favorite: {
+                    peakId: string;
+                    marker: mapboxgl.Marker;
+                }[];
+                unclimbed: {
+                    peakId: string;
+                    marker: mapboxgl.Marker;
+                }[];
+            } = {
+                completed: [],
+                favorite: [],
+                unclimbed: [],
+            };
             unclimbedPeaks?.forEach((peak) => {
                 if (peak.isFavorited) return;
                 const el = UnclimbedMarker();
-                new mapboxgl.Marker(el)
+                const marker = new mapboxgl.Marker(el)
                     .setLngLat([peak.Long, peak.Lat])
                     .setPopup(
                         new mapboxgl.Popup({ offset: 25 }).setDOMContent(
@@ -246,21 +469,28 @@ const Map = () => {
                         )
                     )
                     .addTo(mapRef.current);
+                newMarkers.unclimbed.push({ peakId: peak.Id, marker });
             });
             favoritePeaks?.forEach((peak) => {
                 const el = FavoriteMarker();
-                new mapboxgl.Marker(el)
+                const marker = new mapboxgl.Marker(el)
                     .setLngLat([peak.Long, peak.Lat])
                     .setPopup(
-                        new mapboxgl.Popup({ offset: 25 }).setHTML(
-                            FavoritePopup({ peak, units, theme })
+                        new mapboxgl.Popup({ offset: 25 }).setDOMContent(
+                            FavoritePopup({
+                                peak,
+                                units,
+                                theme,
+                                onUnfavoriteClick: onFavoriteClick,
+                            })
                         )
                     )
                     .addTo(mapRef.current);
+                newMarkers.favorite.push({ peakId: peak.Id, marker });
             });
             peakSummits?.forEach((peak) => {
                 const el = PeakMarker();
-                new mapboxgl.Marker(el)
+                const marker = new mapboxgl.Marker(el)
                     .setLngLat([peak.Long, peak.Lat])
                     .setPopup(
                         new mapboxgl.Popup({ offset: 25 }).setHTML(
@@ -268,7 +498,9 @@ const Map = () => {
                         )
                     )
                     .addTo(mapRef.current);
+                newMarkers.completed.push({ peakId: peak.Id, marker });
             });
+            setMarkers(newMarkers);
         }
     };
 
@@ -320,7 +552,10 @@ const Map = () => {
                 flexDirection="column"
                 gap="16px"
             >
-                <UnclimbedPeaksList onRowClick={onRowClick} />
+                <UnclimbedPeaksList
+                    onRowClick={onRowClick}
+                    onFavoriteClick={onFavoriteClick}
+                />
             </Grid>
             <Grid
                 size={{ xs: 12, md: 6, lg: 4 }}
@@ -328,7 +563,10 @@ const Map = () => {
                 flexDirection="column"
                 gap="16px"
             >
-                <FavoritePeaks onRowClick={onRowClick} />
+                <FavoritePeaks
+                    onRowClick={onRowClick}
+                    onFavoriteClick={onFavoriteClick}
+                />
             </Grid>
         </>
     );

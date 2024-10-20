@@ -15,9 +15,7 @@ const UnclimbedPopup = ({ peak, units, theme, onFavoriteClick }: Props) => {
     const button = document.createElement("div");
     button.style.width = "100%";
     button.style.display = "flex";
-    button.innerHTML = `<button class="button-secondary">${
-        peak.isFavorited ? "Unfavorite" : "Favorite"
-    }</button>`;
+    button.innerHTML = `<button class="button-secondary">Favorite</button>`;
     el.innerHTML = `
         <div style="display: flex">
             <div class="tag-secondary">
@@ -53,17 +51,17 @@ const UnclimbedPopup = ({ peak, units, theme, onFavoriteClick }: Props) => {
 
     const favoriteClick = () => {
         onFavoriteClick(peak.Id, true);
-        button.innerHTML = `<button class="button-secondary">Unfavorite</button>`;
-        button.removeEventListener("click", favoriteClick, true);
-        button.addEventListener("click", unFavoriteClick, true);
+        // button.innerHTML = `<button class="button-secondary">Unfavorite</button>`;
+        // button.removeEventListener("click", favoriteClick, true);
+        // button.addEventListener("click", unFavoriteClick, true);
     };
 
-    const unFavoriteClick = () => {
-        onFavoriteClick(peak.Id, false);
-        button.innerHTML = `<button class="button-secondary">Favorite</button>`;
-        button.removeEventListener("click", unFavoriteClick, true);
-        button.addEventListener("click", favoriteClick, true);
-    };
+    // const unFavoriteClick = () => {
+    //     onFavoriteClick(peak.Id, false);
+    //     button.innerHTML = `<button class="button-secondary">Favorite</button>`;
+    //     button.removeEventListener("click", unFavoriteClick, true);
+    //     button.addEventListener("click", favoriteClick, true);
+    // };
 
     button.addEventListener("click", favoriteClick, true);
 

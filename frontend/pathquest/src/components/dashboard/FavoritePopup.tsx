@@ -7,10 +7,16 @@ type Props = {
     peak: FavoritedPeak;
     units: "metric" | "imperial";
     theme: Theme;
+    onUnfavoriteClick: (peakId: string, newValue: boolean) => void;
 };
 
-const FavoritePopup = ({ peak, units, theme }: Props) => {
-    return `
+const FavoritePopup = ({ peak, units, theme, onUnfavoriteClick }: Props) => {
+    const el = document.createElement("div");
+    const button = document.createElement("div");
+    button.style.width = "100%";
+    button.style.display = "flex";
+    button.innerHTML = `<button class="button-tertiary">Unfavorite</button>`;
+    el.innerHTML = `
         <div style="display: flex">
             <div class="tag-tertiary">
                 <p style="font-size: 12px">
@@ -41,6 +47,18 @@ const FavoritePopup = ({ peak, units, theme }: Props) => {
             View Peak
         </a>
     `;
+
+    el.appendChild(button);
+
+    const favoriteClick = () => {
+        onUnfavoriteClick(peak.Id, false);
+        // button.removeEventListener("click", favoriteClick, true);
+        // button.addEventListener("click", unFavoriteClick, true);
+    };
+
+    button.addEventListener("click", favoriteClick, true);
+
+    return el;
 };
 
 export default FavoritePopup;

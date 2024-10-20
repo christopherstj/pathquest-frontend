@@ -45,8 +45,14 @@ const listStyles: SxProps = {
 
 const FavoritePeaks = ({
     onRowClick,
+    onFavoriteClick,
 }: {
     onRowClick: (lat: number, long: number) => void;
+    onFavoriteClick: (
+        peakId: string,
+        newValue: boolean,
+        openPopup: boolean
+    ) => void;
 }) => {
     const [{ favoritePeaks }, setPeaksState] = usePeaks();
     const [{ user }] = useUser();
@@ -55,66 +61,6 @@ const FavoritePeaks = ({
     if (!user) return null;
 
     const { units } = user;
-
-    const onFavoriteClick = async (peakId: string, newValue: boolean) => {
-        setPeaksState((state) => {
-            if (!state.favoritePeaks) return state;
-            const newPeaks = state.favoritePeaks.map((peak) => {
-                if (peak.Id === peakId) {
-                    return { ...peak, isFavorited: newValue };
-                }
-                return peak;
-            });
-            return {
-                ...state,
-                favoritePeaks: newPeaks,
-                unclimbedPeaks: (state.unclimbedPeaks ?? []).map((peak) => ({
-                    ...peak,
-                    isFavorited: newPeaks.some(
-                        (favoritePeak) =>
-                            favoritePeak.Id === peak.Id &&
-                            favoritePeak.isFavorited
-                    ),
-                })),
-            };
-        });
-
-        const success = await toggleFavoritePeak(peakId, newValue);
-
-        if (!success) {
-            dispatch({
-                type: "SET_MESSAGE",
-                payload: {
-                    text: "Failed to update favorite status",
-                    type: "error",
-                },
-            });
-
-            setPeaksState((state) => {
-                if (!state.favoritePeaks) return state;
-                const newPeaks = state.favoritePeaks.map((peak) => {
-                    if (peak.Id === peakId) {
-                        return { ...peak, isFavorited: !newValue };
-                    }
-                    return peak;
-                });
-                return {
-                    ...state,
-                    favoritePeaks: newPeaks,
-                    unclimbedPeaks: (state.unclimbedPeaks ?? []).map(
-                        (peak) => ({
-                            ...peak,
-                            isFavorited: newPeaks.some(
-                                (favoritePeak) =>
-                                    favoritePeak.Id === peak.Id &&
-                                    favoritePeak.isFavorited
-                            ),
-                        })
-                    ),
-                };
-            });
-        }
-    };
 
     return (
         <>
@@ -135,7 +81,9 @@ const FavoritePeaks = ({
                     <List sx={listStyles}>
                         {favoritePeaks.map((peak, index) => (
                             <UnclimbedPeakRow
-                                onFavoriteClick={onFavoriteClick}
+                                onFavoriteClick={(peakId, newValue) =>
+                                    onFavoriteClick(peakId, newValue, false)
+                                }
                                 key={index}
                                 peak={{
                                     ...peak,

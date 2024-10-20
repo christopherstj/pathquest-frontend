@@ -9,6 +9,15 @@ interface PeaksState {
     peakSummits: PeakSummit[] | null;
     unclimbedPeaks: UnclimbedPeak[] | null;
     favoritePeaks: FavoritedPeak[] | null;
+    peakSelection:
+        | {
+              type: "completed";
+          }
+        | {
+              type: "unclimbed";
+              peaks: UnclimbedPeak[];
+              boundingBox: [[number, number], [number, number]];
+          };
 }
 
 const usePeaksState = (
@@ -20,6 +29,9 @@ const usePeaksState = (
         peakSummits,
         unclimbedPeaks,
         favoritePeaks,
+        peakSelection: {
+            type: "completed",
+        },
     });
 
 export const PeaksContext = createContext<ReturnType<

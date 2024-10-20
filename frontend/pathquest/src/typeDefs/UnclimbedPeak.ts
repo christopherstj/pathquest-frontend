@@ -1,6 +1,6 @@
 import Peak from "./Peak";
 
 export default interface UnclimbedPeak extends Peak {
-    distance: number;
+    distance?: number;
     isFavorited: boolean;
 }
