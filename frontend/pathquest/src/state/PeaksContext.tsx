@@ -12,11 +12,11 @@ interface PeaksState {
     peakSelection:
         | {
               type: "completed";
+              data: PeakSummit[];
           }
         | {
               type: "unclimbed";
-              peaks: UnclimbedPeak[];
-              boundingBox: [[number, number], [number, number]];
+              data: UnclimbedPeak[];
           };
 }
 
@@ -31,6 +31,7 @@ const usePeaksState = (
         favoritePeaks,
         peakSelection: {
             type: "completed",
+            data: peakSummits ?? [],
         },
     });
 
