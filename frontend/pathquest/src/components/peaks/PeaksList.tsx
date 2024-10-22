@@ -33,6 +33,7 @@ const cardStyles: SxProps = {
     display: "flex",
     flexDirection: "column",
     width: "100%",
+    minHeight: "70vh",
     flex: 1,
     ".peaks-list": {
         height: "100%",
