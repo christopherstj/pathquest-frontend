@@ -8,9 +8,10 @@ type Props = {
     peak: PeakSummit;
     units: "metric" | "imperial";
     theme: Theme;
+    showButtton?: boolean;
 };
 
-const CompletedPopup = ({ peak, units, theme }: Props) => {
+const CompletedPopup = ({ peak, units, theme, showButtton = true }: Props) => {
     const ascents =
         typeof peak.ascents === "string"
             ? JSON.parse(peak.ascents)
@@ -45,9 +46,13 @@ const CompletedPopup = ({ peak, units, theme }: Props) => {
         }; margin-bottom: 8px;">
             ${ascents.length} summit${ascents.length > 1 ? "s" : ""}
         </p>
-        <a href="/app/peaks/${peak.Id}" class="link-primary">
+        ${
+            showButtton
+                ? `<a href="/app/peaks/${peak.Id}" class="link-primary">
             View Peak
-        </a>
+        </a>`
+                : ""
+        }
     `;
 };
 

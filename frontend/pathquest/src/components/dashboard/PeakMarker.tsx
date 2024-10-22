@@ -1,5 +1,5 @@
 import React from "react";
-import peakMarker from "../../public/images/peak-marker.svg";
+import peakMarker from "../../public/images/marker-primary.png";
 
 const PeakMarker = () => {
     const el = document.createElement("div");

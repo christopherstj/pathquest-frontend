@@ -29,10 +29,6 @@ const DashboardPeaksMap = () => {
 
     const theme = useTheme();
 
-    const [popups, setPopups] = React.useState<{
-        [key: string]: mapboxgl.Popup;
-    }>({});
-
     const mapRef = React.useRef<mapboxgl.Map | null>(null);
     const mapContainerRef = React.useRef<any>(null);
 

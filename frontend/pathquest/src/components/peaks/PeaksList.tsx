@@ -2,7 +2,6 @@
 import { usePeaks } from "@/state/PeaksContext";
 import { usePeaksMap } from "@/state/PeaksMapContext";
 import { useUser } from "@/state/UserContext";
-import PeakSummit from "@/typeDefs/PeakSummit";
 import UnclimbedPeak from "@/typeDefs/UnclimbedPeak";
 import {
     Box,
@@ -10,14 +9,13 @@ import {
     FormControlLabel,
     SxProps,
     Typography,
-    useTheme,
 } from "@mui/material";
 import React from "react";
 import CompletedPeakRow from "./CompletedPeakRow";
 import { Virtuoso } from "react-virtuoso";
 import TextField from "../common/TextField";
 import UnclimbedPeakRow from "../dashboard/UnclimbedPeakRow";
-import mapboxgl, { GeoJSONSource, MapMouseEvent } from "mapbox-gl";
+import { GeoJSONSource } from "mapbox-gl";
 import toggleFavoritePeak from "@/actions/toggleFavoritePeak";
 import { useMessage } from "@/state/MessageContext";
 import getUnclimbedPeaksWithBounds from "@/actions/getUnclimbedPeaksWithBounds";
