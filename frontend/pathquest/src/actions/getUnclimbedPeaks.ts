@@ -4,7 +4,10 @@ import { useAuth } from "@/auth/useAuth";
 import getBackendUrl from "@/helpers/getBackendUrl";
 import UnclimbedPeak from "@/typeDefs/UnclimbedPeak";
 
-const getUnclimbedPeaks = async (): Promise<UnclimbedPeak[]> => {
+const getUnclimbedPeaks = async (
+    search?: string,
+    bounds?: [[number, number], [number, number]]
+): Promise<UnclimbedPeak[]> => {
     const session = await useAuth();
 
     if (!session) {
@@ -17,16 +20,15 @@ const getUnclimbedPeaks = async (): Promise<UnclimbedPeak[]> => {
 
     const backendUrl = getBackendUrl();
 
-    const apiRes = await fetch(`${backendUrl}/peaks/summits/unclimbed`, {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-            userId,
-        }),
-    });
+    const apiRes = await fetch(
+        `${backendUrl}/peaks/summits/unclimbed/nearest?userId=${userId}`,
+        {
+            method: "GET",
+            headers: {
+                Authorization: `Bearer ${token}`,
+            },
+        }
+    );
 
     if (!apiRes.ok) {
         console.error(await apiRes.text());

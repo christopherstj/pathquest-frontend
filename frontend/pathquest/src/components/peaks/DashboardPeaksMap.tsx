@@ -4,7 +4,7 @@ import { usePeaks } from "@/state/PeaksContext";
 import { usePeaksMap } from "@/state/PeaksMapContext";
 import { useUser } from "@/state/UserContext";
 import { Box, SxProps, useTheme } from "@mui/material";
-import mapboxgl, { GeoJSONSource } from "mapbox-gl";
+import mapboxgl, { GeoJSONSource, MapMouseEvent } from "mapbox-gl";
 import React from "react";
 import primaryMarker from "@/public/images/marker-primary.png";
 import secondaryMarker from "@/public/images/marker-secondary.png";
@@ -18,6 +18,8 @@ import MapboxContainer from "../common/MapboxContainer";
 import UnclimbedPopup from "../dashboard/UnclimbedPopup";
 import UnclimbedPeak from "@/typeDefs/UnclimbedPeak";
 import FavoritePopup from "../dashboard/FavoritePopup";
+import toggleFavoritePeak from "@/actions/toggleFavoritePeak";
+import { useMessage } from "@/state/MessageContext";
 
 const mapContainerStyles: SxProps = {
     height: "calc(100vh - 32px)",
@@ -133,10 +135,15 @@ const mapContainerStyles: SxProps = {
 
 const DashboardPeaksMap = () => {
     const [{ user }] = useUser();
-    const [{ peakSummits, peakSelection }] = usePeaks();
+    const [{ peakSummits, peakSelection }, setPeaksState] = usePeaks();
     const [peaksMap, setPeaksMapState] = usePeaksMap();
+    const [, dispatch] = useMessage();
 
     const theme = useTheme();
+
+    const [popups, setPopups] = React.useState<{
+        [key: string]: mapboxgl.Popup;
+    }>({});
 
     const mapRef = React.useRef<mapboxgl.Map | null>(null);
     const mapContainerRef = React.useRef<any>(null);
@@ -251,6 +258,7 @@ const DashboardPeaksMap = () => {
             layout: {
                 "icon-image": "marker-secondary",
                 "icon-size": 0.2,
+                "icon-allow-overlap": true,
             },
         });
         mapRef.current?.addLayer({
@@ -261,6 +269,7 @@ const DashboardPeaksMap = () => {
             layout: {
                 "icon-image": "marker-tertiary",
                 "icon-size": 0.2,
+                "icon-allow-overlap": true,
             },
         });
 
@@ -291,7 +300,7 @@ const DashboardPeaksMap = () => {
         });
 
         mapRef.current?.on("click", "unclimbedPeaks", (e) => {
-            e.originalEvent.stopPropagation();
+            e.originalEvent?.stopPropagation();
             const feature = e.features?.[0];
 
             if (feature?.geometry.type === "Point" && mapRef.current) {
@@ -312,7 +321,7 @@ const DashboardPeaksMap = () => {
                             units,
                             theme,
                             onFavoriteClick: (peakId, newValue) => {
-                                // onFavoriteClick(peakId, newValue);
+                                onFavoriteClick(peakId, newValue, true, e);
                             },
                         })
                     )
@@ -321,7 +330,7 @@ const DashboardPeaksMap = () => {
         });
 
         mapRef.current?.on("click", "favoritePeaks", (e) => {
-            e.originalEvent.stopPropagation();
+            e.originalEvent?.stopPropagation();
             const feature = e.features?.[0];
 
             if (feature?.geometry.type === "Point" && mapRef.current) {
@@ -342,13 +351,281 @@ const DashboardPeaksMap = () => {
                             units,
                             theme,
                             onUnfavoriteClick: (peakId, newValue) => {
-                                // onFavoriteClick(peakId, newValue);
+                                onFavoriteClick(peakId, newValue, true, e);
                             },
                         })
                     )
                     .addTo(mapRef.current);
             }
         });
+    };
+
+    const onFavoriteClick = async (
+        peakId: string,
+        newValue: boolean,
+        openPopup: boolean = true,
+        event: MapMouseEvent | null = null
+    ) => {
+        if (newValue) {
+            const unclimbedPeaksSource = mapRef.current?.getSource(
+                "unclimbedPeaks"
+            ) as GeoJSONSource;
+            const unclimbedPeaksData = unclimbedPeaksSource.serialize()
+                .data as GeoJSON.FeatureCollection<GeoJSON.Point>;
+            const peak = unclimbedPeaksData?.features.find(
+                (feature) => feature.properties?.Id === peakId
+            ) as GeoJSON.Feature<GeoJSON.Point>;
+
+            if (peak) {
+                unclimbedPeaksData.features =
+                    unclimbedPeaksData.features.filter(
+                        (feature) => feature.properties?.Id !== peakId
+                    );
+
+                unclimbedPeaksSource?.setData(unclimbedPeaksData);
+
+                const favoritePeaksSource = mapRef.current?.getSource(
+                    "favoritePeaks"
+                ) as GeoJSONSource;
+
+                const favoritePeaksData = favoritePeaksSource?.serialize()
+                    .data as GeoJSON.FeatureCollection<GeoJSON.Point>;
+
+                favoritePeaksData.features = [
+                    peak,
+                    ...favoritePeaksData.features,
+                ];
+
+                favoritePeaksSource?.setData(favoritePeaksData);
+
+                setPeaksState((state) => ({
+                    ...state,
+                    peakSelection: {
+                        ...state.peakSelection,
+                        type: "unclimbed",
+                        data: [
+                            ...unclimbedPeaksData.features,
+                            ...favoritePeaksData.features,
+                        ]
+                            .map((p) => p.properties as UnclimbedPeak)
+                            .sort(
+                                (a, b) => (b.Altitude ?? 0) - (a.Altitude ?? 0)
+                            ),
+                    },
+                }));
+
+                if (openPopup && mapRef.current) {
+                    const coordinates = peak.geometry.coordinates.slice();
+
+                    const lngLat = mapboxgl.LngLat.convert(
+                        coordinates as [number, number]
+                    );
+
+                    event?.target._popups.forEach((pop) => pop.remove());
+
+                    new mapboxgl.Popup({ offset: 25 })
+                        .setLngLat(lngLat)
+                        .setDOMContent(
+                            FavoritePopup({
+                                peak: peak.properties as UnclimbedPeak,
+                                units,
+                                theme,
+                                onUnfavoriteClick: (peakId, newValue) => {
+                                    onFavoriteClick(peakId, newValue, true);
+                                },
+                            })
+                        )
+                        .addTo(mapRef.current);
+                }
+            }
+        } else {
+            const favoritePeaksSource = mapRef.current?.getSource(
+                "favoritePeaks"
+            ) as GeoJSONSource;
+            const favoritePeaksData = favoritePeaksSource.serialize()
+                .data as GeoJSON.FeatureCollection<GeoJSON.Point>;
+            const peak = favoritePeaksData?.features.find(
+                (feature) => feature.properties?.Id === peakId
+            ) as GeoJSON.Feature<GeoJSON.Point>;
+
+            if (peak) {
+                favoritePeaksData.features = favoritePeaksData.features.filter(
+                    (feature) => feature.properties?.Id !== peakId
+                );
+
+                favoritePeaksSource?.setData(favoritePeaksData);
+
+                const unclimbedPeaksSource = mapRef.current?.getSource(
+                    "unclimbedPeaks"
+                ) as GeoJSONSource;
+
+                const unclimbedPeaksData = unclimbedPeaksSource?.serialize()
+                    .data as GeoJSON.FeatureCollection<GeoJSON.Point>;
+
+                unclimbedPeaksData.features = [
+                    peak,
+                    ...unclimbedPeaksData.features,
+                ];
+
+                unclimbedPeaksSource?.setData(unclimbedPeaksData);
+
+                setPeaksState((state) => ({
+                    ...state,
+                    peakSelection: {
+                        ...state.peakSelection,
+                        type: "unclimbed",
+                        data: [
+                            ...unclimbedPeaksData.features,
+                            ...favoritePeaksData.features,
+                        ]
+                            .map((p) => p.properties as UnclimbedPeak)
+                            .sort(
+                                (a, b) => (b.Altitude ?? 0) - (a.Altitude ?? 0)
+                            ),
+                    },
+                }));
+
+                if (openPopup && mapRef.current) {
+                    const coordinates = peak.geometry.coordinates.slice();
+
+                    const lngLat = mapboxgl.LngLat.convert(
+                        coordinates as [number, number]
+                    );
+
+                    event?.target._popups.forEach((pop) => pop.remove());
+
+                    new mapboxgl.Popup({ offset: 25 })
+                        .setLngLat(lngLat)
+                        .setDOMContent(
+                            UnclimbedPopup({
+                                peak: peak.properties as UnclimbedPeak,
+                                units,
+                                theme,
+                                onFavoriteClick: (peakId, newValue) => {
+                                    onFavoriteClick(peakId, newValue, true);
+                                },
+                            })
+                        )
+                        .addTo(mapRef.current);
+                }
+            }
+        }
+
+        const success = await toggleFavoritePeak(peakId, newValue);
+
+        if (!success) {
+            dispatch({
+                type: "SET_MESSAGE",
+                payload: {
+                    text: "Failed to update favorite status",
+                    type: "error",
+                },
+            });
+
+            const source = newValue ? "favoritePeaks" : "unclimbedPeaks";
+            const target = newValue ? "unclimbedPeaks" : "favoritePeaks";
+
+            const sourceData = mapRef.current?.getSource(
+                source
+            ) as GeoJSONSource;
+
+            const data = sourceData.serialize()
+                .data as GeoJSON.FeatureCollection<GeoJSON.Point>;
+
+            const targetData = mapRef.current?.getSource(
+                target
+            ) as GeoJSONSource;
+
+            const targetDataFeatures = targetData.serialize()
+                .data as GeoJSON.FeatureCollection<GeoJSON.Point>;
+
+            const peak = data.features.find(
+                (feature) => feature.properties?.Id === peakId
+            );
+
+            if (peak) {
+                data.features = data.features.filter(
+                    (feature) => feature.properties?.Id !== peakId
+                );
+
+                sourceData.setData(data);
+
+                targetDataFeatures.features = [
+                    peak,
+                    ...targetDataFeatures.features,
+                ];
+
+                targetData.setData(targetDataFeatures);
+
+                if (openPopup && mapRef.current) {
+                    const coordinates = peak.geometry.coordinates.slice();
+
+                    const lngLat = mapboxgl.LngLat.convert(
+                        coordinates as [number, number]
+                    );
+
+                    const existingPopup = event?.target._popups.find(
+                        (pop) =>
+                            pop._lngLat.lat === lngLat.lat &&
+                            pop._lngLat.lng === lngLat.lng
+                    );
+
+                    if (existingPopup) {
+                        existingPopup.remove();
+                    }
+
+                    new mapboxgl.Popup({ offset: 25 })
+                        .setLngLat(lngLat)
+                        .setDOMContent(
+                            newValue
+                                ? FavoritePopup({
+                                      peak: peak.properties as UnclimbedPeak,
+                                      units,
+                                      theme,
+                                      onUnfavoriteClick: (peakId, newValue) => {
+                                          onFavoriteClick(
+                                              peakId,
+                                              newValue,
+                                              true
+                                          );
+                                      },
+                                  })
+                                : UnclimbedPopup({
+                                      peak: peak.properties as UnclimbedPeak,
+                                      units,
+                                      theme,
+                                      onFavoriteClick: (peakId, newValue) => {
+                                          onFavoriteClick(
+                                              peakId,
+                                              newValue,
+                                              true
+                                          );
+                                      },
+                                  })
+                        )
+                        .addTo(mapRef.current);
+                }
+            }
+
+            setPeaksState((state) => ({
+                ...state,
+                peakSelection: {
+                    ...state.peakSelection,
+                    type: "unclimbed",
+                    data: (peakSelection.data as UnclimbedPeak[]).map(
+                        (peak): UnclimbedPeak => {
+                            if (peak.Id === peakId) {
+                                return {
+                                    ...peak,
+                                    isFavorited: !newValue,
+                                };
+                            }
+                            return peak;
+                        }
+                    ),
+                },
+            }));
+        }
     };
 
     React.useEffect(() => {

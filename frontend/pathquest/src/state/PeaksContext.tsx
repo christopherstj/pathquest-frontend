@@ -18,6 +18,9 @@ interface PeaksState {
               type: "unclimbed";
               data: UnclimbedPeak[];
           };
+    showSummittedPeaks: boolean;
+    search: string;
+    limitResultsToBbox: boolean;
 }
 
 const usePeaksState = (
@@ -33,6 +36,9 @@ const usePeaksState = (
             type: "completed",
             data: peakSummits ?? [],
         },
+        showSummittedPeaks: false,
+        search: "",
+        limitResultsToBbox: true,
     });
 
 export const PeaksContext = createContext<ReturnType<

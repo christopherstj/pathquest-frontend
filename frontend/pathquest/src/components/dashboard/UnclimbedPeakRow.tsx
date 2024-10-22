@@ -1,6 +1,6 @@
 import metersToFt from "@/helpers/metersToFt";
 import UnclimbedPeak from "@/typeDefs/UnclimbedPeak";
-import { Star, StarBorder } from "@mui/icons-material";
+import { Check, Star, StarBorder } from "@mui/icons-material";
 import {
     ListItem,
     ListItemAvatar,
@@ -45,28 +45,41 @@ const UnclimbedPeakRow = ({
             onClick={() => onRowClick(peak.Lat, peak.Long)}
         >
             <ListItemAvatar sx={{ minWidth: "32px" }}>
-                <IconButton
-                    color={rowColor}
-                    size="small"
-                    onClick={(e) => {
-                        e.stopPropagation();
-                        onFavoriteClick(peak.Id, !peak.isFavorited);
-                    }}
-                >
-                    {peak.isFavorited ? (
-                        <Star
-                            sx={{
-                                color: "tertiary.onContainerDim",
-                            }}
-                        />
-                    ) : (
-                        <StarBorder
-                            sx={{
-                                color: `${rowColor}.onContainerDim`,
-                            }}
-                        />
-                    )}
-                </IconButton>
+                {!peak.isSummitted ? (
+                    <IconButton
+                        color={rowColor}
+                        size="small"
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            onFavoriteClick(peak.Id, !peak.isFavorited);
+                        }}
+                    >
+                        {peak.isFavorited ? (
+                            <Star
+                                sx={{
+                                    color: "tertiary.onContainerDim",
+                                }}
+                            />
+                        ) : (
+                            <StarBorder
+                                sx={{
+                                    color: `${rowColor}.onContainerDim`,
+                                }}
+                            />
+                        )}
+                    </IconButton>
+                ) : (
+                    <Avatar
+                        sx={{
+                            backgroundColor: `${rowColor}.containerDim`,
+                            color: `${rowColor}.onContainerDim`,
+                            width: "32px",
+                            height: "32px",
+                        }}
+                    >
+                        <Check sx={{ color: `${rowColor}.onContainerDim` }} />
+                    </Avatar>
+                )}
             </ListItemAvatar>
             <ListItemText
                 sx={{

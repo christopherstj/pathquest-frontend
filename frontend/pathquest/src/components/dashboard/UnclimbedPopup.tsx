@@ -20,7 +20,7 @@ const UnclimbedPopup = ({ peak, units, theme, onFavoriteClick }: Props) => {
         <div style="display: flex">
             <div class="tag-secondary">
                 <p style="font-size: 12px">
-                    Unclimbed
+                    ${peak.isSummitted ? "Completed" : "Unclimbed"}
                 </p>
             </div>
         </div>
@@ -47,7 +47,7 @@ const UnclimbedPopup = ({ peak, units, theme, onFavoriteClick }: Props) => {
             View Peak
         </a>
     `;
-    el.appendChild(button);
+    if (!peak.isSummitted) el.appendChild(button);
 
     const favoriteClick = () => {
         onFavoriteClick(peak.Id, true);

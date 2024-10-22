@@ -6,10 +6,14 @@ import UnclimbedPeak from "@/typeDefs/UnclimbedPeak";
 
 const backendUrl = getBackendUrl();
 
-const getUnclimbedPeaksWithBounds = async (bounds: {
-    northwest: [number, number];
-    southeast: [number, number];
-}): Promise<UnclimbedPeak[]> => {
+const getUnclimbedPeaksWithBounds = async (
+    bounds?: {
+        northwest: [number, number];
+        southeast: [number, number];
+    },
+    search?: string,
+    showSummittedPeaks?: boolean
+): Promise<UnclimbedPeak[]> => {
     const session = await useAuth();
 
     if (!session) {
@@ -20,7 +24,13 @@ const getUnclimbedPeaksWithBounds = async (bounds: {
 
     const token = await getGoogleIdToken();
 
-    const url = `${backendUrl}/peaks/summits/unclimbed?userId=${userId}&northWestLat=${bounds.northwest[0]}&northWestLng=${bounds.northwest[1]}&southEastLat=${bounds.southeast[0]}&southEastLng=${bounds.southeast[1]}`;
+    const searchString = search ? `&search=${encodeURIComponent(search)}` : "";
+
+    const showSummitted = showSummittedPeaks ? "&showSummittedPeaks=true" : "";
+
+    const url = bounds
+        ? `${backendUrl}/peaks/summits/unclimbed?userId=${userId}&northWestLat=${bounds.northwest[0]}&northWestLng=${bounds.northwest[1]}&southEastLat=${bounds.southeast[0]}&southEastLng=${bounds.southeast[1]}${searchString}${showSummitted}`
+        : `${backendUrl}/peaks/summits/unclimbed?userId=${userId}${searchString}${showSummitted}`;
 
     const apiRes = await fetch(url, {
         method: "GET",

@@ -16,6 +16,10 @@ interface PeaksMapState {
         peakId: string;
         marker: mapboxgl.Marker;
     }[];
+    popups: {
+        peakId: string;
+        popup: mapboxgl.Popup;
+    }[];
 }
 
 const usePeaksMapState = () =>
@@ -24,6 +28,7 @@ const usePeaksMapState = () =>
         completed: [],
         unclimbed: [],
         favorite: [],
+        popups: [],
     });
 
 export const PeaksMapContext = createContext<ReturnType<

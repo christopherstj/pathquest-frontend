@@ -11,6 +11,10 @@ type Props = {
 };
 
 const CompletedPopup = ({ peak, units, theme }: Props) => {
+    const ascents =
+        typeof peak.ascents === "string"
+            ? JSON.parse(peak.ascents)
+            : peak.ascents;
     return `
         <div style="display: flex">
             <div class="tag-primary">
@@ -39,7 +43,7 @@ const CompletedPopup = ({ peak, units, theme }: Props) => {
         <p style="color: ${
             theme.palette.primary.onContainerDim
         }; margin-bottom: 8px;">
-            ${peak.ascents.length} summit${peak.ascents.length > 1 ? "s" : ""}
+            ${ascents.length} summit${ascents.length > 1 ? "s" : ""}
         </p>
         <a href="/app/peaks/${peak.Id}" class="link-primary">
             View Peak
