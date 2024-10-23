@@ -9,19 +9,10 @@ import PeakMarker from "../dashboard/PeakMarker";
 import CompletedPopup from "../dashboard/CompletedPopup";
 import { useUser } from "@/state/UserContext";
 import { useTheme } from "@mui/material";
+import { usePeakDetail } from "@/state/PeakDetailContext";
 
-type Props = {
-    details: {
-        peak: UnclimbedPeak;
-        activities: Activity[];
-        summits: {
-            timestamp: string;
-            activityId: string;
-        }[];
-    } | null;
-};
-
-const PeakDetailMap = ({ details }: Props) => {
+const PeakDetailMap = () => {
+    const [details, setPeeakDetail] = usePeakDetail();
     const [{ user }] = useUser();
 
     const units = user?.units ?? "imperial";
@@ -33,7 +24,7 @@ const PeakDetailMap = ({ details }: Props) => {
 
     const theme = useTheme();
 
-    if (!details) return null;
+    if (!details || !details.peak) return null;
 
     const { peak, activities } = details;
 
@@ -44,39 +35,6 @@ const PeakDetailMap = ({ details }: Props) => {
             if (error) throw error;
             if (image) mapRef.current?.addImage("marker-primary", image);
         });
-
-        const el = PeakMarker();
-
-        const newMarker = new mapboxgl.Marker(el)
-            .setLngLat([peak.Long ?? -111.651302, peak.Lat ?? 35.198284])
-            .setPopup(
-                new mapboxgl.Popup({ offset: 25 }).setHTML(
-                    CompletedPopup({
-                        peak: {
-                            ...peak,
-                            ascents: activities.map(
-                                (
-                                    a
-                                ): {
-                                    timestamp: string;
-                                    activityId: string;
-                                } => ({
-                                    timestamp: new Date(
-                                        a.startTime
-                                    ).toISOString(),
-                                    activityId: a.id,
-                                })
-                            ),
-                        },
-                        units,
-                        theme,
-                        showButtton: false,
-                    })
-                )
-            )
-            .addTo(mapRef.current!);
-
-        setMarker(newMarker);
 
         mapRef.current?.addSource("activities", {
             type: "geojson",
@@ -97,6 +55,43 @@ const PeakDetailMap = ({ details }: Props) => {
             },
         });
 
+        mapRef.current?.addSource("activityStarts", {
+            type: "geojson",
+            data: {
+                type: "FeatureCollection",
+                features: activities.map((a) => ({
+                    type: "Feature",
+                    geometry: {
+                        type: "Point",
+                        coordinates: [a.startLong, a.startLat],
+                    },
+                    properties: {
+                        id: a.id,
+                    },
+                })),
+            },
+        });
+
+        mapRef.current?.addSource("selectedActivities", {
+            type: "geojson",
+            data: {
+                type: "FeatureCollection",
+                features: [],
+                // activities.map((a) => ({
+                //     type: "Feature",
+                //     geometry: {
+                //         type: "LineString",
+                //         coordinates: (a.coords as [number, number][]).map(
+                //             (c) => [c[1], c[0]]
+                //         ),
+                //     },
+                //     properties: {
+                //         id: a.id,
+                //     },
+                // })),
+            },
+        });
+
         mapRef.current?.addLayer({
             id: "activities",
             type: "line",
@@ -110,6 +105,69 @@ const PeakDetailMap = ({ details }: Props) => {
                 "line-width": 3,
             },
         });
+
+        mapRef.current?.addLayer({
+            id: "activityStarts",
+            type: "circle",
+            source: "activityStarts",
+            paint: {
+                "circle-color": theme.palette.primary.onContainerDim,
+                "circle-radius": 8,
+                "circle-stroke-color": theme.palette.primary.containerDim,
+                "circle-stroke-width": 1,
+            },
+        });
+
+        mapRef.current?.addLayer({
+            id: "selectedActivities",
+            type: "line",
+            source: "selectedActivities",
+            layout: {
+                "line-join": "round",
+                "line-cap": "round",
+            },
+            paint: {
+                "line-color": theme.palette.tertiary.base,
+                "line-width": 3,
+            },
+        });
+    };
+
+    const addMarker = () => {
+        if (mapRef.current && details.peak) {
+            const el = PeakMarker();
+
+            const newMarker = new mapboxgl.Marker(el)
+                .setLngLat([peak.Long ?? -111.651302, peak.Lat ?? 35.198284])
+                .setPopup(
+                    new mapboxgl.Popup({ offset: 25 }).setHTML(
+                        CompletedPopup({
+                            peak: {
+                                ...peak,
+                                ascents: activities.map(
+                                    (
+                                        a
+                                    ): {
+                                        timestamp: string;
+                                        activityId: string;
+                                    } => ({
+                                        timestamp: new Date(
+                                            a.startTime
+                                        ).toISOString(),
+                                        activityId: a.id,
+                                    })
+                                ),
+                            },
+                            units,
+                            theme,
+                            showButtton: false,
+                        })
+                    )
+                )
+                .addTo(mapRef.current!);
+
+            setMarker(newMarker);
+        }
     };
 
     React.useEffect(() => {
@@ -123,10 +181,18 @@ const PeakDetailMap = ({ details }: Props) => {
 
         mapRef.current.on("load", addMarkers);
 
+        setPeeakDetail({ ...details, map: mapRef.current });
+
         return () => {
             mapRef.current?.remove();
         };
     }, []);
+
+    React.useEffect(() => {
+        if (mapRef.current) {
+            addMarker();
+        }
+    }, [details, mapRef.current]);
 
     return (
         <MapboxContainer

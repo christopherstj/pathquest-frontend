@@ -1,4 +1,5 @@
 export default interface Activity {
+    name?: string;
     id: string;
     userId: string;
     startLat: number;
@@ -6,4 +7,6 @@ export default interface Activity {
     distance: number;
     coords: string | [number, number][];
     startTime: number;
+    sport?: string;
+    timezone?: string;
 }

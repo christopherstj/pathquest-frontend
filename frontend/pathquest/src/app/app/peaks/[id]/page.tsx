@@ -3,6 +3,8 @@ import GridContainer from "@/components/common/GridContainer";
 import React from "react";
 import { Grid2 as Grid } from "@mui/material";
 import PeakDetailMap from "@/components/peaks/PeakDetailMap";
+import PeakDetailData from "@/state/PeakDetailData";
+import ActivityList from "@/components/peaks/ActivityList";
 
 type Props = {
     params: {
@@ -10,15 +12,18 @@ type Props = {
     };
 };
 
-const page = async (props: Props) => {
-    const details = await getPeakDetails(props.params.id);
-
+const page = ({ params: { id } }: Props) => {
     return (
-        <GridContainer spacing={3}>
-            <Grid size={{ xs: 12 }}>
-                <PeakDetailMap details={details} />
-            </Grid>
-        </GridContainer>
+        <PeakDetailData peakId={id}>
+            <GridContainer spacing={3}>
+                <Grid size={{ xs: 12, md: 7, lg: 8, xl: 9 }}>
+                    <PeakDetailMap />
+                </Grid>
+                <Grid size={{ xs: 12, md: 5, lg: 4, xl: 3 }}>
+                    <ActivityList />
+                </Grid>
+            </GridContainer>
+        </PeakDetailData>
     );
 };
 

@@ -11,17 +11,21 @@ const backendUrl = getBackendUrl();
 const getPeakDetails = async (
     peakId: string
 ): Promise<{
-    peak: UnclimbedPeak;
+    peak: UnclimbedPeak | null;
     activities: Activity[];
     summits: {
         activityId: string;
         timestamp: string;
     }[];
-} | null> => {
+}> => {
     const session = await useAuth();
 
     if (!session) {
-        return null;
+        return {
+            peak: null,
+            activities: [],
+            summits: [],
+        };
     }
 
     const userId = session.user.id;
@@ -32,7 +36,6 @@ const getPeakDetails = async (
         `${backendUrl}/peaks/details/${peakId}?userId=${userId}`,
         {
             method: "GET",
-            cache: "no-cache",
             headers: {
                 Authorization: `Bearer ${idToken}`,
             },
@@ -41,9 +44,16 @@ const getPeakDetails = async (
 
     if (!response.ok) {
         console.error(await response.text());
-        return null;
+        return {
+            peak: null,
+            activities: [],
+            summits: [],
+        };
     } else {
         const data = await response.json();
+        data.activities.forEach((activity: any) => {
+            if (activity.id === "12242435637") console.log(activity.startTime);
+        });
         return data;
     }
 };

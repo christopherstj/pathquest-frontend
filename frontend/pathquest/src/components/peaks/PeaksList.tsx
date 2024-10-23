@@ -314,52 +314,6 @@ const PeaksList = () => {
                 )
             );
         }
-        // else {
-        //     const bounds = peaksMap.map?.getBounds();
-        //     const newData = await getUnclimbedPeaksWithBounds(
-        //         {
-        //             northwest: [
-        //                 bounds?.getNorthWest().lat ?? 0,
-        //                 bounds?.getNorthWest().lng ?? 0,
-        //             ],
-        //             southeast: [
-        //                 bounds?.getSouthEast().lat ?? 0,
-        //                 bounds?.getSouthEast().lng ?? 0,
-        //             ],
-        //         },
-        //         search,
-        //         showSummittedPeaks
-        //     );
-        // const unclimbedData =
-        //     peaksMap.map?.querySourceFeatures("unclimbedPeaks") ?? [];
-
-        // const favoritePeaks =
-        //     peaksMap.map?.querySourceFeatures("favoritePeaks") ?? [];
-
-        // const newData = [...unclimbedData, ...favoritePeaks]
-        //     .filter(
-        //         (feature, index, self) =>
-        //             (feature.properties as UnclimbedPeak).Id !==
-        //                 undefined &&
-        //             index ===
-        //                 self.findIndex(
-        //                     (t) =>
-        //                         (t.properties as UnclimbedPeak).Id ===
-        //                         (feature.properties as UnclimbedPeak).Id
-        //                 )
-        //     )
-        //     .map((feature) => feature.properties as UnclimbedPeak)
-        //     .sort((a, b) => (b.Altitude ?? 0) - (a.Altitude ?? 0));
-
-        //     setPeaksState((state) => ({
-        //         ...state,
-        //         peakSelection: {
-        //             ...state.peakSelection,
-        //             type: "unclimbed",
-        //             data: newData,
-        //         },
-        //     }));
-        // }
     };
 
     React.useEffect(() => {
