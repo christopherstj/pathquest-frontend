@@ -77,7 +77,7 @@ const PeaksList = () => {
     const onRowClick = (lat: number, long: number) => {
         peaksMap.map?.flyTo({
             center: [long, lat],
-            zoom: 12,
+            zoom: 14,
         });
     };
 

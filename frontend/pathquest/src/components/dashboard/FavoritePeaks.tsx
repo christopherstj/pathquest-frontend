@@ -44,23 +44,27 @@ const listStyles: SxProps = {
 };
 
 const FavoritePeaks = ({
-    onRowClick,
     onFavoriteClick,
 }: {
-    onRowClick: (lat: number, long: number) => void;
     onFavoriteClick: (
         peakId: string,
         newValue: boolean,
         openPopup: boolean
     ) => void;
 }) => {
-    const [{ favoritePeaks }, setPeaksState] = usePeaks();
+    const [{ favoritePeaks, map }] = usePeaks();
     const [{ user }] = useUser();
-    const [, dispatch] = useMessage();
 
     if (!user) return null;
 
     const { units } = user;
+
+    const onRowClick = (lat: number, long: number) => {
+        map?.flyTo({
+            center: [long, lat],
+            zoom: 12,
+        });
+    };
 
     return (
         <>

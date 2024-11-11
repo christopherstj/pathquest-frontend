@@ -1,13 +1,9 @@
 import getUser from "@/actions/getUser";
 import { redirect } from "next/navigation";
 import React from "react";
-import { Grid2 as Grid, Typography } from "@mui/material";
+import { Grid2 as Grid } from "@mui/material";
 import createUser from "@/actions/createUser";
-import getPeakSummits from "@/actions/getPeakSummits";
 import Map from "@/components/dashboard/Map";
-import PeaksSummitList from "@/components/dashboard/PeaksSummitList";
-import UnclimbedPeaksList from "@/components/dashboard/UnclimbedPeaksList";
-import FavoritePeaks from "@/components/dashboard/FavoritePeaks";
 import IncompleteChallenges from "@/components/dashboard/IncompleteChallenges";
 
 const page = async () => {

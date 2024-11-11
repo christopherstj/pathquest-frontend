@@ -41,17 +41,20 @@ const listStyles: SxProps = {
     },
 };
 
-const PeaksSummitList = ({
-    onRowClick,
-}: {
-    onRowClick: (lat: number, long: number) => void;
-}) => {
-    const [{ peakSummits }] = usePeaks();
+const PeaksSummitList = () => {
+    const [{ peakSummits, map }] = usePeaks();
     const [{ user }] = useUser();
 
     if (!user) return null;
 
     const { units } = user;
+
+    const onRowClick = (lat: number, long: number) => {
+        map?.flyTo({
+            center: [long, lat],
+            zoom: 12,
+        });
+    };
 
     return (
         <>

@@ -7,32 +7,39 @@ type Props = {
     peak: UnclimbedPeak;
     units: "metric" | "imperial";
     theme: Theme;
-    onFavoriteClick: (peakId: string, newValue: boolean) => void;
+    onFavoriteClick?: (peakId: string, newValue: boolean) => void;
+    color?: "primary" | "secondary" | "tertiary";
 };
 
-const UnclimbedPopup = ({ peak, units, theme, onFavoriteClick }: Props) => {
+const UnclimbedPopup = ({
+    peak,
+    units,
+    theme,
+    onFavoriteClick,
+    color = "secondary",
+}: Props) => {
     const el = document.createElement("div");
     const button = document.createElement("div");
     button.style.width = "100%";
     button.style.display = "flex";
-    button.innerHTML = `<button class="button-secondary">Favorite</button>`;
+    button.innerHTML = `<button class="button-${color}">Favorite</button>`;
     el.innerHTML = `
         <div style="display: flex">
-            <div class="tag-secondary">
+            <div class="tag-${color}">
                 <p style="font-size: 12px">
                     ${peak.isSummitted ? "Completed" : "Unclimbed"}
                 </p>
             </div>
         </div>
         <p style="font-size: 16px; color: ${
-            theme.palette.secondary.onContainer
+            theme.palette[color].onContainer
         }; margin-bottom: 8px">
             ${peak.Name}
         </p>
         ${
             peak.Altitude
                 ? `<p style="color: ${
-                      theme.palette.secondary.onContainerDim
+                      theme.palette[color].onContainerDim
                   }; margin-bottom: 8px;">
                 ${Math.round(
                     units === "metric"
@@ -43,25 +50,15 @@ const UnclimbedPopup = ({ peak, units, theme, onFavoriteClick }: Props) => {
         `
                 : ""
         }
-        <a href="/app/peaks/${peak.Id}" class="link-secondary">
+        <a href="/app/peaks/${peak.Id}" class="link-${color}">
             View Peak
         </a>
     `;
-    if (!peak.isSummitted) el.appendChild(button);
+    if (!peak.isSummitted && onFavoriteClick) el.appendChild(button);
 
     const favoriteClick = () => {
-        onFavoriteClick(peak.Id, true);
-        // button.innerHTML = `<button class="button-secondary">Unfavorite</button>`;
-        // button.removeEventListener("click", favoriteClick, true);
-        // button.addEventListener("click", unFavoriteClick, true);
+        if (onFavoriteClick) onFavoriteClick(peak.Id, true);
     };
-
-    // const unFavoriteClick = () => {
-    //     onFavoriteClick(peak.Id, false);
-    //     button.innerHTML = `<button class="button-secondary">Favorite</button>`;
-    //     button.removeEventListener("click", unFavoriteClick, true);
-    //     button.addEventListener("click", favoriteClick, true);
-    // };
 
     button.addEventListener("click", favoriteClick, true);
 

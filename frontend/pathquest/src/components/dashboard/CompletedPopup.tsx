@@ -1,11 +1,12 @@
 "use client";
 import metersToFt from "@/helpers/metersToFt";
 import PeakSummit from "@/typeDefs/PeakSummit";
+import UnclimbedPeak from "@/typeDefs/UnclimbedPeak";
 import { Theme, useTheme } from "@mui/material";
 import React from "react";
 
 type Props = {
-    peak: PeakSummit;
+    peak: PeakSummit | UnclimbedPeak;
     units: "metric" | "imperial";
     theme: Theme;
     showButtton?: boolean;
@@ -13,9 +14,11 @@ type Props = {
 
 const CompletedPopup = ({ peak, units, theme, showButtton = true }: Props) => {
     const ascents =
-        typeof peak.ascents === "string"
-            ? JSON.parse(peak.ascents)
-            : peak.ascents;
+        "ascents" in peak
+            ? typeof peak.ascents === "string"
+                ? JSON.parse(peak.ascents)
+                : peak.ascents
+            : [];
     return `
         <div style="display: flex">
             <div class="tag-primary">
@@ -41,11 +44,15 @@ const CompletedPopup = ({ peak, units, theme, showButtton = true }: Props) => {
         `
                 : ""
         }
-        <p style="color: ${
-            theme.palette.primary.onContainerDim
-        }; margin-bottom: 8px;">
+        ${
+            ascents.length > 0
+                ? `<p style="color: ${
+                      theme.palette.primary.onContainerDim
+                  }; margin-bottom: 8px;">
             ${ascents.length} summit${ascents.length > 1 ? "s" : ""}
-        </p>
+        </p>`
+                : ""
+        }
         ${
             showButtton
                 ? `<a href="/app/peaks/${peak.Id}" class="link-primary">

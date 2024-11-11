@@ -77,18 +77,6 @@ const PeakDetailMap = () => {
             data: {
                 type: "FeatureCollection",
                 features: [],
-                // activities.map((a) => ({
-                //     type: "Feature",
-                //     geometry: {
-                //         type: "LineString",
-                //         coordinates: (a.coords as [number, number][]).map(
-                //             (c) => [c[1], c[0]]
-                //         ),
-                //     },
-                //     properties: {
-                //         id: a.id,
-                //     },
-                // })),
             },
         });
 

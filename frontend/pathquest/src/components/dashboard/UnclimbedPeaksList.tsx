@@ -7,6 +7,8 @@ import { useUser } from "@/state/UserContext";
 import toggleFavoritePeak from "@/actions/toggleFavoritePeak";
 import { useMessage } from "@/state/MessageContext";
 import FavoritedPeak from "@/typeDefs/FavoritedPeak";
+import { GeoJSONSource } from "mapbox-gl";
+import UnclimbedPeak from "@/typeDefs/UnclimbedPeak";
 
 const containerStyles: SxProps = {
     borderRadius: "12px",
@@ -44,98 +46,27 @@ const listStyles: SxProps = {
 };
 
 const UnclimbedPeaksList = ({
-    onRowClick,
     onFavoriteClick,
 }: {
-    onRowClick: (lat: number, long: number) => void;
     onFavoriteClick: (
         peakId: string,
         newValue: boolean,
         openPopup: boolean
     ) => void;
 }) => {
-    const [{ unclimbedPeaks }, setPeaksState] = usePeaks();
+    const [{ unclimbedPeaks, map }] = usePeaks();
     const [{ user }] = useUser();
-    const [, dispatch] = useMessage();
 
     if (!user) return null;
 
     const { units } = user;
 
-    // const onFavoriteClick = async (peakId: string, newValue: boolean) => {
-    //     setPeaksState((state) => {
-    //         if (!state.unclimbedPeaks) return state;
-    //         const newPeaks = state.unclimbedPeaks.map((peak) => {
-    //             if (peak.Id === peakId) {
-    //                 return { ...peak, isFavorited: newValue };
-    //             }
-    //             return peak;
-    //         });
-
-    //         if (state.favoritePeaks) {
-    //             const newfavoritePeaks = newValue
-    //                 ? [
-    //                       newPeaks.find(
-    //                           (peak) => peak.Id === peakId
-    //                       ) as FavoritedPeak,
-    //                       ...state.favoritePeaks,
-    //                   ]
-    //                 : state.favoritePeaks.filter((peak) => peak.Id !== peakId);
-    //             return {
-    //                 ...state,
-    //                 unclimbedPeaks: newPeaks,
-    //                 favoritePeaks: newfavoritePeaks,
-    //             };
-    //         }
-    //         return {
-    //             ...state,
-    //             unclimbedPeaks: newPeaks,
-    //         };
-    //     });
-
-    //     const success = await toggleFavoritePeak(peakId, newValue);
-
-    //     if (!success) {
-    //         dispatch({
-    //             type: "SET_MESSAGE",
-    //             payload: {
-    //                 text: "Failed to update favorite status",
-    //                 type: "error",
-    //             },
-    //         });
-    //         setPeaksState((state) => {
-    //             if (!state.unclimbedPeaks) return state;
-    //             const newPeaks = state.unclimbedPeaks.map((peak) => {
-    //                 if (peak.Id === peakId) {
-    //                     return { ...peak, favorite: !newValue };
-    //                 }
-    //                 return peak;
-    //             });
-
-    //             if (state.favoritePeaks) {
-    //                 const newfavoritePeaks = !newValue
-    //                     ? [
-    //                           newPeaks.find(
-    //                               (peak) => peak.Id === peakId
-    //                           ) as FavoritedPeak,
-    //                           ...state.favoritePeaks,
-    //                       ]
-    //                     : state.favoritePeaks.filter(
-    //                           (peak) => peak.Id !== peakId
-    //                       );
-    //                 return {
-    //                     ...state,
-    //                     unclimbedPeaks: newPeaks,
-    //                     favoritePeaks: newfavoritePeaks,
-    //                 };
-    //             }
-    //             return {
-    //                 ...state,
-    //                 unclimbedPeaks: newPeaks,
-    //             };
-    //         });
-    //     }
-    // };
+    const onRowClick = (lat: number, long: number) => {
+        map?.flyTo({
+            center: [long, lat],
+            zoom: 12,
+        });
+    };
 
     return (
         <>

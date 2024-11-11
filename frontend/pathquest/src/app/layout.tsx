@@ -8,6 +8,7 @@ import Nav from "@/components/layout/Nav";
 import UserData from "@/state/UserData";
 import Message from "@/components/common/Message";
 import MessageProvider from "@/state/MessageContext";
+import mapboxgl from "mapbox-gl";
 
 const raleway = Raleway({
     variable: "--font-raleway",
@@ -57,6 +58,8 @@ export default function RootLayout({
 }: Readonly<{
     children: React.ReactNode;
 }>) {
+    mapboxgl.accessToken =
+        "pk.eyJ1IjoiY2hyaXN0b3BoZXJzdGoiLCJhIjoiY20yZThlMW12MDJwMzJycTAwYzd5ZGhxYyJ9.yj5sadTuPldjsWchDuJ3WA";
     return (
         <html lang="en" suppressHydrationWarning>
             <body

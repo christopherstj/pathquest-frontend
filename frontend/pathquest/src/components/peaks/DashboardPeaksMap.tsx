@@ -9,8 +9,6 @@ import React from "react";
 import primaryMarker from "@/public/images/marker-primary.png";
 import secondaryMarker from "@/public/images/marker-secondary.png";
 import tertiaryMarker from "@/public/images/marker-tertiary.png";
-import getUnclimbedPeaksWithBounds from "@/actions/getUnclimbedPeaksWithBounds";
-import convertUnclimbedPeaksToGEOJson from "@/helpers/convertUnclimbedPeaksToGEOJson";
 import PeakSummit from "@/typeDefs/PeakSummit";
 import CompletedPopup from "../dashboard/CompletedPopup";
 import "mapbox-gl/dist/mapbox-gl.css";
@@ -132,6 +130,7 @@ const DashboardPeaksMap = () => {
                 "icon-image": "marker-primary",
                 "icon-size": 0.2,
                 "icon-allow-overlap": true,
+                "icon-anchor": "bottom",
             },
         });
         mapRef.current?.addLayer({
@@ -140,9 +139,18 @@ const DashboardPeaksMap = () => {
             source: "unclimbedPeaks",
             filter: ["!", ["has", "point_count"]],
             layout: {
-                "icon-image": "marker-secondary",
+                "icon-image": [
+                    "image",
+                    [
+                        "case",
+                        ["==", ["get", "isSummitted"], 1],
+                        "marker-primary",
+                        "marker-secondary",
+                    ],
+                ],
                 "icon-size": 0.2,
                 "icon-allow-overlap": true,
+                "icon-anchor": "bottom",
             },
         });
         mapRef.current?.addLayer({
@@ -154,6 +162,7 @@ const DashboardPeaksMap = () => {
                 "icon-image": "marker-tertiary",
                 "icon-size": 0.2,
                 "icon-allow-overlap": true,
+                "icon-anchor": "bottom",
             },
         });
 
@@ -207,6 +216,7 @@ const DashboardPeaksMap = () => {
                             onFavoriteClick: (peakId, newValue) => {
                                 onFavoriteClick(peakId, newValue, true, e);
                             },
+                            color: peak.isSummitted ? "primary" : "secondary",
                         })
                     )
                     .addTo(mapRef.current);

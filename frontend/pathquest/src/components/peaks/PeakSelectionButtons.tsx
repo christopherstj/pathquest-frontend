@@ -40,8 +40,6 @@ const PeakSelectionButtons = () => {
     const [peaksMap, setPeaksMapState] = usePeaksMap();
     const [, dispatch] = useMessage();
 
-    const [refreshList, setRefreshList] = React.useState(false);
-
     const handleCompletedClick = () => {
         setPeaksState((state) => ({
             ...state,
@@ -138,25 +136,6 @@ const PeakSelectionButtons = () => {
         },
         [peaksMap.map, showSummittedPeaks, search, limitResultsToBbox, dispatch]
     );
-
-    // React.useEffect(() => {
-    //     if (peakSelection.type === "unclimbed" && peakSelection.search === "") {
-    //         const unclimbedData =
-    //             peaksMap.map?.querySourceFeatures("unclimbedPeaks") ?? [];
-    //         const favoritePeaks =
-    //             peaksMap.map?.querySourceFeatures("favoritePeaks") ?? [];
-    //         setPeaksState((state) => ({
-    //             ...state,
-    //             peakSelection: {
-    //                 ...state.peakSelection,
-    //                 type: "unclimbed",
-    //                 data: [...unclimbedData, ...favoritePeaks]
-    //                     .map((feature) => feature.properties as UnclimbedPeak)
-    //                     .sort((a, b) => (b.Altitude ?? 0) - (a.Altitude ?? 0)),
-    //             },
-    //         }));
-    //     }
-    // }, [refreshList]);
 
     React.useEffect(() => {
         if (peaksMap.map) {

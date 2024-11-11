@@ -67,12 +67,6 @@ type Props = {
 const timezone = dayjs.tz.guess();
 
 const ActivityRow = ({ activity, units, onMouseOver, onMouseOut }: Props) => {
-    const router = useRouter();
-
-    const redirect = () => {
-        router.push(`/app/activities/${activity.id}`);
-    };
-
     const getIcon = () => {
         if (activity.sport === "Run") {
             return <DirectionsRun sx={{ color: "primary.onContainerDim" }} />;
@@ -88,7 +82,7 @@ const ActivityRow = ({ activity, units, onMouseOver, onMouseOut }: Props) => {
             sx={rowStyles}
             onMouseEnter={() => onMouseOver(activity.id)}
             onMouseLeave={onMouseOut}
-            onClick={redirect}
+            onClick={() => onMouseOver(activity.id)}
         >
             <Avatar
                 sx={{

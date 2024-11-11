@@ -5,7 +5,7 @@ import { useUser } from "@/state/UserContext";
 import { Box, Divider, List, SxProps, Typography } from "@mui/material";
 import React from "react";
 import UnclimbedPeakRow from "./UnclimbedPeakRow";
-import ChallengeRow from "./ChallengeRow";
+import ChallengeRow from "../challenges/ChallengeRow";
 
 const containerStyles: SxProps = {
     borderRadius: "12px",

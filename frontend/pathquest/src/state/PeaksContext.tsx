@@ -9,6 +9,7 @@ interface PeaksState {
     peakSummits: PeakSummit[] | null;
     unclimbedPeaks: UnclimbedPeak[] | null;
     favoritePeaks: FavoritedPeak[] | null;
+    map: mapboxgl.Map | null;
     peakSelection:
         | {
               type: "completed";
@@ -32,6 +33,7 @@ const usePeaksState = (
         peakSummits,
         unclimbedPeaks,
         favoritePeaks,
+        map: null,
         peakSelection: {
             type: "completed",
             data: peakSummits ?? [],
