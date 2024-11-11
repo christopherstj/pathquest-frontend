@@ -16,9 +16,7 @@ const buttonStyles = (selected: boolean): SxProps => ({
     color: selected ? "primary.container" : "primary.onContainer",
 });
 
-type Props = {};
-
-const ChallengeTypeButtons = (props: Props) => {
+const ChallengeTypeButtons = () => {
     const [{ map, search, limitToBbox, type }, setChallengeDashboardState] =
         useChallengeDashboard();
 
