@@ -29,7 +29,7 @@ const getChallengeDetails = async (
 
     const peaksRes = await fetch(peaksUrl, {
         method: "GET",
-        cache: "no-cache",
+        // cache: "no-cache",
         headers: {
             "Content-Type": "application/json",
             Authorization: `Bearer ${token}`,
