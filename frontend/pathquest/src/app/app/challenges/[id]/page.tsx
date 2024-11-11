@@ -5,6 +5,8 @@ import { Grid2 as Grid } from "@mui/material";
 import ChallengeDetailProvider from "@/state/ChallengeDetailContext";
 import ChallengeDetailMap from "@/components/challenges/ChallengeDetailMap";
 
+export const maxDuration = 60;
+
 type Props = {
     params: {
         id: string;
