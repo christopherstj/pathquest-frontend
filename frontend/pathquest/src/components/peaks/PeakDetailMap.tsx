@@ -29,7 +29,10 @@ const PeakDetailMap = () => {
     const { peak, activities } = details;
 
     const addMarkers = () => {
-        mapRef.current?.addControl(new mapboxgl.NavigationControl());
+        mapRef.current?.addControl(
+            new mapboxgl.NavigationControl(),
+            "top-left"
+        );
 
         mapRef.current?.loadImage(primaryMarker.src, (error, image) => {
             if (error) throw error;

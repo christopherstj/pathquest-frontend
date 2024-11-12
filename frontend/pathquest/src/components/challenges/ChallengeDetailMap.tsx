@@ -31,7 +31,10 @@ const ChallengeDetailMap = () => {
     const addMarkers = () => {
         const bounds = new mapboxgl.LngLatBounds();
 
-        mapRef.current?.addControl(new mapboxgl.NavigationControl());
+        mapRef.current?.addControl(
+            new mapboxgl.NavigationControl(),
+            "top-left"
+        );
 
         mapRef.current?.loadImage(primaryMarker.src, (error, image) => {
             if (error) throw error;

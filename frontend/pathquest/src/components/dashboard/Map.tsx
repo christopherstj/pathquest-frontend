@@ -317,7 +317,10 @@ const Map = () => {
 
     const addMarkers = () => {
         if (mapRef.current !== null) {
-            mapRef.current.addControl(new mapboxgl.NavigationControl());
+            mapRef.current.addControl(
+                new mapboxgl.NavigationControl(),
+                "top-left"
+            );
 
             mapRef.current.loadImage(primaryMarker.src, (error, image) => {
                 if (error) throw error;

@@ -70,7 +70,7 @@ const fixedContainerStyles: SxProps = {
     backgroundColor: "primary.container",
     borderRadius: "50%",
     boxShadow: 3,
-    zIndex: 1,
+    zIndex: 9999,
 };
 
 const UserButton = () => {
