@@ -416,6 +416,9 @@ const Map = () => {
             });
 
             mapRef.current?.on("click", "peakSummits", (e) => {
+                e.originalEvent.preventDefault();
+                e.originalEvent.stopPropagation();
+
                 const feature = e.features?.[0];
 
                 if (feature?.geometry.type === "Point" && mapRef.current) {
@@ -442,6 +445,9 @@ const Map = () => {
             });
 
             mapRef.current?.on("click", "unclimbedPeaks", (e) => {
+                e.originalEvent.preventDefault();
+                e.originalEvent.stopPropagation();
+
                 e.originalEvent?.stopPropagation();
                 const feature = e.features?.[0];
 
@@ -472,6 +478,9 @@ const Map = () => {
             });
 
             mapRef.current?.on("click", "favoritePeaks", (e) => {
+                e.originalEvent.preventDefault();
+                e.originalEvent.stopPropagation();
+
                 e.originalEvent?.stopPropagation();
                 const feature = e.features?.[0];
 
@@ -502,7 +511,9 @@ const Map = () => {
             });
 
             mapRef.current?.on("click", "challenges", (e) => {
-                e.originalEvent?.stopPropagation();
+                e.originalEvent.preventDefault();
+                e.originalEvent.stopPropagation();
+
                 const feature = e.features?.[0];
 
                 if (feature?.geometry.type === "Point" && mapRef.current) {

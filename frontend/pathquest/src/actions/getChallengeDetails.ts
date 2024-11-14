@@ -15,6 +15,7 @@ const getChallengeDetails = async (
     peaks: {
         peak: UnclimbedPeak;
         activity?: Activity;
+        ascents: { timestamp: string; activityId: string; timezone?: string }[];
     }[];
 } | null> => {
     const session = await useAuth();

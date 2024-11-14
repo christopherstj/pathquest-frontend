@@ -1,13 +1,12 @@
 "use client";
 import { useChallengeDetail } from "@/state/ChallengeDetailContext";
-import { Box, List, SxProps } from "@mui/material";
-import React from "react";
+import { Box, Divider, SxProps, useTheme } from "@mui/material";
+import React, { Fragment } from "react";
 import ChallengePeaksDisplayButtons from "./ChallengePeaksDisplayButtons";
 import ChallengePeaksSearch from "./ChallengePeaksSearch";
-import { Virtuoso } from "react-virtuoso";
 import UnclimbedPeakRow from "../dashboard/UnclimbedPeakRow";
 import { useUser } from "@/state/UserContext";
-// import ChallengePeakRow from "./ChallengePeakRow";
+import onFavoriteClick from "./helpers/onFavoriteClick";
 
 const cardStyles: SxProps = {
     borderRadius: "12px",
@@ -32,10 +31,9 @@ const listStyles: SxProps = {
     borderRadius: "12px",
     backgroundColor: "primary.container",
     padding: 0,
-    // paddingRight: "4px",
-    // paddingLeft: "8px",
     flex: 1,
     overflowY: "scroll",
+    paddingRight: "4px",
     "&::-webkit-scrollbar": {
         width: "8px",
     },
@@ -52,8 +50,10 @@ const listStyles: SxProps = {
 };
 
 const ChallengePeaksList = () => {
-    const [{ peaks }] = useChallengeDetail();
+    const [{ peaks, map }, setChallengeDetailState] = useChallengeDetail();
     const [{ user }] = useUser();
+
+    const theme = useTheme();
 
     const units = user?.units ?? "metric";
 
@@ -61,6 +61,13 @@ const ChallengePeaksList = () => {
         "all" | "completed" | "unclimbed"
     >("all");
     const [search, setSearch] = React.useState<string>("");
+
+    const onRowClick = (lat: number, long: number) => {
+        map?.flyTo({
+            center: [long, lat],
+            zoom: 12,
+        });
+    };
 
     return (
         <Box sx={cardStyles}>
@@ -83,34 +90,37 @@ const ChallengePeaksList = () => {
                         (a, b) =>
                             (b.peak.Altitude ?? 0) - (a.peak.Altitude ?? 0)
                     )
-                    .map(({ peak }) => (
-                        <UnclimbedPeakRow
-                            rowColor="primary"
-                            units={units}
-                            onFavoriteClick={(peakId, newValue) =>
-                                console.log(peakId, newValue)
-                            }
-                            onRowClick={(lat, long) => console.log(lat, long)}
-                            peak={peak}
-                            key={peak.Id}
-                        />
+                    .map(({ peak, ascents }) => (
+                        <Fragment key={peak.Id}>
+                            <UnclimbedPeakRow
+                                rowColor="primary"
+                                units={units}
+                                onFavoriteClick={(peakId, newValue) =>
+                                    onFavoriteClick(
+                                        peaks,
+                                        setChallengeDetailState,
+                                        map,
+                                        theme,
+                                        units,
+                                        peakId,
+                                        newValue,
+                                        true,
+                                        false
+                                    )
+                                }
+                                onRowClick={onRowClick}
+                                peak={peak}
+                                ascents={ascents}
+                            />
+                            <Divider
+                                sx={{
+                                    backgroundColor: "primary.onContainerDim",
+                                    margin: "0 8px",
+                                }}
+                            />
+                        </Fragment>
                     ))}
             </Box>
-            {/* <Box flex="1">
-                <List sx={{ height: "100%", gap: "12px" }}>
-                    {peaks
-                        .filter(({ peak }) => {
-                            if (display === "completed")
-                                return peak.isSummitted;
-                            if (display === "unclimbed")
-                                return !peak.isSummitted;
-                            return true;
-                        })
-                        .map(({ peak }) => (
-                            <ChallengePeakRow peak={peak} key={peak.Id} />
-                        ))}
-                </List>
-            </Box> */}
         </Box>
     );
 };

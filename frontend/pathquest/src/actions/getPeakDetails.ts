@@ -16,6 +16,7 @@ const getPeakDetails = async (
     summits: {
         activityId: string;
         timestamp: string;
+        timezone?: string;
     }[];
 }> => {
     const session = await useAuth();

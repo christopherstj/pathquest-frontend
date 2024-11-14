@@ -4,12 +4,13 @@ import Challenge from "@/typeDefs/Challenge";
 import UnclimbedPeak from "@/typeDefs/UnclimbedPeak";
 import React, { createContext, useState } from "react";
 
-interface ChallengeDetailState {
+export interface ChallengeDetailState {
     map: mapboxgl.Map | null;
     challenge: Challenge;
     peaks: {
         peak: UnclimbedPeak;
         activity?: Activity;
+        ascents: { timestamp: string; activityId: string; timezone?: string }[];
     }[];
 }
 
@@ -18,6 +19,7 @@ const useChallengeDetailState = (data: {
     peaks: {
         peak: UnclimbedPeak;
         activity?: Activity;
+        ascents: { timestamp: string; activityId: string; timezone?: string }[];
     }[];
 }) =>
     useState<ChallengeDetailState>({
@@ -49,6 +51,11 @@ const ChallengeDetailProvider = ({
         peaks: {
             peak: UnclimbedPeak;
             activity?: Activity;
+            ascents: {
+                timestamp: string;
+                activityId: string;
+                timezone?: string;
+            }[];
         }[];
     };
 }) => {
