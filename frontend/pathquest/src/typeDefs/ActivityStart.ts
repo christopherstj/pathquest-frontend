@@ -1,3 +1,15 @@
 import Activity from "./Activity";
 
-export interface ActivityStart extends Omit<Activity, "coords"> {}
+export interface ActivityStart {
+    startTime: number;
+    sport?: string;
+    timezone?: string;
+    gain?: number;
+    peakSummits?: number;
+    name?: string;
+    id: string;
+    userId: string;
+    startLat: number;
+    startLong: number;
+    distance: number;
+}
