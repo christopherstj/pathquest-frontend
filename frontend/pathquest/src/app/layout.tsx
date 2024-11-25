@@ -9,6 +9,7 @@ import UserData from "@/state/UserData";
 import Message from "@/components/common/Message";
 import MessageProvider from "@/state/MessageContext";
 import mapboxgl from "mapbox-gl";
+import { Analytics } from "@vercel/analytics/react";
 
 const raleway = Raleway({
     variable: "--font-raleway",
@@ -78,6 +79,7 @@ export default function RootLayout({
                         </MessageProvider>
                     </UserData>
                 </Contexts>
+                <Analytics />
             </body>
         </html>
     );
