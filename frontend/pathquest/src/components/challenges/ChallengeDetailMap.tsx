@@ -22,8 +22,7 @@ const ChallengeDetailMap = () => {
     const mapRef = React.useRef<mapboxgl.Map | null>(null);
 
     React.useEffect(() => {
-        mapboxgl.accessToken =
-            "pk.eyJ1IjoiY2hyaXN0b3BoZXJzdGoiLCJhIjoiY20yZThlMW12MDJwMzJycTAwYzd5ZGhxYyJ9.yj5sadTuPldjsWchDuJ3WA";
+        mapboxgl.accessToken = process.env.NEXT_PUBLIC_MAPBOX_TOKEN ?? "";
         mapRef.current = new mapboxgl.Map({
             container: mapContainerRef.current,
             center: [challenge.centerLong ?? 0, challenge.centerLat ?? 0],

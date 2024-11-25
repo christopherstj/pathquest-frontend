@@ -5,8 +5,8 @@ import React from "react";
 import MapboxContainer from "../common/MapboxContainer";
 import mapboxgl from "mapbox-gl";
 import primaryMarker from "@/public/images/marker-primary.png";
-import PeakMarker from "../dashboard/PeakMarker";
-import CompletedPopup from "../dashboard/CompletedPopup";
+import secondaryMarker from "@/public/images/marker-secondary.png";
+import tertiaryMarker from "@/public/images/marker-tertiary.png";
 import { useUser } from "@/state/UserContext";
 import { useTheme } from "@mui/material";
 import { usePeakDetail } from "@/state/PeakDetailContext";
@@ -37,6 +37,14 @@ const PeakDetailMap = () => {
         mapRef.current?.loadImage(primaryMarker.src, (error, image) => {
             if (error) throw error;
             if (image) mapRef.current?.addImage("marker-primary", image);
+        });
+        mapRef.current?.loadImage(secondaryMarker.src, (error, image) => {
+            if (error) throw error;
+            if (image) mapRef.current?.addImage("marker-secondary", image);
+        });
+        mapRef.current?.loadImage(tertiaryMarker.src, (error, image) => {
+            if (error) throw error;
+            if (image) mapRef.current?.addImage("marker-tertiary", image);
         });
 
         mapRef.current?.addSource("activities", {
@@ -83,6 +91,58 @@ const PeakDetailMap = () => {
             },
         });
 
+        mapRef.current?.addSource("peaks", {
+            type: "geojson",
+            data: {
+                type: "FeatureCollection",
+                features: [
+                    {
+                        type: "Feature",
+                        geometry: {
+                            type: "Point",
+                            coordinates: [
+                                peak.Long ?? -111.651302,
+                                peak.Lat ?? 35.198284,
+                            ],
+                        },
+                        properties: {
+                            ...peak,
+                        },
+                    },
+                ],
+            },
+        });
+
+        mapRef.current?.addLayer({
+            id: "peaks",
+            type: "symbol",
+            source: "peaks",
+            layout: {
+                "icon-image": [
+                    "image",
+                    [
+                        "case",
+                        [
+                            "any",
+                            ["==", ["get", "isSummitted"], 1],
+                            ["==", ["get", "isSummitted"], true],
+                        ],
+                        "marker-primary",
+                        [
+                            "any",
+                            ["==", ["get", "isFavorited"], 1],
+                            ["==", ["get", "isFavorited"], true],
+                        ],
+                        "marker-tertiary",
+                        "marker-secondary",
+                    ],
+                ],
+                "icon-size": 0.2,
+                "icon-allow-overlap": true,
+                "icon-anchor": "bottom",
+            },
+        });
+
         mapRef.current?.addLayer({
             id: "activities",
             type: "line",
@@ -124,46 +184,8 @@ const PeakDetailMap = () => {
         });
     };
 
-    const addMarker = () => {
-        if (mapRef.current && details.peak) {
-            const el = PeakMarker();
-
-            const newMarker = new mapboxgl.Marker(el)
-                .setLngLat([peak.Long ?? -111.651302, peak.Lat ?? 35.198284])
-                .setPopup(
-                    new mapboxgl.Popup({ offset: 25 }).setHTML(
-                        CompletedPopup({
-                            peak: {
-                                ...peak,
-                                ascents: activities.map(
-                                    (
-                                        a
-                                    ): {
-                                        timestamp: string;
-                                        activityId: string;
-                                    } => ({
-                                        timestamp: new Date(
-                                            a.startTime
-                                        ).toISOString(),
-                                        activityId: a.id,
-                                    })
-                                ),
-                            },
-                            units,
-                            theme,
-                            showButtton: false,
-                        })
-                    )
-                )
-                .addTo(mapRef.current!);
-
-            setMarker(newMarker);
-        }
-    };
-
     React.useEffect(() => {
-        mapboxgl.accessToken =
-            "pk.eyJ1IjoiY2hyaXN0b3BoZXJzdGoiLCJhIjoiY20yZThlMW12MDJwMzJycTAwYzd5ZGhxYyJ9.yj5sadTuPldjsWchDuJ3WA";
+        mapboxgl.accessToken = process.env.NEXT_PUBLIC_MAPBOX_TOKEN ?? "";
         mapRef.current = new mapboxgl.Map({
             container: mapContainerRef.current,
             center: [peak.Long ?? -111.651302, peak.Lat ?? 35.198284],
@@ -178,12 +200,6 @@ const PeakDetailMap = () => {
             mapRef.current?.remove();
         };
     }, []);
-
-    React.useEffect(() => {
-        if (mapRef.current) {
-            addMarker();
-        }
-    }, [details, mapRef.current]);
 
     return (
         <MapboxContainer

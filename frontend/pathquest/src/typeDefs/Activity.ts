@@ -9,4 +9,6 @@ export default interface Activity {
     startTime: number;
     sport?: string;
     timezone?: string;
+    gain?: number;
+    peakSummits?: number;
 }

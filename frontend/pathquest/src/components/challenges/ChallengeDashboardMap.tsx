@@ -92,8 +92,7 @@ const ChallengeDashboardMap = () => {
     };
 
     React.useEffect(() => {
-        mapboxgl.accessToken =
-            "pk.eyJ1IjoiY2hyaXN0b3BoZXJzdGoiLCJhIjoiY20yZThlMW12MDJwMzJycTAwYzd5ZGhxYyJ9.yj5sadTuPldjsWchDuJ3WA";
+        mapboxgl.accessToken = process.env.NEXT_PUBLIC_MAPBOX_TOKEN ?? "";
         mapRef.current = new mapboxgl.Map({
             container: mapContainerRef.current,
             center: [user.long ?? 0, user.lat ?? 0],

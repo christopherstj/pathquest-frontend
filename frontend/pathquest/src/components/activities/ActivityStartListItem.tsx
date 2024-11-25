@@ -1,7 +1,6 @@
 import dayjs from "@/helpers/dayjs";
 import getDistanceString from "@/helpers/getDistanceString";
 import hexToRgb from "@/helpers/hexToRgb";
-import Activity from "@/typeDefs/Activity";
 import { ActivityStart } from "@/typeDefs/ActivityStart";
 import { DirectionsBike, DirectionsRun } from "@mui/icons-material";
 import {
@@ -14,24 +13,22 @@ import {
     Typography,
 } from "@mui/material";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import React, { act } from "react";
-import ActivityIcon from "../common/customIcons/Activity";
-import getVerticalGainString from "@/helpers/getVerticalGainString";
+import React from "react";
 import DataRow from "../common/DataRow";
+import getVerticalGainString from "@/helpers/getVerticalGainString";
 
 const rowStyles: SxProps<Theme> = (theme) => ({
     display: "flex",
-    alignItems: "stretch",
+    alignItems: "flex-start",
     gap: "12px",
-    padding: "8px",
+    padding: "8px 16px",
     // borderRadius: "12px",
     // backgroundColor: "primary.container",
-    borderBottom: `1px solid ${theme.palette.primary.onContainerDim}`,
+    height: "100%",
+    borderRight: `1px solid ${theme.palette.primary.onContainerDim}`,
     position: "relative",
     overflow: "hidden",
     minHeight: "54px",
-    width: "100%",
     transition: "box-shadow 0.2s",
     cursor: "pointer",
     marginBottom: "8px",
@@ -69,28 +66,21 @@ const buttonStyles: SxProps = {
 };
 
 type Props = {
-    activity:
-        | (Activity & {
-              summits: {
-                  timestamp: string;
-                  activityId: string;
-              }[];
-          })
-        | ActivityStart;
+    activity: ActivityStart;
     units: "metric" | "imperial";
-    onMouseOver: (activityId: string) => void;
-    onMouseOut: () => void;
-    onClick?: (activityId: string) => void;
+    onHover: (activityId: string) => void;
+    onUnhover: () => void;
+    onClick: (activityId: string) => void;
 };
 
 const tz = dayjs.tz.guess();
 
-const ActivityRow = ({
+const ActivityStartListItem = ({
     activity,
     units,
-    onMouseOver,
-    onMouseOut,
     onClick,
+    onHover,
+    onUnhover,
 }: Props) => {
     const getIcon = () => {
         if (activity.sport === "Run") {
@@ -98,7 +88,7 @@ const ActivityRow = ({
         } else if (activity.sport === "Ride") {
             return <DirectionsBike sx={{ color: "primary.onContainerDim" }} />;
         } else {
-            return <ActivityIcon sx={{ color: "primary.onContainerDim" }} />;
+            return null;
         }
     };
 
@@ -109,31 +99,19 @@ const ActivityRow = ({
     return (
         <ButtonBase
             sx={rowStyles}
-            onMouseEnter={() => onMouseOver(activity.id)}
-            onMouseLeave={onMouseOut}
-            onClick={() => {
-                if (onClick) {
-                    onClick(activity.id);
-                } else {
-                    onMouseOver(activity.id);
-                }
-            }}
+            onMouseEnter={() => onHover(activity.id)}
+            onMouseLeave={onUnhover}
+            onClick={() => onClick(activity.id)}
         >
-            <Avatar
+            {/* <Avatar
                 sx={{
                     backgroundColor: "primary.containerDim",
                     color: "primary.onContainerDim",
                 }}
             >
                 {getIcon()}
-            </Avatar>
-            <Box
-                display="flex"
-                flexDirection="column"
-                flex="1"
-                gap="4px"
-                alignItems="flex-start"
-            >
+            </Avatar> */}
+            <Box display="flex" flexDirection="column" flex="1" gap="4px">
                 <Typography
                     variant="body1"
                     fontWeight="bold"
@@ -146,23 +124,6 @@ const ActivityRow = ({
                         .tz(timezone, true)
                         .format("MMM D, YYYY h:mm A")}
                 </Typography>
-                <Button
-                    sx={stravaButtonStyles}
-                    size="small"
-                    LinkComponent={Link}
-                    href={`https://www.strava.com/activities/${activity.id}`}
-                    target="_blank"
-                    onClick={(e) => e.stopPropagation()}
-                >
-                    View on Strava
-                </Button>
-            </Box>
-            <Box
-                display="flex"
-                flexDirection="column"
-                justifyContent="space-between"
-                alignItems="center"
-            >
                 <DataRow
                     label="Distance:"
                     value={getDistanceString(activity.distance, units)}
@@ -173,51 +134,42 @@ const ActivityRow = ({
                         value={getVerticalGainString(activity.gain, units)}
                     />
                 )}
-                {"summits" in activity && activity.summits.length > 0 ? (
-                    <Typography
-                        variant="caption"
-                        color="primary.onContainerDim"
-                    >
-                        Summit{activity.summits.length > 1 ? "s" : ""}:{" "}
-                        {activity.summits.length > 1 ? <br /> : ""}
-                        {activity.summits.map((summit) => (
-                            <React.Fragment key={summit.timestamp}>
-                                {dayjs(summit.timestamp)
-                                    .tz(timezone, true)
-                                    .format("h:mm A")}
-                                {/* {new Date(summit.timestamp).toLocaleTimeString()} */}
-                                <br />
-                            </React.Fragment>
-                        ))}
-                    </Typography>
-                ) : (
-                    activity.peakSummits !== null &&
+                {activity.peakSummits !== null &&
                     activity.peakSummits !== undefined && (
                         <DataRow
                             label="Peak Summits:"
                             value={activity.peakSummits}
                         />
-                        // <Typography
-                        //     variant="caption"
-                        //     color="primary.onContainerDim"
-                        // >
-                        //     {activity.peakSummits} peak summit
-                        //     {activity.peakSummits === 1 ? "" : "s"}
-                        // </Typography>
-                    )
-                )}
-                <Button
-                    sx={buttonStyles}
-                    LinkComponent={Link}
-                    href={`/app/activites/${activity.id}`}
-                    size="small"
-                    fullWidth
+                    )}
+                <Box
+                    width="100%"
+                    display="flex"
+                    flexDirection="column"
+                    justifyContent="space-between"
                 >
-                    Details
-                </Button>
+                    {/* <Button
+                        sx={stravaButtonStyles}
+                        size="small"
+                        LinkComponent={Link}
+                        href={`https://www.strava.com/activities/${activity.id}`}
+                        target="_blank"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        View on Strava
+                    </Button> */}
+                    <Button
+                        sx={buttonStyles}
+                        LinkComponent={Link}
+                        href={`/app/activites/${activity.id}`}
+                        size="small"
+                        fullWidth
+                    >
+                        Details
+                    </Button>
+                </Box>
             </Box>
         </ButtonBase>
     );
 };
 
-export default ActivityRow;
+export default ActivityStartListItem;

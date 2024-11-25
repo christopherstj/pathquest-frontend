@@ -9,6 +9,7 @@ const containerStyles: SxProps = {
     width: "100%",
     borderRadius: "8px",
     overflow: "hidden",
+    position: "relative",
     ".mapboxgl-popup-tip": {
         borderTopColor: "background.paper",
     },
@@ -17,6 +18,22 @@ const containerStyles: SxProps = {
         borderRadius: "6px",
         padding: "12px 8px 8px 8px",
         fontFamily: "var(--font-merriweather-sans)",
+        ".button-primary": {
+            color: "primary.onContainer",
+            fontWeight: "bold",
+            fontFamily: "var(--font-merriweather-sans)",
+            textDecoration: "none",
+            padding: "4px",
+            borderRadius: "12px",
+            width: "100%",
+            border: "1px solid",
+            borderColor: "primary.onContainerDim",
+            backgroundColor: "transparent",
+            marginTop: "8px",
+            "&:hover": {
+                backgroundColor: "primary.containerDim",
+            },
+        },
         ".link-primary": {
             color: "primary.onContainer",
             textDecoration: "none",

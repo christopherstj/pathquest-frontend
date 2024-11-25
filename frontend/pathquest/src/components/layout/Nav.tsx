@@ -5,7 +5,9 @@ import { useSession } from "next-auth/react";
 import dynamic from "next/dynamic";
 import { usePathname } from "next/navigation";
 import React from "react";
-const Sidebar = dynamic(() => import("./Sidebar"));
+const Sidebar = dynamic(() => import("./Sidebar"), {
+    loading: () => <div />,
+});
 const BottomNav = dynamic(() => import("./BottomNav"));
 
 const Nav = () => {
