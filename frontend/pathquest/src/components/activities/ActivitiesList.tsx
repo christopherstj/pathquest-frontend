@@ -36,6 +36,10 @@ const ActivitiesList = () => {
         setCoordsTimeoutId(setTimeout(() => getCoords(activityId, map), 500));
     };
 
+    const onClick = (lat: number, long: number) => {
+        map?.flyTo({ center: [long, lat], zoom: 12 });
+    };
+
     React.useEffect(() => {
         if (map) {
             setActivitiesState((state) => ({
@@ -92,6 +96,7 @@ const ActivitiesList = () => {
                             clearCoords(map);
                         }}
                         onMouseOver={onHover}
+                        onClick={onClick}
                     />
                 )}
             />

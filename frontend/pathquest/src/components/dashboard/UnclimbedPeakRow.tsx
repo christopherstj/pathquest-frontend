@@ -230,7 +230,7 @@ const UnclimbedPeakRow = ({
                     href={`/app/peaks/${peak.Id}`}
                     onClick={(e) => e.stopPropagation()}
                 >
-                    Go to peak
+                    Details
                 </Button>
             </Box>
         </ListItem>

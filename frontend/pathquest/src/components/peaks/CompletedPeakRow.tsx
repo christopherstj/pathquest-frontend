@@ -16,6 +16,7 @@ import React from "react";
 const rowStyles: SxProps<Theme> = (theme) => ({
     display: "flex",
     alignItems: "center",
+    justifyContent: "flex-start",
     gap: "12px",
     padding: "8px",
     borderRadius: "12px",
@@ -23,10 +24,7 @@ const rowStyles: SxProps<Theme> = (theme) => ({
     position: "relative",
     overflow: "hidden",
     minHeight: "54px",
-    width: {
-        xs: "100%",
-        md: "auto",
-    },
+    width: "100%",
     transition: "box-shadow 0.2s",
     cursor: "pointer",
     marginTop: "8px",
@@ -68,8 +66,11 @@ const CompletedPeakRow = ({ peak, onClick, units }: Props) => {
     return (
         <ButtonBase
             sx={rowStyles}
-            LinkComponent={Link}
-            href={`/app/peaks/${peak.Id}`}
+            onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                onClick(peak.Lat, peak.Long);
+            }}
         >
             <Avatar
                 sx={{
@@ -79,11 +80,18 @@ const CompletedPeakRow = ({ peak, onClick, units }: Props) => {
             >
                 {peak.ascents.length}
             </Avatar>
-            <Box display="flex" flexDirection="column" flex="1" gap="4px">
+            <Box
+                display="flex"
+                alignItems="flex-start"
+                flexDirection="column"
+                flex="1"
+                gap="4px"
+            >
                 <Typography
                     variant="body1"
                     fontWeight="bold"
                     color="primary.onContainerDim"
+                    textAlign="left"
                 >
                     {peak.Name}
                 </Typography>
@@ -103,7 +111,12 @@ const CompletedPeakRow = ({ peak, onClick, units }: Props) => {
                     ).toLocaleDateString()}
                 </Typography>
             </Box>
-            <Box display="flex" flexDirection="column" gap="8px">
+            <Box
+                display="flex"
+                justifySelf="flex-end"
+                flexDirection="column"
+                gap="8px"
+            >
                 {peak.Altitude && (
                     <Box
                         sx={{
@@ -131,13 +144,10 @@ const CompletedPeakRow = ({ peak, onClick, units }: Props) => {
                 <Button
                     sx={buttonStyles}
                     size="small"
-                    onClick={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        onClick(peak.Lat, peak.Long);
-                    }}
+                    LinkComponent={Link}
+                    href={`/app/peaks/${peak.Id}`}
                 >
-                    Fly to peak
+                    Details
                 </Button>
             </Box>
         </ButtonBase>

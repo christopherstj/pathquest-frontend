@@ -80,7 +80,7 @@ type Props = {
     units: "metric" | "imperial";
     onMouseOver: (activityId: string) => void;
     onMouseOut: () => void;
-    onClick?: (activityId: string) => void;
+    onClick?: (lat: number, long: number) => void;
 };
 
 const tz = dayjs.tz.guess();
@@ -113,7 +113,7 @@ const ActivityRow = ({
             onMouseLeave={onMouseOut}
             onClick={() => {
                 if (onClick) {
-                    onClick(activity.id);
+                    onClick(activity.startLat, activity.startLong);
                 } else {
                     onMouseOver(activity.id);
                 }
