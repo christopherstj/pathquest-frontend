@@ -38,7 +38,7 @@ const usePeaksState = (
             type: "completed",
             data: peakSummits ?? [],
         },
-        showSummittedPeaks: false,
+        showSummittedPeaks: true,
         search: "",
         limitResultsToBbox: true,
     });

@@ -31,7 +31,7 @@ const buttonStyles: SxProps = {
 type Props = {
     peak: UnclimbedPeak;
     units: "metric" | "imperial";
-    onFavoriteClick: (peakId: string, newValue: boolean) => void;
+    onFavoriteClick?: (peakId: string, newValue: boolean) => void;
     onRowClick: (lat: number, long: number) => void;
     rowColor: "primary" | "secondary";
     ascents?: {
@@ -39,6 +39,7 @@ type Props = {
         activityId: string;
         timezone?: string;
     }[];
+    useAscentRedirect?: boolean;
 };
 
 const timezone = dayjs.tz.guess();
@@ -50,6 +51,7 @@ const UnclimbedPeakRow = ({
     onRowClick,
     rowColor,
     ascents,
+    useAscentRedirect = true,
 }: Props) => {
     const color =
         (peak.Altitude ?? 0) < 1000
@@ -82,7 +84,8 @@ const UnclimbedPeakRow = ({
                         size="small"
                         onClick={(e) => {
                             e.stopPropagation();
-                            onFavoriteClick(peak.Id, !peak.isFavorited);
+                            if (onFavoriteClick)
+                                onFavoriteClick(peak.Id, !peak.isFavorited);
                         }}
                     >
                         {peak.isFavorited ? (
@@ -132,6 +135,9 @@ const UnclimbedPeakRow = ({
                         </Typography>
                     </Box>
                 }
+                secondaryTypographyProps={{
+                    component: "div",
+                }}
                 secondary={
                     <Box width="100%" display="flex" flexDirection="column">
                         <Typography
@@ -163,15 +169,22 @@ const UnclimbedPeakRow = ({
                                         key={index}
                                         variant="caption"
                                         color={`${rowColor}.onContainerDim`}
-                                        component={Link}
-                                        onClick={(e) => e.stopPropagation()}
-                                        href={`/app/activities/${ascent.activityId}`}
+                                        {...(useAscentRedirect && {
+                                            component: Link,
+                                            onClick: (e: any) =>
+                                                e.stopPropagation(),
+                                            href: `/app/activities/${ascent.activityId}`,
+                                        })}
                                         sx={{
                                             opacity: 0.75,
-                                            cursor: "pointer",
-                                            "&:hover": {
-                                                opacity: 1,
-                                            },
+                                            ...(useAscentRedirect
+                                                ? {
+                                                      cursor: "pointer",
+                                                      "&:hover": {
+                                                          opacity: 1,
+                                                      },
+                                                  }
+                                                : {}),
                                         }}
                                     >
                                         {dayjs(ascent.timestamp)

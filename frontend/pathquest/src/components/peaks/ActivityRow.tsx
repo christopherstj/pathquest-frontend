@@ -197,21 +197,15 @@ const ActivityRow = ({
                             label="Peak Summits:"
                             value={activity.peakSummits}
                         />
-                        // <Typography
-                        //     variant="caption"
-                        //     color="primary.onContainerDim"
-                        // >
-                        //     {activity.peakSummits} peak summit
-                        //     {activity.peakSummits === 1 ? "" : "s"}
-                        // </Typography>
                     )
                 )}
                 <Button
                     sx={buttonStyles}
                     LinkComponent={Link}
-                    href={`/app/activites/${activity.id}`}
+                    href={`/app/activities/${activity.id}`}
                     size="small"
                     fullWidth
+                    onClick={(e) => e.stopPropagation()}
                 >
                     Details
                 </Button>

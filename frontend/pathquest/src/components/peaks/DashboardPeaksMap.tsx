@@ -129,11 +129,20 @@ const DashboardPeaksMap = () => {
             id: "peakSummits",
             type: "symbol",
             source: "peakSummits",
+            paint: {
+                "text-color": theme.palette.primary.container,
+            },
             layout: {
+                "text-field": ["get", "Name"],
+                "text-anchor": "top",
+                "text-offset": [0, 1],
+                "text-size": 12,
                 "icon-image": "marker-primary",
                 "icon-size": 0.2,
                 "icon-allow-overlap": true,
                 "icon-anchor": "bottom",
+                "icon-ignore-placement": true,
+                "text-optional": true,
             },
         });
         mapRef.current?.addLayer({
@@ -141,7 +150,20 @@ const DashboardPeaksMap = () => {
             type: "symbol",
             source: "unclimbedPeaks",
             filter: ["!", ["has", "point_count"]],
+            paint: {
+                "text-color": [
+                    "case",
+                    ["==", ["get", "isSummitted"], 1],
+                    theme.palette.primary.container,
+                    theme.palette.secondary.container,
+                ],
+                // "text-color": theme.palette.primary.container,
+            },
             layout: {
+                "text-field": ["get", "Name"],
+                "text-anchor": "top",
+                "text-offset": [0, 1],
+                "text-size": 12,
                 "icon-image": [
                     "image",
                     [
@@ -153,6 +175,8 @@ const DashboardPeaksMap = () => {
                 ],
                 "icon-size": 0.2,
                 "icon-allow-overlap": true,
+                "icon-ignore-placement": true,
+                "text-optional": true,
                 "icon-anchor": "bottom",
             },
         });
@@ -161,10 +185,19 @@ const DashboardPeaksMap = () => {
             type: "symbol",
             source: "favoritePeaks",
             filter: ["!", ["has", "point_count"]],
+            paint: {
+                "text-color": theme.palette.tertiary.container,
+            },
             layout: {
+                "text-field": ["get", "Name"],
+                "text-anchor": "top",
+                "text-offset": [0, 1],
+                "text-size": 12,
                 "icon-image": "marker-tertiary",
                 "icon-size": 0.2,
                 "icon-allow-overlap": true,
+                "icon-ignore-placement": true,
+                "text-optional": true,
                 "icon-anchor": "bottom",
             },
         });

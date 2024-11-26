@@ -117,7 +117,11 @@ const ActivitiesMap = () => {
                 }
             });
 
-            if (feature?.geometry.type === "Point" && e.target) {
+            if (
+                (e.features ?? []).length === 1 &&
+                feature?.geometry.type === "Point" &&
+                e.target
+            ) {
                 const coordinates = feature?.geometry.coordinates.slice();
 
                 while (Math.abs(e.lngLat.lng - coordinates[0]) > 180) {

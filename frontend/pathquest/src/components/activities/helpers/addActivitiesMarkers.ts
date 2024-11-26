@@ -1,8 +1,6 @@
 import { Theme } from "@mui/material";
 import mapboxgl from "mapbox-gl";
 import primaryMarker from "@/public/images/marker-primary.png";
-import { ActivityStart } from "@/typeDefs/ActivityStart";
-import ActivitiesPopup from "../ActivitiesPopup";
 
 const addActivitiesMarkers = (map: mapboxgl.Map | null, theme: Theme) => {
     if (!map) return;
@@ -65,13 +63,7 @@ const addActivitiesMarkers = (map: mapboxgl.Map | null, theme: Theme) => {
         source: "activityStarts",
         filter: ["has", "point_count"],
         paint: {
-            "circle-color":
-                // [
-                //     "case",
-                //     ["==", ["get", "selected"], 0],
-                theme.palette.primary.onContainerDim,
-            //     theme.palette.primary.base,
-            // ],
+            "circle-color": theme.palette.primary.onContainerDim,
             "circle-radius": 20,
         },
     });
@@ -87,43 +79,6 @@ const addActivitiesMarkers = (map: mapboxgl.Map | null, theme: Theme) => {
             "text-size": 12,
         },
     });
-
-    // map.on("click", "clusters", (e) => {
-    //     const features = map?.queryRenderedFeatures(e.point, {
-    //         layers: ["clusters"],
-    //     });
-    //     const feature = features?.[0];
-
-    //     if (feature?.geometry.type === "Point" && map) {
-    //         const coords = feature.geometry.coordinates;
-    //         const source = e?.target.getSource(
-    //             "activityStarts"
-    //         ) as mapboxgl.GeoJSONSource;
-    //         const clusterId = features?.[0].properties?.cluster_id;
-    //         const pointCount = features?.[0].properties?.point_count;
-
-    //         source.getClusterLeaves(
-    //             clusterId,
-    //             pointCount,
-    //             0,
-    //             (err, clusterFeatures) => {
-    //                 const clusterActivityStarts = (clusterFeatures ?? []).map(
-    //                     (f) => f.properties as ActivityStart
-    //                 );
-
-    //                 const popup = ActivitiesPopup({
-    //                     activities: clusterActivityStarts,
-    //                     theme,
-    //                 });
-
-    //                 new mapboxgl.Popup()
-    //                     .setLngLat(coords as mapboxgl.LngLatLike)
-    //                     .setDOMContent(popup)
-    //                     .addTo(map as mapboxgl.Map);
-    //             }
-    //         );
-    //     }
-    // });
 };
 
 export default addActivitiesMarkers;
