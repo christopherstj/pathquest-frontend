@@ -7,9 +7,7 @@ import MapboxContainer from "../common/MapboxContainer";
 import mapboxgl from "mapbox-gl";
 import addActivityDetailMarkers from "./helpers/addActivityDetailMarkers";
 
-type Props = {};
-
-const ActivityDetailMap = (props: Props) => {
+const ActivityDetailMap = () => {
     const [{ activity, peakSummits }, setActivityDetailState] =
         useActivityDetail();
     const [{ user }] = useUser();
