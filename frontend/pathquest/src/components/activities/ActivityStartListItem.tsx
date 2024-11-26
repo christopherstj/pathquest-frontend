@@ -160,7 +160,7 @@ const ActivityStartListItem = ({
                     <Button
                         sx={buttonStyles}
                         LinkComponent={Link}
-                        href={`/app/activites/${activity.id}`}
+                        href={`/app/activities/${activity.id}`}
                         size="small"
                         fullWidth
                     >

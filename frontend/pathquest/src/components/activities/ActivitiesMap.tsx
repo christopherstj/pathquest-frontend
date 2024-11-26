@@ -79,6 +79,7 @@ const ActivitiesMap = () => {
 
     const onActivityClick = useCallback(
         (e: MapMouseEvent) => {
+            console.log(e.features);
             const feature = e.features?.[0];
 
             const activity = feature?.properties as ActivityStart;
@@ -88,40 +89,41 @@ const ActivitiesMap = () => {
                 selectedActivities: [activity.id],
             }));
 
-            getActivityCoords(activity.id).then((coords) => {
-                if (coords) {
-                    const source = e.target?.getSource(
-                        "activities"
-                    ) as mapboxgl.GeoJSONSource;
-
-                    if (source) {
-                        source.setData({
-                            type: "FeatureCollection",
-                            features: [
-                                {
-                                    type: "Feature",
-                                    geometry: {
-                                        type: "LineString",
-                                        coordinates: coords.coords.map((c) => [
-                                            c[1],
-                                            c[0],
-                                        ]),
-                                    },
-                                    properties: {
-                                        id: activity.id,
-                                    },
-                                },
-                            ],
-                        });
-                    }
-                }
-            });
-
             if (
-                (e.features ?? []).length === 1 &&
-                feature?.geometry.type === "Point" &&
+                feature &&
+                feature.properties &&
+                !("cluster_id" in feature.properties) &&
+                feature.geometry.type === "Point" &&
                 e.target
             ) {
+                getActivityCoords(activity.id).then((coords) => {
+                    if (coords) {
+                        const source = e.target?.getSource(
+                            "activities"
+                        ) as mapboxgl.GeoJSONSource;
+
+                        if (source) {
+                            source.setData({
+                                type: "FeatureCollection",
+                                features: [
+                                    {
+                                        type: "Feature",
+                                        geometry: {
+                                            type: "LineString",
+                                            coordinates: coords.coords.map(
+                                                (c) => [c[1], c[0]]
+                                            ),
+                                        },
+                                        properties: {
+                                            id: activity.id,
+                                        },
+                                    },
+                                ],
+                            });
+                        }
+                    }
+                });
+
                 const coordinates = feature?.geometry.coordinates.slice();
 
                 while (Math.abs(e.lngLat.lng - coordinates[0]) > 180) {
