@@ -189,7 +189,11 @@ const UnclimbedPeakRow = ({
                                     >
                                         {dayjs(ascent.timestamp)
                                             .tz(
-                                                ascent.timezone ?? timezone,
+                                                ascent.timezone
+                                                    ? ascent.timezone
+                                                          .split(" ")
+                                                          .slice(-1)[0]
+                                                    : timezone,
                                                 true
                                             )
                                             .format("MMM D, YYYY h:mm A")}

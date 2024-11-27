@@ -78,7 +78,14 @@ const addChallengeDetailMarkers = (
         id: "peaks",
         type: "symbol",
         source: "peaks",
+        paint: {
+            "text-color": theme.palette.primary.container,
+        },
         layout: {
+            "text-field": ["get", "Name"],
+            "text-anchor": "top",
+            "text-offset": [0, 1],
+            "text-size": 12,
             "icon-image": [
                 "image",
                 [
@@ -100,6 +107,8 @@ const addChallengeDetailMarkers = (
             ],
             "icon-size": 0.2,
             "icon-allow-overlap": true,
+            "icon-ignore-placement": true,
+            "text-optional": true,
             "icon-anchor": "bottom",
         },
     });
