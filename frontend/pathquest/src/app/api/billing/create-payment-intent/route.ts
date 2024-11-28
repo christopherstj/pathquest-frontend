@@ -1,8 +1,10 @@
 import { getServerStripe } from "@/helpers/getStripe";
-import { NextApiRequest } from "next";
+import { NextRequest, NextResponse } from "next/server";
 
-export const POST = async (req: NextApiRequest) => {
-    const items = req.body.items;
+export const POST = async (req: NextRequest) => {
+    const body = await req.json();
 
-    const stripe = await getServerStripe();
+    // const stripe = await getServerStripe();
+
+    return NextResponse.json({ body });
 };
