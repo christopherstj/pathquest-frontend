@@ -5,7 +5,10 @@ import {
 } from "@mui/material";
 import React from "react";
 
-const textFieldStyles = (color: "primary" | "secondary"): SxProps => ({
+const textFieldStyles = (
+    color: "primary" | "secondary",
+    inverted: boolean
+): SxProps => ({
     borderRadius: "12px",
     backgroundColor: `${color}.containerDim`,
     color: `${color}.onContainer`,
@@ -15,20 +18,44 @@ const textFieldStyles = (color: "primary" | "secondary"): SxProps => ({
     },
     ".MuiInputLabel-root": {
         color: `${color}.onContainer`,
+        "&.Mui-focused": {
+            color: `${color}.onContainerDim`,
+        },
     },
     ".MuiInputBase-root": {
         color: `${color}.onContainer`,
         borderColor: `${color}.onContainer`,
+        "&.Mui-focused": {
+            borderColor: `${color}.onContainerDim`,
+            ".MuiOutlinedInput-notchedOutline": {
+                borderColor: `${color}.onContainerDim`,
+            },
+        },
         borderRadius: "12px",
+    },
+    ".MuiInputBase-input": {
+        color: `${color}.onContainer`,
+        "&:-webkit-autofill": {
+            WebkitBoxShadow: `none`,
+        },
+    },
+    ".MuiOutlinedInput-notchedOutline": {
+        borderColor: `${color}.onContainer`,
     },
 });
 
-const TextField = ({ sx, color, ...props }: TextFieldProps) => {
+const TextField = ({
+    sx,
+    color,
+    inverted = false,
+    ...props
+}: TextFieldProps & { inverted?: boolean }) => {
     const totalSx = {
         ...textFieldStyles(
             !["primary", "secondary"].includes(color ?? "primary")
                 ? "primary"
-                : (color as "primary" | "secondary")
+                : (color as "primary" | "secondary"),
+            inverted
         ),
         ...sx,
     };
