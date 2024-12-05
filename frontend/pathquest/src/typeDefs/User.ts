@@ -10,4 +10,6 @@ export interface User {
     lat?: number;
     long?: number;
     units: "imperial" | "metric";
+    isSubscribed: boolean;
+    isLifetimeFree: boolean;
 }

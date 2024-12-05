@@ -1,4 +1,5 @@
 import getPeakSummits from "@/actions/getPeakSummits";
+import getUser from "@/actions/getUser";
 import { useAuth } from "@/auth/useAuth";
 import ChallengeData from "@/state/ChallengeData";
 import PeaksData from "@/state/PeaksData";
@@ -21,6 +22,18 @@ const layout = async ({ children }: Props) => {
 
     if (!session) {
         redirect("/login");
+    }
+
+    const { userFound, user, error } = await getUser();
+
+    if (!userFound || error || !user) {
+        redirect("/logout");
+    }
+
+    const isSubscribed = user.isSubscribed || user.isLifetimeFree;
+
+    if (!isSubscribed) {
+        redirect("/checkout");
     }
 
     return (

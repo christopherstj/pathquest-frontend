@@ -31,7 +31,7 @@ const Description = () => {
                 color="primary.onContainerDim"
                 textAlign="center"
             >
-                Your path has led here. Let's take a look at that path.
+                Your path forward
             </Typography>
             <Button
                 variant="contained"

@@ -43,18 +43,6 @@ const rowStyles: SxProps<Theme> = (theme) => ({
     },
 });
 
-const stravaButtonStyles: SxProps = {
-    borderRadius: "24px",
-    backgroundColor: "transparent",
-    borderColor: "primary.onContainer",
-    color: "#FC4C02",
-    paddingLeft: "12px",
-    paddingRight: "12px",
-    "&:hover": {
-        backgroundColor: "primary.containerDim",
-    },
-};
-
 const buttonStyles: SxProps = {
     borderRadius: "24px",
     backgroundColor: "transparent",
@@ -147,16 +135,6 @@ const ActivityStartListItem = ({
                     flexDirection="column"
                     justifyContent="space-between"
                 >
-                    {/* <Button
-                        sx={stravaButtonStyles}
-                        size="small"
-                        LinkComponent={Link}
-                        href={`https://www.strava.com/activities/${activity.id}`}
-                        target="_blank"
-                        onClick={(e) => e.stopPropagation()}
-                    >
-                        View on Strava
-                    </Button> */}
                     <Button
                         sx={buttonStyles}
                         LinkComponent={Link}

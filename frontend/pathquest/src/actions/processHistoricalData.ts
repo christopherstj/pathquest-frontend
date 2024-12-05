@@ -2,11 +2,10 @@
 import getGoogleIdToken from "@/auth/getGoogleIdToken";
 import { useAuth } from "@/auth/useAuth";
 import getBackendUrl from "@/helpers/getBackendUrl";
-import { revalidatePath } from "next/cache";
 
 const backendUrl = getBackendUrl();
 
-const createUser = async (): Promise<{
+const processHistoricalData = async (): Promise<{
     success: boolean;
     error?: string;
 }> => {
@@ -23,7 +22,7 @@ const createUser = async (): Promise<{
 
     const token = await getGoogleIdToken();
 
-    const apiRes = await fetch(`${backendUrl}/signup`, {
+    const historicalRes = await fetch(`${backendUrl}/historical-data`, {
         method: "POST",
         cache: "no-cache",
         headers: {
@@ -31,25 +30,21 @@ const createUser = async (): Promise<{
             Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
-            id: user.id.toString(),
-            name: user.name,
-            email: null,
-            pic: user.image ?? null,
+            userId: user.id.toString(),
         }),
     });
 
-    if (!apiRes.ok) {
-        console.error(await apiRes.text());
+    if (!historicalRes.ok) {
+        console.error(await historicalRes.text());
         return {
             success: false,
-            error: "Failed to create user",
-        };
-    } else {
-        revalidatePath(`${backendUrl}/user`);
-        return {
-            success: true,
+            error: "Failed to process historical data",
         };
     }
+
+    return {
+        success: true,
+    };
 };
 
-export default createUser;
+export default processHistoricalData;
