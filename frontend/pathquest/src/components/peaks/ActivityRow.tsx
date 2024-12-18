@@ -63,6 +63,7 @@ const buttonStyles: SxProps = {
     backgroundColor: "transparent",
     borderColor: "primary.onContainer",
     color: "primary.onContainer",
+    marginTop: "auto",
     "&:hover": {
         backgroundColor: "primary.containerDim",
     },
@@ -138,6 +139,7 @@ const ActivityRow = ({
                     variant="body1"
                     fontWeight="bold"
                     color="primary.onContainerDim"
+                    textAlign="left"
                 >
                     {activity.name}
                 </Typography>
@@ -157,12 +159,7 @@ const ActivityRow = ({
                     View on Strava
                 </Button>
             </Box>
-            <Box
-                display="flex"
-                flexDirection="column"
-                justifyContent="space-between"
-                alignItems="center"
-            >
+            <Box display="flex" flexDirection="column" alignItems="center">
                 <DataRow
                     label="Distance:"
                     value={getDistanceString(activity.distance, units)}

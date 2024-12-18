@@ -24,6 +24,8 @@ const ChallengeDashboardMap = () => {
     if (!user) return null;
 
     const addMarkers = () => {
+        if (!mapRef.current) return;
+
         mapRef.current?.addControl(
             new mapboxgl.NavigationControl(),
             "top-left"

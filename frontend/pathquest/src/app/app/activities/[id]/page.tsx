@@ -5,6 +5,7 @@ import React from "react";
 import { Divider, Grid2 as Grid, Typography } from "@mui/material";
 import ActivityDetailMap from "@/components/activities/ActivityDetailMap";
 import ActivityPeaksList from "@/components/activities/ActivityPeaksList";
+import ActivityDetails from "@/components/activities/ActivityDetails";
 
 type Props = {
     params: {
@@ -19,7 +20,12 @@ const page = ({ params: { id } }: Props) => {
                 <Grid size={{ xs: 12, md: 7, lg: 8 }}>
                     <ActivityDetailMap />
                 </Grid>
-                <Grid size={{ xs: 12, md: 5, lg: 4 }}>
+                <Grid
+                    size={{ xs: 12, md: 5, lg: 4 }}
+                    display="flex"
+                    flexDirection="column"
+                    gap="12px"
+                >
                     <Typography variant="h4" color="primary.onContainer">
                         Summitted Peaks
                     </Typography>
@@ -31,6 +37,7 @@ const page = ({ params: { id } }: Props) => {
                         }}
                     />
                     <ActivityPeaksList />
+                    <ActivityDetails />
                 </Grid>
             </GridContainer>
         </ActivityDetailData>

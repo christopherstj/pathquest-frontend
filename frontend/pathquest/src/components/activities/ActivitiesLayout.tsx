@@ -3,6 +3,7 @@ import React from "react";
 import ActivitiesList from "./ActivitiesList";
 import ActivitiesSearch from "./ActivitiesSearch";
 import LimitToBboxCheckbox from "./LimitToBboxCheckbox";
+import ActivityDetails from "./ActivityDetails";
 
 const cardStyles: SxProps = {
     borderRadius: "12px",

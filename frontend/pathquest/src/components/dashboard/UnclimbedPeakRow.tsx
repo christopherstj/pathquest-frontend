@@ -154,10 +154,21 @@ const UnclimbedPeakRow = ({
                             ascents
                                 .sort((a, b) =>
                                     dayjs(b.timestamp)
-                                        .tz(b.timezone ?? timezone, true)
+                                        .tz(
+                                            b.timezone
+                                                ? b.timezone
+                                                      .split(" ")
+                                                      .slice(-1)[0]
+                                                : timezone,
+                                            true
+                                        )
                                         .isBefore(
                                             dayjs(a.timestamp).tz(
-                                                a.timezone ?? timezone,
+                                                a.timezone
+                                                    ? a.timezone
+                                                          .split(" ")
+                                                          .slice(-1)[0]
+                                                    : timezone,
                                                 true
                                             )
                                         )
