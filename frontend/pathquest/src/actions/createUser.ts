@@ -6,14 +6,15 @@ import { revalidatePath } from "next/cache";
 
 const backendUrl = getBackendUrl();
 
-const createUser = async (): Promise<{
+const createUser = async (user?: {
+    id: string | number;
+    name?: string | null;
+    email?: string | null;
+    image?: string | null;
+}): Promise<{
     success: boolean;
     error?: string;
 }> => {
-    const session = await useAuth();
-
-    const user = session?.user;
-
     if (!user) {
         return {
             success: false,
