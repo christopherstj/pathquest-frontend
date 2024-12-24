@@ -1,8 +1,4 @@
-import getPeakSummits from "@/actions/getPeakSummits";
 import React from "react";
-import PeaksProvider from "./PeaksContext";
-import getUnclimbedPeaks from "@/actions/getUnclimbedPeaks";
-import getFavoritePeaks from "@/actions/getFavoritePeaks";
 import ChallengesProvider from "./ChallengesContext";
 import getIncompleteChallenges from "@/actions/getIncompleteChallenges";
 

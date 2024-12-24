@@ -105,7 +105,7 @@ const FavoritePeaks = ({
                         color="primary.onContainerDim"
                         textAlign="center"
                     >
-                        Looks like something went wrong. Please try again later.
+                        Looks like you haven't favorited any peaks yet!
                     </Typography>
                 )}
             </Box>

@@ -1,17 +1,12 @@
 "use client";
 import { usePeaks } from "@/state/PeaksContext";
 import { usePeaksMap } from "@/state/PeaksMapContext";
-import { Button, ButtonGroup, SxProps, useTheme } from "@mui/material";
-import mapboxgl, { GeoJSONSource } from "mapbox-gl";
+import { Button, ButtonGroup, SxProps } from "@mui/material";
+import { GeoJSONSource } from "mapbox-gl";
 import React, { useCallback } from "react";
-import PeakMarker from "../dashboard/PeakMarker";
-import CompletedPopup from "../dashboard/CompletedPopup";
-import { useUser } from "@/state/UserContext";
-import getUnclimbedPeaks from "@/actions/getUnclimbedPeaks";
 import convertUnclimbedPeaksToGEOJson from "@/helpers/convertUnclimbedPeaksToGEOJson";
 import convertPeakSummitsToGeoJSON from "@/helpers/convertPeakSummitsToGeoJSON";
 import getUnclimbedPeaksWithBounds from "@/actions/getUnclimbedPeaksWithBounds";
-import UnclimbedPeak from "@/typeDefs/UnclimbedPeak";
 import { useMessage } from "@/state/MessageContext";
 
 const buttonGroupStyles: SxProps = {

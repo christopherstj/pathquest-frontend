@@ -2,17 +2,14 @@
 import React from "react";
 import mapboxgl, { GeoJSONSource, MapMouseEvent } from "mapbox-gl";
 import "mapbox-gl/dist/mapbox-gl.css";
-import { Grid2 as Grid, Box, SxProps, useTheme } from "@mui/material";
+import { Grid2 as Grid, useTheme } from "@mui/material";
 import { usePeaks } from "@/state/PeaksContext";
-import PeakMarker from "./PeakMarker";
 import { useUser } from "@/state/UserContext";
 import PeaksSummitList from "./PeaksSummitList";
 import UnclimbedPeaksList from "./UnclimbedPeaksList";
 import FavoritePeaks from "./FavoritePeaks";
 import CompletedPopup from "./CompletedPopup";
-import FavoriteMarker from "./FavoriteMarker";
 import FavoritePopup from "./FavoritePopup";
-import UnclimbedMarker from "./UnclimbedMarker";
 import UnclimbedPopup from "./UnclimbedPopup";
 import toggleFavoritePeak from "@/actions/toggleFavoritePeak";
 import { useMessage } from "@/state/MessageContext";
@@ -41,7 +38,7 @@ const Map = () => {
 
     const theme = useTheme();
 
-    const { peakSummits, favoritePeaks, unclimbedPeaks, map } = peaks;
+    const { peakSummits, unclimbedPeaks } = peaks;
 
     const mapRef = React.useRef<mapboxgl.Map | null>(null);
     const mapContainerRef = React.useRef<any>(null);

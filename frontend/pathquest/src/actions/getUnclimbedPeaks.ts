@@ -4,10 +4,7 @@ import { useAuth } from "@/auth/useAuth";
 import getBackendUrl from "@/helpers/getBackendUrl";
 import UnclimbedPeak from "@/typeDefs/UnclimbedPeak";
 
-const getUnclimbedPeaks = async (
-    search?: string,
-    bounds?: [[number, number], [number, number]]
-): Promise<UnclimbedPeak[]> => {
+const getUnclimbedPeaks = async (): Promise<UnclimbedPeak[]> => {
     const session = await useAuth();
 
     if (!session) {
