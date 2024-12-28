@@ -1,8 +1,5 @@
-import getPeakSummits from "@/actions/getPeakSummits";
 import getUser from "@/actions/getUser";
 import { useAuth } from "@/auth/useAuth";
-import ChallengeData from "@/state/ChallengeData";
-import PeaksData from "@/state/PeaksData";
 import { Metadata } from "next";
 import { redirect } from "next/navigation";
 import React from "react";
