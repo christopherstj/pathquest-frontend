@@ -9,6 +9,7 @@ import { useMessage } from "@/state/MessageContext";
 import FavoritedPeak from "@/typeDefs/FavoritedPeak";
 import { GeoJSONSource } from "mapbox-gl";
 import UnclimbedPeak from "@/typeDefs/UnclimbedPeak";
+import { useDashboard } from "@/state/DashboardContext";
 
 const containerStyles: SxProps = {
     borderRadius: "12px",
@@ -54,7 +55,7 @@ const UnclimbedPeaksList = ({
         openPopup: boolean
     ) => void;
 }) => {
-    const [{ unclimbedPeaks, map }] = usePeaks();
+    const [{ favoritePeaks, map }] = useDashboard();
     const [{ user }] = useUser();
 
     if (!user) return null;
@@ -83,24 +84,20 @@ const UnclimbedPeaksList = ({
                 />
             </Box>
             <Box sx={containerStyles}>
-                {unclimbedPeaks && unclimbedPeaks.length > 0 ? (
+                {favoritePeaks && favoritePeaks.length > 0 ? (
                     <List sx={listStyles}>
-                        {unclimbedPeaks
-                            .sort(
-                                (a, b) => (a.distance ?? 0) - (b.distance ?? 0)
-                            )
-                            .map((peak) => (
-                                <UnclimbedPeakRow
-                                    onFavoriteClick={(peakId, newValue) =>
-                                        onFavoriteClick(peakId, newValue, false)
-                                    }
-                                    onRowClick={onRowClick}
-                                    key={peak.Id}
-                                    peak={peak}
-                                    units={units}
-                                    rowColor="secondary"
-                                />
-                            ))}
+                        {favoritePeaks.map((peak) => (
+                            <UnclimbedPeakRow
+                                onFavoriteClick={(peakId, newValue) =>
+                                    onFavoriteClick(peakId, newValue, false)
+                                }
+                                onRowClick={onRowClick}
+                                key={peak.Id}
+                                peak={peak}
+                                units={units}
+                                rowColor="secondary"
+                            />
+                        ))}
                     </List>
                 ) : (
                     <Typography

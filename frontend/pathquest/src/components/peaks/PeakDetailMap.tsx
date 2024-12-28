@@ -1,18 +1,15 @@
 "use client";
-import Activity from "@/typeDefs/Activity";
-import UnclimbedPeak from "@/typeDefs/UnclimbedPeak";
 import React from "react";
 import MapboxContainer from "../common/MapboxContainer";
 import mapboxgl from "mapbox-gl";
-import primaryMarker from "@/public/images/marker-primary.png";
-import secondaryMarker from "@/public/images/marker-secondary.png";
-import tertiaryMarker from "@/public/images/marker-tertiary.png";
 import { useUser } from "@/state/UserContext";
 import { useTheme } from "@mui/material";
 import { usePeakDetail } from "@/state/PeakDetailContext";
+import loadMapDefaults from "@/helpers/loadMapDefaults";
+import initiateMap from "@/helpers/initiateMap";
 
 const PeakDetailMap = () => {
-    const [details, setPeeakDetail] = usePeakDetail();
+    const [details, setPeakDetail] = usePeakDetail();
     const [{ user }] = useUser();
 
     const units = user?.units ?? "imperial";
@@ -29,23 +26,9 @@ const PeakDetailMap = () => {
     const { peak, activities } = details;
 
     const addMarkers = () => {
-        mapRef.current?.addControl(
-            new mapboxgl.NavigationControl(),
-            "top-left"
-        );
+        if (!mapRef.current) return;
 
-        mapRef.current?.loadImage(primaryMarker.src, (error, image) => {
-            if (error) throw error;
-            if (image) mapRef.current?.addImage("marker-primary", image);
-        });
-        mapRef.current?.loadImage(secondaryMarker.src, (error, image) => {
-            if (error) throw error;
-            if (image) mapRef.current?.addImage("marker-secondary", image);
-        });
-        mapRef.current?.loadImage(tertiaryMarker.src, (error, image) => {
-            if (error) throw error;
-            if (image) mapRef.current?.addImage("marker-tertiary", image);
-        });
+        loadMapDefaults(mapRef.current, theme);
 
         mapRef.current?.addSource("activities", {
             type: "geojson",
@@ -185,16 +168,15 @@ const PeakDetailMap = () => {
     };
 
     React.useEffect(() => {
-        mapboxgl.accessToken = process.env.NEXT_PUBLIC_MAPBOX_TOKEN ?? "";
-        mapRef.current = new mapboxgl.Map({
-            container: mapContainerRef.current,
-            center: [peak.Long ?? -111.651302, peak.Lat ?? 35.198284],
-            zoom: 12,
-        });
+        initiateMap(
+            mapContainerRef,
+            mapRef,
+            addMarkers,
+            [peak.Long ?? -111.651302, peak.Lat ?? 35.198284],
+            12
+        );
 
-        mapRef.current.on("load", addMarkers);
-
-        setPeeakDetail({ ...details, map: mapRef.current });
+        setPeakDetail({ ...details, map: mapRef.current });
 
         return () => {
             mapRef.current?.remove();

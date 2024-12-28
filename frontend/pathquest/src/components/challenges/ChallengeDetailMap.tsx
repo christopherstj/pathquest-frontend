@@ -8,6 +8,7 @@ import { useTheme } from "@mui/material";
 import { useUser } from "@/state/UserContext";
 import addChallengeDetailMarkers from "./helpers/addChallengeDetailMarkers";
 import onFavoriteClick from "./helpers/onFavoriteClick";
+import initiateMap from "@/helpers/initiateMap";
 
 const ChallengeDetailMap = () => {
     const [{ challenge, peaks }, setChallengeDetailState] =
@@ -22,31 +23,29 @@ const ChallengeDetailMap = () => {
     const mapRef = React.useRef<mapboxgl.Map | null>(null);
 
     React.useEffect(() => {
-        mapboxgl.accessToken = process.env.NEXT_PUBLIC_MAPBOX_TOKEN ?? "";
-        mapRef.current = new mapboxgl.Map({
-            container: mapContainerRef.current,
-            center: [challenge.centerLong ?? 0, challenge.centerLat ?? 0],
-            zoom: 6,
-        });
-
-        mapRef.current.on("load", () => {
-            addChallengeDetailMarkers(
-                mapRef.current,
-                peaks,
-                theme,
-                units,
-                (peakId: string, newValue: boolean) =>
-                    onFavoriteClick(
-                        peaks,
-                        setChallengeDetailState,
-                        mapRef.current,
-                        theme,
-                        units,
-                        peakId,
-                        newValue
-                    )
-            );
-        });
+        initiateMap(
+            mapContainerRef,
+            mapRef,
+            () => {
+                addChallengeDetailMarkers(
+                    mapRef.current,
+                    peaks,
+                    theme,
+                    units,
+                    (peakId: string, newValue: boolean) =>
+                        onFavoriteClick(
+                            peaks,
+                            setChallengeDetailState,
+                            mapRef.current,
+                            theme,
+                            units,
+                            peakId,
+                            newValue
+                        )
+                );
+            },
+            [challenge.centerLong ?? 0, challenge.centerLat ?? 0]
+        );
 
         setChallengeDetailState((state) => ({
             ...state,

@@ -14,6 +14,7 @@ import SelectedActivities from "./SelectedActivities";
 import ActivityPopup from "./ActivityPopup";
 import { useRouter } from "next/navigation";
 import getActivityCoords from "@/actions/getActivityCoords";
+import initiateMap from "@/helpers/initiateMap";
 
 const ActivitiesMap = () => {
     const [{ search, limitToBbox }, setActivitiesState] = useActivities();
@@ -79,7 +80,6 @@ const ActivitiesMap = () => {
 
     const onActivityClick = useCallback(
         (e: MapMouseEvent) => {
-            console.log(e.features);
             const feature = e.features?.[0];
 
             const activity = feature?.properties as ActivityStart;
@@ -97,8 +97,8 @@ const ActivitiesMap = () => {
                 e.target
             ) {
                 getActivityCoords(activity.id).then((coords) => {
-                    if (coords) {
-                        const source = e.target?.getSource(
+                    if (coords && e.target) {
+                        const source = e.target.getSource(
                             "activities"
                         ) as mapboxgl.GeoJSONSource;
 
@@ -193,17 +193,15 @@ const ActivitiesMap = () => {
     }, [mapRef.current, onActivityClick]);
 
     React.useEffect(() => {
-        mapboxgl.accessToken = process.env.NEXT_PUBLIC_MAPBOX_TOKEN ?? "";
-        mapRef.current = new mapboxgl.Map({
-            container: mapContainerRef.current,
-            center: [user.long ?? -111.651302, user.lat ?? 35.198284],
-            zoom: 8,
-        });
-
-        mapRef.current.on("load", () => {
-            addActivitiesMarkers(mapRef.current, theme);
-            refreshData();
-        });
+        initiateMap(
+            mapContainerRef,
+            mapRef,
+            () => {
+                addActivitiesMarkers(mapRef.current, theme);
+                refreshData();
+            },
+            [user.long ?? -111.651302, user.lat ?? 35.198284]
+        );
 
         setActivitiesState((state) => ({
             ...state,

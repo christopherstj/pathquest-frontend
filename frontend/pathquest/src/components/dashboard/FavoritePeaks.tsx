@@ -6,6 +6,7 @@ import React from "react";
 import UnclimbedPeakRow from "./UnclimbedPeakRow";
 import toggleFavoritePeak from "@/actions/toggleFavoritePeak";
 import { useMessage } from "@/state/MessageContext";
+import { useDashboard } from "@/state/DashboardContext";
 
 const containerStyles: SxProps = {
     borderRadius: "12px",
@@ -52,7 +53,7 @@ const FavoritePeaks = ({
         openPopup: boolean
     ) => void;
 }) => {
-    const [{ favoritePeaks, map }] = usePeaks();
+    const [{ favoritePeaks, map }] = useDashboard();
     const [{ user }] = useUser();
 
     if (!user) return null;

@@ -3,6 +3,7 @@ import PeakSummit from "@/typeDefs/PeakSummit";
 import { Theme } from "@mui/material";
 import mapboxgl from "mapbox-gl";
 import primaryMarker from "@/public/images/marker-primary.png";
+import loadMapDefaults from "@/helpers/loadMapDefaults";
 
 const addActivityDetailMarkers = (
     map: mapboxgl.Map | null,
@@ -27,12 +28,7 @@ const addActivityDetailMarkers = (
         padding: 20,
     });
 
-    map.addControl(new mapboxgl.NavigationControl(), "top-left");
-
-    map.loadImage(primaryMarker.src, (error, image) => {
-        if (error) throw error;
-        if (image) map?.addImage("marker-primary", image);
-    });
+    loadMapDefaults(map, theme, "markers");
 
     map.addSource("activities", {
         type: "geojson",

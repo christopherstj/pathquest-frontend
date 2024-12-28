@@ -5,11 +5,9 @@ import PeakSummit from "@/typeDefs/PeakSummit";
 import UnclimbedPeak from "@/typeDefs/UnclimbedPeak";
 import React, { createContext, useState } from "react";
 
-interface PeaksState {
-    peakSummits: PeakSummit[] | null;
-    unclimbedPeaks: UnclimbedPeak[] | null;
-    favoritePeaks: FavoritedPeak[] | null;
+export interface PeaksState {
     map: mapboxgl.Map | null;
+    peakSummits: PeakSummit[];
     peakSelection:
         | {
               type: "completed";
@@ -24,16 +22,10 @@ interface PeaksState {
     limitResultsToBbox: boolean;
 }
 
-const usePeaksState = (
-    peakSummits: PeakSummit[] | null,
-    unclimbedPeaks: UnclimbedPeak[] | null,
-    favoritePeaks: FavoritedPeak[] | null
-) =>
+const usePeaksState = (peakSummits: PeakSummit[] | null) =>
     useState<PeaksState>({
-        peakSummits,
-        unclimbedPeaks,
-        favoritePeaks,
         map: null,
+        peakSummits: peakSummits ?? [],
         peakSelection: {
             type: "completed",
             data: peakSummits ?? [],
@@ -57,20 +49,12 @@ export const usePeaks = () => {
 
 const PeaksProvider = ({
     peakSummits,
-    unclimbedPeaks,
-    favoritePeaks,
     children,
 }: {
     peakSummits: PeakSummit[] | null;
-    unclimbedPeaks: UnclimbedPeak[] | null;
-    favoritePeaks: FavoritedPeak[] | null;
     children: React.ReactNode;
 }) => {
-    const [state, setState] = usePeaksState(
-        peakSummits,
-        unclimbedPeaks,
-        favoritePeaks
-    );
+    const [state, setState] = usePeaksState(peakSummits);
 
     return (
         <PeaksContext.Provider value={[state, setState]}>

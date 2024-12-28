@@ -77,7 +77,11 @@ const ActivityPopup = ({ activity, redirect, theme, units }: Props) => {
 
     button.addEventListener(
         "click",
-        () => redirect(`/app/activities/${activity.id}`),
+        (e) => {
+            e.stopPropagation();
+            e.preventDefault();
+            redirect(`/app/activities/${activity.id}`);
+        },
         true
     );
 

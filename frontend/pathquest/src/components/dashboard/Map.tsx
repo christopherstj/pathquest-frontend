@@ -1,36 +1,39 @@
 "use client";
-import React from "react";
-import mapboxgl, { GeoJSONSource, MapMouseEvent } from "mapbox-gl";
+import React, { useCallback } from "react";
+import mapboxgl, { MapMouseEvent } from "mapbox-gl";
 import "mapbox-gl/dist/mapbox-gl.css";
 import { Grid2 as Grid, useTheme } from "@mui/material";
-import { usePeaks } from "@/state/PeaksContext";
 import { useUser } from "@/state/UserContext";
 import PeaksSummitList from "./PeaksSummitList";
 import UnclimbedPeaksList from "./UnclimbedPeaksList";
 import FavoritePeaks from "./FavoritePeaks";
 import CompletedPopup from "./CompletedPopup";
 import FavoritePopup from "./FavoritePopup";
-import UnclimbedPopup from "./UnclimbedPopup";
-import toggleFavoritePeak from "@/actions/toggleFavoritePeak";
 import { useMessage } from "@/state/MessageContext";
 import MapboxContainer from "../common/MapboxContainer";
-import primaryMarker from "@/public/images/marker-primary.png";
-import secondaryMarker from "@/public/images/marker-secondary.png";
-import tertiaryMarker from "@/public/images/marker-tertiary.png";
 import convertPeakSummitsToGeoJSON from "@/helpers/convertPeakSummitsToGeoJSON";
 import convertUnclimbedPeaksToGEOJson from "@/helpers/convertUnclimbedPeaksToGEOJson";
 import PeakSummit from "@/typeDefs/PeakSummit";
 import UnclimbedPeak from "@/typeDefs/UnclimbedPeak";
-import primaryChallenge from "@/public/images/challenge-primary.png";
-import { useChallenges } from "@/state/ChallengesContext";
 import ChallengeProgress from "@/typeDefs/ChallengeProgress";
 import ChallengePopup from "../challenges/ChallengePopup";
+import loadMapDefaults from "@/helpers/loadMapDefaults";
+import onFavoriteClick from "./helpers/onFavoriteClick";
+import initiateMap from "@/helpers/initiateMap";
+import { useDashboard } from "@/state/DashboardContext";
+import UnclimbedPopup from "./UnclimbedPopup";
+import { ActivityStart } from "@/typeDefs/ActivityStart";
+import getActivityCoords from "@/actions/getActivityCoords";
+import ActivityPopup from "../activities/ActivityPopup";
+import { useRouter } from "next/navigation";
+import RecentActivities from "./RecentActivities";
 
 const Map = () => {
-    const [peaks, setPeaksState] = usePeaks();
-    const [{ incompleteChallenges }] = useChallenges();
+    const [dashboardState, setDashboardState] = useDashboard();
     const [{ user }] = useUser();
     const [, dispatch] = useMessage();
+
+    const router = useRouter();
 
     if (!user) return null;
 
@@ -38,303 +41,215 @@ const Map = () => {
 
     const theme = useTheme();
 
-    const { peakSummits, unclimbedPeaks } = peaks;
+    const { peakSummits, favoritePeaks, incompleteChallenges, activities } =
+        dashboardState;
 
     const mapRef = React.useRef<mapboxgl.Map | null>(null);
     const mapContainerRef = React.useRef<any>(null);
 
-    const onFavoriteClick = async (
-        peakId: string,
-        newValue: boolean,
-        openPopup: boolean = true,
-        event: MapMouseEvent | null = null
-    ) => {
-        if (newValue) {
-            const unclimbedPeaksSource = mapRef.current?.getSource(
-                "unclimbedPeaks"
-            ) as GeoJSONSource;
-            const unclimbedPeaksData = unclimbedPeaksSource.serialize()
-                .data as GeoJSON.FeatureCollection<GeoJSON.Point>;
-            const peak = unclimbedPeaksData?.features.find(
-                (feature) => feature.properties?.Id === peakId
-            ) as GeoJSON.Feature<GeoJSON.Point>;
+    const onCompletedPeakClick = useCallback(
+        (e: MapMouseEvent) => {
+            e.originalEvent.preventDefault();
+            e.originalEvent.stopPropagation();
 
-            if (peak) {
-                unclimbedPeaksData.features =
-                    unclimbedPeaksData.features.filter(
-                        (feature) => feature.properties?.Id !== peakId
-                    );
+            const feature = e.features?.[0];
 
-                unclimbedPeaksSource?.setData(unclimbedPeaksData);
+            if (feature?.geometry.type === "Point" && e.target) {
+                const coordinates = feature.geometry.coordinates.slice();
 
-                const favoritePeaksSource = mapRef.current?.getSource(
-                    "favoritePeaks"
-                ) as GeoJSONSource;
-
-                const favoritePeaksData = favoritePeaksSource?.serialize()
-                    .data as GeoJSON.FeatureCollection<GeoJSON.Point>;
-
-                favoritePeaksData.features = [
-                    peak,
-                    ...favoritePeaksData.features,
-                ];
-
-                favoritePeaksSource?.setData(favoritePeaksData);
-
-                setPeaksState((state) => ({
-                    ...state,
-                    unclimbedPeaks: [
-                        ...unclimbedPeaksData.features
-                            .map((p) => ({
-                                ...(p.properties as UnclimbedPeak),
-                                isFavorited: false,
-                            }))
-                            .sort(
-                                (a, b) => (a.distance ?? 0) - (b.distance ?? 0)
-                            ),
-                        ...favoritePeaksData.features.map((p) => ({
-                            ...(p.properties as UnclimbedPeak),
-                            isFavorited: true,
-                        })),
-                    ],
-                }));
-
-                if (openPopup && mapRef.current) {
-                    const coordinates = peak.geometry.coordinates.slice();
-
-                    const lngLat = mapboxgl.LngLat.convert(
-                        coordinates as [number, number]
-                    );
-
-                    event?.target._popups.forEach((pop) => pop.remove());
-
-                    new mapboxgl.Popup({ offset: 25 })
-                        .setLngLat(lngLat)
-                        .setDOMContent(
-                            FavoritePopup({
-                                peak: peak.properties as UnclimbedPeak,
-                                units,
-                                theme,
-                                onUnfavoriteClick: (peakId, newValue) => {
-                                    onFavoriteClick(peakId, newValue, true);
-                                },
-                            })
-                        )
-                        .addTo(mapRef.current);
+                while (Math.abs(e.lngLat.lng - coordinates[0]) > 180) {
+                    coordinates[0] +=
+                        e.lngLat.lng > coordinates[0] ? 360 : -360;
                 }
+
+                const peak = feature.properties as PeakSummit;
+
+                new mapboxgl.Popup({ offset: 25 })
+                    .setLngLat(coordinates as [number, number])
+                    .setHTML(
+                        CompletedPopup({
+                            peak,
+                            units,
+                            theme,
+                        })
+                    )
+                    .addTo(e.target);
             }
-        } else {
-            const favoritePeaksSource = mapRef.current?.getSource(
-                "favoritePeaks"
-            ) as GeoJSONSource;
-            const favoritePeaksData = favoritePeaksSource.serialize()
-                .data as GeoJSON.FeatureCollection<GeoJSON.Point>;
-            const peak = favoritePeaksData?.features.find(
-                (feature) => feature.properties?.Id === peakId
-            ) as GeoJSON.Feature<GeoJSON.Point>;
+        },
+        [units, theme]
+    );
 
-            if (peak) {
-                favoritePeaksData.features = favoritePeaksData.features.filter(
-                    (feature) => feature.properties?.Id !== peakId
-                );
+    const onUnclimbedPeakClick = useCallback(
+        (e: MapMouseEvent) => {
+            e.originalEvent.preventDefault();
+            e.originalEvent.stopPropagation();
 
-                favoritePeaksSource?.setData(favoritePeaksData);
+            const feature = e.features?.[0];
 
-                const unclimbedPeaksSource = mapRef.current?.getSource(
-                    "unclimbedPeaks"
-                ) as GeoJSONSource;
+            console.log("feature", feature);
 
-                const unclimbedPeaksData = unclimbedPeaksSource?.serialize()
-                    .data as GeoJSON.FeatureCollection<GeoJSON.Point>;
+            if (feature?.geometry.type === "Point" && e.target) {
+                const coordinates = feature.geometry.coordinates.slice();
 
-                unclimbedPeaksData.features = [
-                    peak,
-                    ...unclimbedPeaksData.features,
-                ];
-
-                unclimbedPeaksSource?.setData(unclimbedPeaksData);
-
-                setPeaksState((state) => ({
-                    ...state,
-                    unclimbedPeaks: [
-                        ...unclimbedPeaksData.features
-                            .map((p) => ({
-                                ...(p.properties as UnclimbedPeak),
-                                isFavorited: false,
-                            }))
-                            .sort(
-                                (a, b) => (a.distance ?? 0) - (b.distance ?? 0)
-                            ),
-                        ...favoritePeaksData.features.map((p) => ({
-                            ...(p.properties as UnclimbedPeak),
-                            isFavorited: true,
-                        })),
-                    ],
-                }));
-
-                if (openPopup && mapRef.current) {
-                    const coordinates = peak.geometry.coordinates.slice();
-
-                    const lngLat = mapboxgl.LngLat.convert(
-                        coordinates as [number, number]
-                    );
-
-                    event?.target._popups.forEach((pop) => pop.remove());
-
-                    new mapboxgl.Popup({ offset: 25 })
-                        .setLngLat(lngLat)
-                        .setDOMContent(
-                            UnclimbedPopup({
-                                peak: peak.properties as UnclimbedPeak,
-                                units,
-                                theme,
-                                onFavoriteClick: (peakId, newValue) => {
-                                    onFavoriteClick(peakId, newValue, true);
-                                },
-                            })
-                        )
-                        .addTo(mapRef.current);
+                while (Math.abs(e.lngLat.lng - coordinates[0]) > 180) {
+                    coordinates[0] +=
+                        e.lngLat.lng > coordinates[0] ? 360 : -360;
                 }
+
+                const peak = feature.properties as UnclimbedPeak;
+
+                new mapboxgl.Popup({ offset: 25 })
+                    .setLngLat(coordinates as [number, number])
+                    .setDOMContent(
+                        UnclimbedPopup({
+                            peak,
+                            units,
+                            theme,
+                            onFavoriteClick: (peakId, newValue) => {
+                                onFavoriteClick(
+                                    peakId,
+                                    newValue,
+                                    true,
+                                    e.target,
+                                    theme,
+                                    units,
+                                    setDashboardState,
+                                    dispatch
+                                );
+                            },
+                        })
+                    )
+                    .addTo(e.target);
             }
-        }
+        },
+        [units, theme, setDashboardState, dispatch]
+    );
 
-        const success = await toggleFavoritePeak(peakId, newValue);
+    const onFavoritePeakClick = useCallback(
+        (e: MapMouseEvent) => {
+            e.originalEvent.preventDefault();
+            e.originalEvent.stopPropagation();
 
-        if (!success) {
-            dispatch({
-                type: "SET_MESSAGE",
-                payload: {
-                    text: "Failed to update favorite status",
-                    type: "error",
-                },
-            });
+            e.originalEvent?.stopPropagation();
+            const feature = e.features?.[0];
 
-            const source = newValue ? "favoritePeaks" : "unclimbedPeaks";
-            const target = newValue ? "unclimbedPeaks" : "favoritePeaks";
+            if (feature?.geometry.type === "Point" && e.target) {
+                const coordinates = feature.geometry.coordinates.slice();
 
-            const sourceData = mapRef.current?.getSource(
-                source
-            ) as GeoJSONSource;
+                while (Math.abs(e.lngLat.lng - coordinates[0]) > 180) {
+                    coordinates[0] +=
+                        e.lngLat.lng > coordinates[0] ? 360 : -360;
+                }
 
-            const data = sourceData.serialize()
-                .data as GeoJSON.FeatureCollection<GeoJSON.Point>;
+                const peak = feature.properties as UnclimbedPeak;
 
-            const targetData = mapRef.current?.getSource(
-                target
-            ) as GeoJSONSource;
+                new mapboxgl.Popup({ offset: 25 })
+                    .setLngLat(coordinates as [number, number])
+                    .setDOMContent(
+                        FavoritePopup({
+                            peak,
+                            units,
+                            theme,
+                            onUnfavoriteClick: (peakId, newValue) => {
+                                onFavoriteClick(
+                                    peakId,
+                                    newValue,
+                                    true,
+                                    e.target,
+                                    theme,
+                                    units,
+                                    setDashboardState,
+                                    dispatch
+                                );
+                            },
+                        })
+                    )
+                    .addTo(e.target);
+            }
+        },
+        [units, theme, setDashboardState, dispatch]
+    );
 
-            const targetDataFeatures = targetData.serialize()
-                .data as GeoJSON.FeatureCollection<GeoJSON.Point>;
+    const onActivityClick = useCallback(
+        (e: MapMouseEvent) => {
+            const feature = e.features?.[0];
 
-            const peak = data.features.find(
-                (feature) => feature.properties?.Id === peakId
-            );
+            const activity = feature?.properties as ActivityStart;
 
-            if (peak) {
-                data.features = data.features.filter(
-                    (feature) => feature.properties?.Id !== peakId
-                );
+            if (
+                feature &&
+                feature.properties &&
+                !("cluster_id" in feature.properties) &&
+                feature.geometry.type === "Point" &&
+                e.target
+            ) {
+                getActivityCoords(activity.id).then((coords) => {
+                    if (coords && e.target) {
+                        const source = e.target.getSource(
+                            "activities"
+                        ) as mapboxgl.GeoJSONSource;
 
-                sourceData.setData(data);
-
-                targetDataFeatures.features = [
-                    peak,
-                    ...targetDataFeatures.features,
-                ];
-
-                targetData.setData(targetDataFeatures);
-
-                if (openPopup && mapRef.current) {
-                    const coordinates = peak.geometry.coordinates.slice();
-
-                    const lngLat = mapboxgl.LngLat.convert(
-                        coordinates as [number, number]
-                    );
-
-                    const existingPopup = event?.target._popups.find(
-                        (pop) =>
-                            pop._lngLat.lat === lngLat.lat &&
-                            pop._lngLat.lng === lngLat.lng
-                    );
-
-                    if (existingPopup) {
-                        existingPopup.remove();
+                        if (source) {
+                            source.setData({
+                                type: "FeatureCollection",
+                                features: [
+                                    {
+                                        type: "Feature",
+                                        geometry: {
+                                            type: "LineString",
+                                            coordinates: coords.coords.map(
+                                                (c) => [c[1], c[0]]
+                                            ),
+                                        },
+                                        properties: {
+                                            id: activity.id,
+                                        },
+                                    },
+                                ],
+                            });
+                        }
                     }
+                });
 
-                    new mapboxgl.Popup({ offset: 25 })
-                        .setLngLat(lngLat)
-                        .setDOMContent(
-                            newValue
-                                ? FavoritePopup({
-                                      peak: peak.properties as UnclimbedPeak,
-                                      units,
-                                      theme,
-                                      onUnfavoriteClick: (peakId, newValue) => {
-                                          onFavoriteClick(
-                                              peakId,
-                                              newValue,
-                                              true
-                                          );
-                                      },
-                                  })
-                                : UnclimbedPopup({
-                                      peak: peak.properties as UnclimbedPeak,
-                                      units,
-                                      theme,
-                                      onFavoriteClick: (peakId, newValue) => {
-                                          onFavoriteClick(
-                                              peakId,
-                                              newValue,
-                                              true
-                                          );
-                                      },
-                                  })
-                        )
-                        .addTo(mapRef.current);
+                const coordinates = feature?.geometry.coordinates.slice();
+
+                while (Math.abs(e.lngLat.lng - coordinates[0]) > 180) {
+                    coordinates[0] +=
+                        e.lngLat.lng > coordinates[0] ? 360 : -360;
                 }
-            }
 
-            setPeaksState((state) => ({
-                ...state,
-                unclimbedPeaks: [
-                    ...data.features
-                        .map((p) => ({
-                            ...(p.properties as UnclimbedPeak),
-                            isFavorited: false,
-                        }))
-                        .sort((a, b) => (a.distance ?? 0) - (b.distance ?? 0)),
-                    ...targetDataFeatures.features.map((p) => ({
-                        ...(p.properties as UnclimbedPeak),
-                        isFavorited: true,
-                    })),
-                ],
-            }));
-        }
-    };
+                const popup = new mapboxgl.Popup()
+                    .setLngLat(coordinates as [number, number])
+                    .setDOMContent(
+                        ActivityPopup({
+                            activity,
+                            theme,
+                            units: user.units,
+                            redirect: (url) => router.push(url),
+                        })
+                    )
+                    .addTo(e.target);
+
+                popup.on("close", () => {
+                    const source = e.target?.getSource(
+                        "activities"
+                    ) as mapboxgl.GeoJSONSource;
+
+                    if (source) {
+                        source.setData({
+                            type: "FeatureCollection",
+                            features: [],
+                        });
+                    }
+                });
+            }
+        },
+        [getActivityCoords, user.units]
+    );
 
     const addMarkers = () => {
         if (mapRef.current !== null) {
-            mapRef.current.addControl(
-                new mapboxgl.NavigationControl(),
-                "top-left"
-            );
-
-            mapRef.current.loadImage(primaryMarker.src, (error, image) => {
-                if (error) throw error;
-                if (image) mapRef.current?.addImage("marker-primary", image);
-            });
-            mapRef.current.loadImage(secondaryMarker.src, (error, image) => {
-                if (error) throw error;
-                if (image) mapRef.current?.addImage("marker-secondary", image);
-            });
-            mapRef.current.loadImage(tertiaryMarker.src, (error, image) => {
-                if (error) throw error;
-                if (image) mapRef.current?.addImage("marker-tertiary", image);
-            });
-            mapRef.current?.loadImage(primaryChallenge.src, (error, image) => {
-                if (error) throw error;
-                if (image) mapRef.current?.addImage("challenge-primary", image);
-            });
+            loadMapDefaults(mapRef.current, theme, "all");
 
             mapRef.current?.addSource("peakSummits", {
                 type: "geojson",
@@ -342,15 +257,14 @@ const Map = () => {
             });
             mapRef.current?.addSource("unclimbedPeaks", {
                 type: "geojson",
-                data: convertUnclimbedPeaksToGEOJson(
-                    (unclimbedPeaks ?? []).filter((peak) => !peak.isFavorited)
-                ),
+                data: {
+                    type: "FeatureCollection",
+                    features: [],
+                },
             });
             mapRef.current?.addSource("favoritePeaks", {
                 type: "geojson",
-                data: convertUnclimbedPeaksToGEOJson(
-                    (unclimbedPeaks ?? []).filter((peak) => peak.isFavorited)
-                ),
+                data: convertUnclimbedPeaksToGEOJson(favoritePeaks ?? []),
             });
             mapRef.current?.addSource("challenges", {
                 type: "geojson",
@@ -368,6 +282,58 @@ const Map = () => {
                     })),
                 },
             });
+            mapRef.current.addSource("activities", {
+                type: "geojson",
+                data: {
+                    type: "FeatureCollection",
+                    features: [],
+                },
+            });
+            mapRef.current.addSource("activityStarts", {
+                type: "geojson",
+                data: {
+                    type: "FeatureCollection",
+                    features: (activities ?? []).map((activity) => ({
+                        type: "Feature",
+                        geometry: {
+                            type: "Point",
+                            coordinates: [
+                                activity.startLong,
+                                activity.startLat,
+                            ],
+                        },
+                        properties: {
+                            ...activity,
+                        },
+                    })),
+                },
+            });
+
+            mapRef.current.addLayer({
+                id: "activities",
+                type: "line",
+                source: "activities",
+                layout: {
+                    "line-join": "round",
+                    "line-cap": "round",
+                },
+                paint: {
+                    "line-color": theme.palette.primary.containerDim,
+                    "line-width": 3,
+                },
+            });
+
+            mapRef.current.addLayer({
+                id: "activityStarts",
+                type: "circle",
+                source: "activityStarts",
+                paint: {
+                    "circle-color": theme.palette.primary.onContainerDim,
+                    "circle-radius": 8,
+                    "circle-stroke-color": theme.palette.primary.containerDim,
+                    "circle-stroke-width": 1,
+                },
+            });
 
             mapRef.current?.addLayer({
                 id: "peakSummits",
@@ -377,6 +343,7 @@ const Map = () => {
                     "icon-image": "marker-primary",
                     "icon-size": 0.2,
                     "icon-allow-overlap": true,
+                    "icon-anchor": "bottom",
                 },
             });
             mapRef.current?.addLayer({
@@ -388,6 +355,7 @@ const Map = () => {
                     "icon-image": "marker-secondary",
                     "icon-size": 0.2,
                     "icon-allow-overlap": true,
+                    "icon-anchor": "bottom",
                 },
             });
             mapRef.current?.addLayer({
@@ -399,6 +367,7 @@ const Map = () => {
                     "icon-image": "marker-tertiary",
                     "icon-size": 0.2,
                     "icon-allow-overlap": true,
+                    "icon-anchor": "bottom",
                 },
             });
             mapRef.current?.addLayer({
@@ -406,106 +375,27 @@ const Map = () => {
                 type: "symbol",
                 source: "challenges",
                 layout: {
-                    "icon-image": "challenge-primary",
+                    "icon-image": [
+                        "image",
+                        [
+                            "case",
+                            ["==", ["get", "total"], ["get", "completed"]],
+                            "challenge-primary",
+                            ["==", ["get", "completed"], 0],
+                            "challenge-secondary",
+                            "challenge-tertiary",
+                        ],
+                    ],
                     "icon-size": 0.2,
                     "icon-allow-overlap": true,
+                    "icon-anchor": "bottom",
                 },
             });
 
-            mapRef.current?.on("click", "peakSummits", (e) => {
-                e.originalEvent.preventDefault();
-                e.originalEvent.stopPropagation();
-
-                const feature = e.features?.[0];
-
-                if (feature?.geometry.type === "Point" && mapRef.current) {
-                    const coordinates = feature.geometry.coordinates.slice();
-
-                    while (Math.abs(e.lngLat.lng - coordinates[0]) > 180) {
-                        coordinates[0] +=
-                            e.lngLat.lng > coordinates[0] ? 360 : -360;
-                    }
-
-                    const peak = feature.properties as PeakSummit;
-
-                    new mapboxgl.Popup({ offset: 25 })
-                        .setLngLat(coordinates as [number, number])
-                        .setHTML(
-                            CompletedPopup({
-                                peak,
-                                units,
-                                theme,
-                            })
-                        )
-                        .addTo(mapRef.current);
-                }
-            });
-
-            mapRef.current?.on("click", "unclimbedPeaks", (e) => {
-                e.originalEvent.preventDefault();
-                e.originalEvent.stopPropagation();
-
-                e.originalEvent?.stopPropagation();
-                const feature = e.features?.[0];
-
-                if (feature?.geometry.type === "Point" && mapRef.current) {
-                    const coordinates = feature.geometry.coordinates.slice();
-
-                    while (Math.abs(e.lngLat.lng - coordinates[0]) > 180) {
-                        coordinates[0] +=
-                            e.lngLat.lng > coordinates[0] ? 360 : -360;
-                    }
-
-                    const peak = feature.properties as UnclimbedPeak;
-
-                    new mapboxgl.Popup({ offset: 25 })
-                        .setLngLat(coordinates as [number, number])
-                        .setDOMContent(
-                            UnclimbedPopup({
-                                peak,
-                                units,
-                                theme,
-                                onFavoriteClick: (peakId, newValue) => {
-                                    onFavoriteClick(peakId, newValue, true, e);
-                                },
-                            })
-                        )
-                        .addTo(mapRef.current);
-                }
-            });
-
-            mapRef.current?.on("click", "favoritePeaks", (e) => {
-                e.originalEvent.preventDefault();
-                e.originalEvent.stopPropagation();
-
-                e.originalEvent?.stopPropagation();
-                const feature = e.features?.[0];
-
-                if (feature?.geometry.type === "Point" && mapRef.current) {
-                    const coordinates = feature.geometry.coordinates.slice();
-
-                    while (Math.abs(e.lngLat.lng - coordinates[0]) > 180) {
-                        coordinates[0] +=
-                            e.lngLat.lng > coordinates[0] ? 360 : -360;
-                    }
-
-                    const peak = feature.properties as UnclimbedPeak;
-
-                    new mapboxgl.Popup({ offset: 25 })
-                        .setLngLat(coordinates as [number, number])
-                        .setDOMContent(
-                            FavoritePopup({
-                                peak,
-                                units,
-                                theme,
-                                onUnfavoriteClick: (peakId, newValue) => {
-                                    onFavoriteClick(peakId, newValue, true, e);
-                                },
-                            })
-                        )
-                        .addTo(mapRef.current);
-                }
-            });
+            mapRef.current.on("click", "peakSummits", onCompletedPeakClick);
+            mapRef.current.on("click", "unclimbedPeaks", onUnclimbedPeakClick);
+            mapRef.current.on("click", "favoritePeaks", onFavoritePeakClick);
+            mapRef.current.on("click", "activities", onActivityClick);
 
             mapRef.current?.on("click", "challenges", (e) => {
                 e.originalEvent.preventDefault();
@@ -538,14 +428,15 @@ const Map = () => {
     };
 
     React.useEffect(() => {
-        mapboxgl.accessToken = process.env.NEXT_PUBLIC_MAPBOX_TOKEN ?? "";
-        mapRef.current = new mapboxgl.Map({
-            container: mapContainerRef.current,
-            center: [user.long ?? -111.651302, user.lat ?? 35.198284],
-            zoom: 8,
-        });
+        initiateMap(mapContainerRef, mapRef, addMarkers, [
+            user.long ?? -111.651302,
+            user.lat ?? 35.198284,
+        ]);
 
-        mapRef.current.on("load", addMarkers);
+        setDashboardState((state) => ({
+            ...state,
+            map: mapRef.current,
+        }));
 
         return () => {
             mapRef.current?.remove();
@@ -577,7 +468,7 @@ const Map = () => {
                 flexDirection="column"
                 gap="16px"
             >
-                <UnclimbedPeaksList onFavoriteClick={onFavoriteClick} />
+                <RecentActivities />
             </Grid>
             <Grid
                 size={{ xs: 12, md: 6, lg: 4 }}
@@ -585,7 +476,20 @@ const Map = () => {
                 flexDirection="column"
                 gap="16px"
             >
-                <FavoritePeaks onFavoriteClick={onFavoriteClick} />
+                <FavoritePeaks
+                    onFavoriteClick={(peakId, newValue, openPopup) =>
+                        onFavoriteClick(
+                            peakId,
+                            newValue,
+                            openPopup,
+                            mapRef.current,
+                            theme,
+                            units,
+                            setDashboardState,
+                            dispatch
+                        )
+                    }
+                />
             </Grid>
         </>
     );

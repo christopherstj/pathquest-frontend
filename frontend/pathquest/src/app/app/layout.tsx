@@ -36,11 +36,7 @@ const layout = async ({ children }: Props) => {
         redirect("/checkout");
     }
 
-    return (
-        <PeaksData>
-            <ChallengeData>{children}</ChallengeData>
-        </PeaksData>
-    );
+    return <>{children}</>;
 };
 
 export default layout;

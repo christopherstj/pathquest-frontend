@@ -1,44 +1,44 @@
-"use client";
-import ChallengeProgress from "@/typeDefs/ChallengeProgress";
-import React, { createContext, useState } from "react";
+// "use client";
+// import ChallengeProgress from "@/typeDefs/ChallengeProgress";
+// import React, { createContext, useState } from "react";
 
-interface ChallengesState {
-    incompleteChallenges: ChallengeProgress[] | null;
-}
+// interface ChallengesState {
+//     incompleteChallenges: ChallengeProgress[] | null;
+// }
 
-const useChallengesState = (incompleteChallenges: ChallengeProgress[] | null) =>
-    useState<ChallengesState>({
-        incompleteChallenges,
-    });
+// const useChallengesState = (incompleteChallenges: ChallengeProgress[] | null) =>
+//     useState<ChallengesState>({
+//         incompleteChallenges,
+//     });
 
-export const ChallengesContext = createContext<ReturnType<
-    typeof useChallengesState
-> | null>(null);
+// export const ChallengesContext = createContext<ReturnType<
+//     typeof useChallengesState
+// > | null>(null);
 
-export const useChallenges = () => {
-    const context = React.useContext(ChallengesContext);
-    if (!context) {
-        throw new Error(
-            "useChallenges must be used within a ChallengesProvider"
-        );
-    }
-    return context;
-};
+// export const useChallenges = () => {
+//     const context = React.useContext(ChallengesContext);
+//     if (!context) {
+//         throw new Error(
+//             "useChallenges must be used within a ChallengesProvider"
+//         );
+//     }
+//     return context;
+// };
 
-const ChallengesProvider = ({
-    children,
-    incompleteChallenges,
-}: {
-    children: React.ReactNode;
-    incompleteChallenges: ChallengeProgress[] | null;
-}) => {
-    const [state, setState] = useChallengesState(incompleteChallenges);
+// const ChallengesProvider = ({
+//     children,
+//     incompleteChallenges,
+// }: {
+//     children: React.ReactNode;
+//     incompleteChallenges: ChallengeProgress[] | null;
+// }) => {
+//     const [state, setState] = useChallengesState(incompleteChallenges);
 
-    return (
-        <ChallengesContext.Provider value={[state, setState]}>
-            {children}
-        </ChallengesContext.Provider>
-    );
-};
+//     return (
+//         <ChallengesContext.Provider value={[state, setState]}>
+//             {children}
+//         </ChallengesContext.Provider>
+//     );
+// };
 
-export default ChallengesProvider;
+// export default ChallengesProvider;

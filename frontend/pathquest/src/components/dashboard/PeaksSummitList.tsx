@@ -5,6 +5,7 @@ import { Box } from "@mui/system";
 import React from "react";
 import PeakSummtRow from "./PeakSummitRow";
 import { useUser } from "@/state/UserContext";
+import { useDashboard } from "@/state/DashboardContext";
 
 const containerStyles: SxProps = {
     borderRadius: "12px",
@@ -42,7 +43,7 @@ const listStyles: SxProps = {
 };
 
 const PeaksSummitList = () => {
-    const [{ peakSummits, map }] = usePeaks();
+    const [{ peakSummits, map }] = useDashboard();
     const [{ user }] = useUser();
 
     if (!user) return null;

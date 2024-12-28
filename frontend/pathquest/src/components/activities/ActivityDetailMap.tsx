@@ -6,6 +6,7 @@ import React from "react";
 import MapboxContainer from "../common/MapboxContainer";
 import mapboxgl from "mapbox-gl";
 import addActivityDetailMarkers from "./helpers/addActivityDetailMarkers";
+import initiateMap from "@/helpers/initiateMap";
 
 const ActivityDetailMap = () => {
     const [{ activity, peakSummits }, setActivityDetailState] =
@@ -20,21 +21,19 @@ const ActivityDetailMap = () => {
     const mapRef = React.useRef<mapboxgl.Map | null>(null);
 
     React.useEffect(() => {
-        mapboxgl.accessToken = process.env.NEXT_PUBLIC_MAPBOX_TOKEN ?? "";
-        mapRef.current = new mapboxgl.Map({
-            container: mapContainerRef.current,
-            center: [activity.startLong ?? 0, activity.startLat ?? 0],
-            zoom: 8,
-        });
-
-        mapRef.current.on("load", () => {
-            addActivityDetailMarkers(
-                mapRef.current,
-                theme,
-                activity,
-                peakSummits
-            );
-        });
+        initiateMap(
+            mapContainerRef,
+            mapRef,
+            () => {
+                addActivityDetailMarkers(
+                    mapRef.current,
+                    theme,
+                    activity,
+                    peakSummits
+                );
+            },
+            [activity.startLong ?? 0, activity.startLat ?? 0]
+        );
 
         setActivityDetailState((state) => ({
             ...state,

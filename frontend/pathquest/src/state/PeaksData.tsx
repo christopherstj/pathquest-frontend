@@ -10,18 +10,8 @@ type Props = {
 
 const PeaksData = async ({ children }: Props) => {
     const peakSummits = await getPeakSummits();
-    const unclimbedPeaks = await getUnclimbedPeaks();
-    const favoritePeaks = await getFavoritePeaks();
 
-    return (
-        <PeaksProvider
-            peakSummits={peakSummits}
-            unclimbedPeaks={unclimbedPeaks}
-            favoritePeaks={favoritePeaks}
-        >
-            {children}
-        </PeaksProvider>
-    );
+    return <PeaksProvider peakSummits={peakSummits}>{children}</PeaksProvider>;
 };
 
 export default PeaksData;

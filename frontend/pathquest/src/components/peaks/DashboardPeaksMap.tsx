@@ -1,14 +1,10 @@
 "use client";
 import convertPeakSummitsToGeoJSON from "@/helpers/convertPeakSummitsToGeoJSON";
 import { usePeaks } from "@/state/PeaksContext";
-import { usePeaksMap } from "@/state/PeaksMapContext";
 import { useUser } from "@/state/UserContext";
-import { Box, SxProps, useTheme } from "@mui/material";
+import { useTheme } from "@mui/material";
 import mapboxgl, { GeoJSONSource, MapMouseEvent } from "mapbox-gl";
 import React from "react";
-import primaryMarker from "@/public/images/marker-primary.png";
-import secondaryMarker from "@/public/images/marker-secondary.png";
-import tertiaryMarker from "@/public/images/marker-tertiary.png";
 import PeakSummit from "@/typeDefs/PeakSummit";
 import CompletedPopup from "../dashboard/CompletedPopup";
 import "mapbox-gl/dist/mapbox-gl.css";
@@ -18,11 +14,13 @@ import UnclimbedPeak from "@/typeDefs/UnclimbedPeak";
 import FavoritePopup from "../dashboard/FavoritePopup";
 import toggleFavoritePeak from "@/actions/toggleFavoritePeak";
 import { useMessage } from "@/state/MessageContext";
+import loadMapDefaults from "@/helpers/loadMapDefaults";
+import initiateMap from "@/helpers/initiateMap";
+import convertUnclimbedPeaksToGEOJson from "@/helpers/convertUnclimbedPeaksToGEOJson";
 
 const DashboardPeaksMap = () => {
     const [{ user }] = useUser();
-    const [{ peakSummits, peakSelection }, setPeaksState] = usePeaks();
-    const [peaksMap, setPeaksMapState] = usePeaksMap();
+    const [{ peakSelection, map }, setPeaksState] = usePeaks();
     const [, dispatch] = useMessage();
 
     const theme = useTheme();
@@ -35,48 +33,65 @@ const DashboardPeaksMap = () => {
     const { units } = user;
 
     const addMarkers = () => {
-        mapRef.current?.addControl(
-            new mapboxgl.NavigationControl(),
-            "top-left"
-        );
+        if (!mapRef.current) return;
 
-        mapRef.current?.loadImage(primaryMarker.src, (error, image) => {
-            if (error) throw error;
-            if (image) mapRef.current?.addImage("marker-primary", image);
-        });
-        mapRef.current?.loadImage(secondaryMarker.src, (error, image) => {
-            if (error) throw error;
-            if (image) mapRef.current?.addImage("marker-secondary", image);
-        });
-        mapRef.current?.loadImage(tertiaryMarker.src, (error, image) => {
-            if (error) throw error;
-            if (image) mapRef.current?.addImage("marker-tertiary", image);
-        });
+        loadMapDefaults(mapRef.current, theme);
 
-        mapRef.current?.addSource("peakSummits", {
-            type: "geojson",
-            data: convertPeakSummitsToGeoJSON(peakSummits ?? []),
-        });
-        mapRef.current?.addSource("unclimbedPeaks", {
-            type: "geojson",
-            data: {
-                type: "FeatureCollection",
-                features: [],
-            },
-            cluster: true,
-            clusterMaxZoom: 14,
-            clusterRadius: 50,
-        });
-        mapRef.current?.addSource("favoritePeaks", {
-            type: "geojson",
-            data: {
-                type: "FeatureCollection",
-                features: [],
-            },
-            cluster: true,
-            clusterMaxZoom: 14,
-            clusterRadius: 50,
-        });
+        if (peakSelection.type === "completed") {
+            mapRef.current?.addSource("peakSummits", {
+                type: "geojson",
+                data: convertPeakSummitsToGeoJSON(peakSelection.data ?? []),
+            });
+            mapRef.current?.addSource("unclimbedPeaks", {
+                type: "geojson",
+                data: {
+                    type: "FeatureCollection",
+                    features: [],
+                },
+                cluster: true,
+                clusterMaxZoom: 14,
+                clusterRadius: 50,
+            });
+            mapRef.current?.addSource("favoritePeaks", {
+                type: "geojson",
+                data: {
+                    type: "FeatureCollection",
+                    features: [],
+                },
+                cluster: true,
+                clusterMaxZoom: 14,
+                clusterRadius: 50,
+            });
+        } else {
+            mapRef.current?.addSource("peakSummits", {
+                type: "geojson",
+                data: convertPeakSummitsToGeoJSON([]),
+            });
+            mapRef.current?.addSource("unclimbedPeaks", {
+                type: "geojson",
+                data: convertUnclimbedPeaksToGEOJson(
+                    (peakSelection.data ?? []).filter(
+                        (peak) =>
+                            (!peak.isFavorited && !peak.isSummitted) ||
+                            peak.isSummitted
+                    )
+                ),
+                cluster: true,
+                clusterMaxZoom: 14,
+                clusterRadius: 50,
+            });
+            mapRef.current?.addSource("favoritePeaks", {
+                type: "geojson",
+                data: convertUnclimbedPeaksToGEOJson(
+                    (peakSelection.data ?? []).filter(
+                        (peak) => peak.isFavorited && !peak.isSummitted
+                    )
+                ),
+                cluster: true,
+                clusterMaxZoom: 14,
+                clusterRadius: 50,
+            });
+        }
 
         mapRef.current?.addLayer({
             id: "clusters",
@@ -559,16 +574,12 @@ const DashboardPeaksMap = () => {
     };
 
     React.useEffect(() => {
-        mapboxgl.accessToken = process.env.NEXT_PUBLIC_MAPBOX_TOKEN ?? "";
-        mapRef.current = new mapboxgl.Map({
-            container: mapContainerRef.current,
-            center: [user.long ?? -111.651302, user.lat ?? 35.198284],
-            zoom: 8,
-        });
+        initiateMap(mapContainerRef, mapRef, addMarkers, [
+            user.long ?? -111.651302,
+            user.lat ?? 35.198284,
+        ]);
 
-        mapRef.current.on("load", addMarkers);
-
-        setPeaksMapState((state) => ({
+        setPeaksState((state) => ({
             ...state,
             map: mapRef.current,
         }));

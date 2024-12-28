@@ -8,6 +8,7 @@ import convertUnclimbedPeaksToGEOJson from "@/helpers/convertUnclimbedPeaksToGEO
 import { Theme } from "@mui/material";
 import FavoritePopup from "@/components/dashboard/FavoritePopup";
 import UnclimbedPopup from "@/components/dashboard/UnclimbedPopup";
+import loadMapDefaults from "@/helpers/loadMapDefaults";
 
 let hoveredPolygonId: number | null = null;
 
@@ -23,20 +24,9 @@ const addChallengeDetailMarkers = (
 ) => {
     const bounds = new mapboxgl.LngLatBounds();
 
-    map?.addControl(new mapboxgl.NavigationControl(), "top-left");
+    if (!map) return;
 
-    map?.loadImage(primaryMarker.src, (error, image) => {
-        if (error) throw error;
-        if (image) map?.addImage("marker-primary", image);
-    });
-    map?.loadImage(secondaryMarker.src, (error, image) => {
-        if (error) throw error;
-        if (image) map?.addImage("marker-secondary", image);
-    });
-    map?.loadImage(tertiaryMarker.src, (error, image) => {
-        if (error) throw error;
-        if (image) map?.addImage("marker-tertiary", image);
-    });
+    loadMapDefaults(map, theme, "markers");
 
     const geoJson = convertUnclimbedPeaksToGEOJson(data.map((p) => p.peak));
 

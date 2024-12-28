@@ -1,11 +1,11 @@
 "use client";
-import { useChallenges } from "@/state/ChallengesContext";
 import { useMessage } from "@/state/MessageContext";
 import { useUser } from "@/state/UserContext";
 import { Box, Divider, List, SxProps, Typography } from "@mui/material";
 import React from "react";
 import UnclimbedPeakRow from "./UnclimbedPeakRow";
 import ChallengeRow from "../challenges/ChallengeRow";
+import { useDashboard } from "@/state/DashboardContext";
 
 const containerStyles: SxProps = {
     borderRadius: "12px",
@@ -47,7 +47,7 @@ const listStyles: SxProps = {
 };
 
 const IncompleteChallenges = () => {
-    const [{ incompleteChallenges }, setChallengesState] = useChallenges();
+    const [{ incompleteChallenges }] = useDashboard();
     const [{ user }] = useUser();
 
     if (!user) return null;

@@ -4,13 +4,12 @@ import React, { useCallback } from "react";
 import MapboxContainer from "../common/MapboxContainer";
 import mapboxgl from "mapbox-gl";
 import { useUser } from "@/state/UserContext";
-import primaryMarker from "@/public/images/challenge-primary.png";
-import secondaryMarker from "@/public/images/challenge-secondary.png";
-import tertiaryMarker from "@/public/images/challenge-tertiary.png";
 import ChallengeProgress from "@/typeDefs/ChallengeProgress";
 import ChallengePopup from "./ChallengePopup";
 import { useTheme } from "@mui/material";
 import "mapbox-gl/dist/mapbox-gl.css";
+import loadMapDefaults from "@/helpers/loadMapDefaults";
+import initiateMap from "@/helpers/initiateMap";
 
 const ChallengeDashboardMap = () => {
     const [, setChallengeDashboardState] = useChallengeDashboard();
@@ -26,23 +25,8 @@ const ChallengeDashboardMap = () => {
     const addMarkers = () => {
         if (!mapRef.current) return;
 
-        mapRef.current?.addControl(
-            new mapboxgl.NavigationControl(),
-            "top-left"
-        );
+        loadMapDefaults(mapRef.current, theme, "challenges");
 
-        mapRef.current?.loadImage(primaryMarker.src, (error, image) => {
-            if (error) throw error;
-            if (image) mapRef.current?.addImage("marker-primary", image);
-        });
-        mapRef.current?.loadImage(secondaryMarker.src, (error, image) => {
-            if (error) throw error;
-            if (image) mapRef.current?.addImage("marker-secondary", image);
-        });
-        mapRef.current?.loadImage(tertiaryMarker.src, (error, image) => {
-            if (error) throw error;
-            if (image) mapRef.current?.addImage("marker-tertiary", image);
-        });
         mapRef.current?.addSource("challenges", {
             type: "geojson",
             data: {
@@ -60,10 +44,10 @@ const ChallengeDashboardMap = () => {
                     [
                         "case",
                         ["==", ["get", "total"], ["get", "completed"]],
-                        "marker-primary",
+                        "challenge-primary",
                         ["==", ["get", "completed"], 0],
-                        "marker-secondary",
-                        "marker-tertiary",
+                        "challenge-secondary",
+                        "challenge-tertiary",
                     ],
                 ],
                 "icon-size": 0.2,
@@ -94,16 +78,13 @@ const ChallengeDashboardMap = () => {
     };
 
     React.useEffect(() => {
-        mapboxgl.accessToken = process.env.NEXT_PUBLIC_MAPBOX_TOKEN ?? "";
-        mapRef.current = new mapboxgl.Map({
-            container: mapContainerRef.current,
-            center: [user.long ?? 0, user.lat ?? 0],
-            zoom: 6,
-        });
-
-        mapRef.current.on("load", () => {
-            addMarkers();
-        });
+        initiateMap(
+            mapContainerRef,
+            mapRef,
+            addMarkers,
+            [user.long ?? -111.651302, user.lat ?? 35.198284],
+            6
+        );
 
         setChallengeDashboardState((state) => ({
             ...state,

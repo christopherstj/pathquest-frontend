@@ -1,6 +1,5 @@
 "use client";
 import { usePeaks } from "@/state/PeaksContext";
-import { usePeaksMap } from "@/state/PeaksMapContext";
 import { useUser } from "@/state/UserContext";
 import UnclimbedPeak from "@/typeDefs/UnclimbedPeak";
 import {
@@ -20,6 +19,7 @@ import toggleFavoritePeak from "@/actions/toggleFavoritePeak";
 import { useMessage } from "@/state/MessageContext";
 import getUnclimbedPeaksWithBounds from "@/actions/getUnclimbedPeaksWithBounds";
 import convertUnclimbedPeaksToGEOJson from "@/helpers/convertUnclimbedPeaksToGEOJson";
+import getPeakSummits from "@/actions/getPeakSummits";
 
 const cardStyles: SxProps = {
     borderRadius: "12px",
@@ -53,16 +53,9 @@ const cardStyles: SxProps = {
 
 const PeaksList = () => {
     const [
-        {
-            peakSelection,
-            peakSummits,
-            showSummittedPeaks,
-            search,
-            limitResultsToBbox,
-        },
+        { peakSelection, showSummittedPeaks, search, limitResultsToBbox, map },
         setPeaksState,
     ] = usePeaks();
-    const [peaksMap, setPeaksMapState] = usePeaksMap();
     const [{ user }] = useUser();
     const [, dispatch] = useMessage();
 
@@ -75,7 +68,7 @@ const PeaksList = () => {
     const { units } = user;
 
     const onRowClick = (lat: number, long: number) => {
-        peaksMap.map?.flyTo({
+        map?.flyTo({
             center: [long, lat],
             zoom: 14,
         });
@@ -83,7 +76,7 @@ const PeaksList = () => {
 
     const onFavoriteClick = async (peakId: string, newValue: boolean) => {
         if (newValue) {
-            const unclimbedPeaksSource = peaksMap.map?.getSource(
+            const unclimbedPeaksSource = map?.getSource(
                 "unclimbedPeaks"
             ) as GeoJSONSource;
             const unclimbedPeaksData = unclimbedPeaksSource.serialize()
@@ -100,7 +93,7 @@ const PeaksList = () => {
 
                 unclimbedPeaksSource?.setData(unclimbedPeaksData);
 
-                const favoritePeaksSource = peaksMap.map?.getSource(
+                const favoritePeaksSource = map?.getSource(
                     "favoritePeaks"
                 ) as GeoJSONSource;
 
@@ -134,7 +127,7 @@ const PeaksList = () => {
                 }));
             }
         } else {
-            const favoritePeaksSource = peaksMap.map?.getSource(
+            const favoritePeaksSource = map?.getSource(
                 "favoritePeaks"
             ) as GeoJSONSource;
             const favoritePeaksData = favoritePeaksSource.serialize()
@@ -150,7 +143,7 @@ const PeaksList = () => {
 
                 favoritePeaksSource?.setData(favoritePeaksData);
 
-                const unclimbedPeaksSource = peaksMap.map?.getSource(
+                const unclimbedPeaksSource = map?.getSource(
                     "unclimbedPeaks"
                 ) as GeoJSONSource;
 
@@ -199,12 +192,12 @@ const PeaksList = () => {
             const source = newValue ? "favoritePeaks" : "unclimbedPeaks";
             const target = newValue ? "unclimbedPeaks" : "favoritePeaks";
 
-            const sourceData = peaksMap.map?.getSource(source) as GeoJSONSource;
+            const sourceData = map?.getSource(source) as GeoJSONSource;
 
             const data = sourceData.serialize()
                 .data as GeoJSON.FeatureCollection<GeoJSON.Point>;
 
-            const targetData = peaksMap.map?.getSource(target) as GeoJSONSource;
+            const targetData = map?.getSource(target) as GeoJSONSource;
 
             const targetDataFeatures = targetData.serialize()
                 .data as GeoJSON.FeatureCollection<GeoJSON.Point>;
@@ -251,6 +244,8 @@ const PeaksList = () => {
 
     const refreshData = async () => {
         if (peakSelection.type === "completed") {
+            const peakSummits = await getPeakSummits();
+
             setPeaksState((state) => ({
                 ...state,
                 peakSelection: {
@@ -272,7 +267,7 @@ const PeaksList = () => {
                 });
                 return;
             }
-            const bounds = peaksMap.map?.getBounds();
+            const bounds = map?.getBounds();
             const newData = await getUnclimbedPeaksWithBounds(
                 limitResultsToBbox
                     ? {
@@ -299,16 +294,12 @@ const PeaksList = () => {
                 },
             }));
 
-            (
-                peaksMap.map?.getSource("unclimbedPeaks") as GeoJSONSource
-            )?.setData(
+            (map?.getSource("unclimbedPeaks") as GeoJSONSource)?.setData(
                 convertUnclimbedPeaksToGEOJson(
                     newData.filter((peak) => !peak.isFavorited)
                 )
             );
-            (
-                peaksMap.map?.getSource("favoritePeaks") as GeoJSONSource
-            )?.setData(
+            (map?.getSource("favoritePeaks") as GeoJSONSource)?.setData(
                 convertUnclimbedPeaksToGEOJson(
                     newData.filter((peak) => peak.isFavorited)
                 )

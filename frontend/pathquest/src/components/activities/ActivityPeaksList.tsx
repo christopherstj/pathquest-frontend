@@ -1,7 +1,7 @@
 "use client";
 import { useActivityDetail } from "@/state/ActivityDetailsContext";
 import { useUser } from "@/state/UserContext";
-import { Box, Divider, SxProps, useTheme } from "@mui/material";
+import { Box, Divider, SxProps, Typography, useTheme } from "@mui/material";
 import React, { Fragment } from "react";
 import UnclimbedPeakRow from "../dashboard/UnclimbedPeakRow";
 
@@ -60,39 +60,50 @@ const ActivityPeaksList = () => {
 
     return (
         <Box sx={cardStyles}>
-            <Box sx={listStyles}>
-                {peakSummits
-                    .sort((a, b) => (b.Altitude ?? 0) - (a.Altitude ?? 0))
-                    .map((peak) => (
-                        <Fragment key={peak.Id}>
-                            <UnclimbedPeakRow
-                                rowColor="primary"
-                                units={units}
-                                onRowClick={onRowClick}
-                                peak={{
-                                    Id: peak.Id,
-                                    Name: peak.Name,
-                                    Altitude: peak.Altitude,
-                                    Lat: peak.Lat,
-                                    Long: peak.Long,
-                                    isSummitted: true,
-                                    isFavorited: false,
-                                }}
-                                ascents={peak.ascents.map((a) => ({
-                                    ...a,
-                                    timezone: activity.timezone,
-                                }))}
-                                useAscentRedirect={false}
-                            />
-                            <Divider
-                                sx={{
-                                    backgroundColor: "primary.onContainerDim",
-                                    margin: "0 8px",
-                                }}
-                            />
-                        </Fragment>
-                    ))}
-            </Box>
+            {peakSummits.length === 0 ? (
+                <Box sx={listStyles}>
+                    {peakSummits
+                        .sort((a, b) => (b.Altitude ?? 0) - (a.Altitude ?? 0))
+                        .map((peak) => (
+                            <Fragment key={peak.Id}>
+                                <UnclimbedPeakRow
+                                    rowColor="primary"
+                                    units={units}
+                                    onRowClick={onRowClick}
+                                    peak={{
+                                        Id: peak.Id,
+                                        Name: peak.Name,
+                                        Altitude: peak.Altitude,
+                                        Lat: peak.Lat,
+                                        Long: peak.Long,
+                                        isSummitted: true,
+                                        isFavorited: false,
+                                    }}
+                                    ascents={peak.ascents.map((a) => ({
+                                        ...a,
+                                        timezone: activity.timezone,
+                                    }))}
+                                    useAscentRedirect={false}
+                                />
+                                <Divider
+                                    sx={{
+                                        backgroundColor:
+                                            "primary.onContainerDim",
+                                        margin: "0 8px",
+                                    }}
+                                />
+                            </Fragment>
+                        ))}
+                </Box>
+            ) : (
+                <Typography
+                    variant="h6"
+                    color="primary.onContainerDim"
+                    textAlign="center"
+                >
+                    Looks like you didn't summit any peaks on this activity!
+                </Typography>
+            )}
         </Box>
     );
 };
