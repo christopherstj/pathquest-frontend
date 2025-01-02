@@ -1,11 +1,8 @@
 "use client";
-import { usePeaks } from "@/state/PeaksContext";
 import { useUser } from "@/state/UserContext";
 import { Box, Divider, List, SxProps, Typography } from "@mui/material";
 import React from "react";
 import UnclimbedPeakRow from "./UnclimbedPeakRow";
-import toggleFavoritePeak from "@/actions/toggleFavoritePeak";
-import { useMessage } from "@/state/MessageContext";
 import { useDashboard } from "@/state/DashboardContext";
 
 const containerStyles: SxProps = {

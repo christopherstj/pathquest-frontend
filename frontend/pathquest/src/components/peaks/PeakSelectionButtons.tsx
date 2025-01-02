@@ -7,7 +7,6 @@ import convertUnclimbedPeaksToGEOJson from "@/helpers/convertUnclimbedPeaksToGEO
 import convertPeakSummitsToGeoJSON from "@/helpers/convertPeakSummitsToGeoJSON";
 import getUnclimbedPeaksWithBounds from "@/actions/getUnclimbedPeaksWithBounds";
 import { useMessage } from "@/state/MessageContext";
-import getPeakSummits from "@/actions/getPeakSummits";
 
 const buttonGroupStyles: SxProps = {
     borderRadius: "24px",
@@ -39,7 +38,6 @@ const PeakSelectionButtons = () => {
         setPeaksState((state) => ({
             ...state,
             peakSelection: {
-                ...state.peakSelection,
                 type: "completed",
                 data: peakSummits ?? [],
             },
@@ -61,7 +59,6 @@ const PeakSelectionButtons = () => {
         setPeaksState((state) => ({
             ...state,
             peakSelection: {
-                ...state.peakSelection,
                 type: "unclimbed",
                 data: [],
             },
@@ -73,6 +70,7 @@ const PeakSelectionButtons = () => {
     };
 
     const getNewData = useCallback(async () => {
+        console.log("getting new data", peakSelection.type);
         if (peakSelection.type === "unclimbed") {
             const bounds = map?.getBounds();
             if (!limitResultsToBbox && search === "") {
@@ -135,10 +133,11 @@ const PeakSelectionButtons = () => {
     ]);
 
     React.useEffect(() => {
+        console.log("use effect", peakSelection.type);
         if (peakSelection.type === "unclimbed") {
             getNewData();
         }
-    }, [getNewData, peakSelection.type]);
+    }, [peakSelection.type]);
 
     React.useEffect(() => {
         if (map) {

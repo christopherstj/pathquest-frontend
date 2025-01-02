@@ -60,7 +60,7 @@ const ActivityPeaksList = () => {
 
     return (
         <Box sx={cardStyles}>
-            {peakSummits.length === 0 ? (
+            {peakSummits.length > 0 ? (
                 <Box sx={listStyles}>
                     {peakSummits
                         .sort((a, b) => (b.Altitude ?? 0) - (a.Altitude ?? 0))

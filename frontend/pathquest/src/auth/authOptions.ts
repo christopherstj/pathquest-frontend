@@ -1,4 +1,4 @@
-import createUser from "@/actions/createUser";
+import createUserIfExists from "@/actions/createUser";
 import NextAuth, { AuthOptions } from "next-auth";
 import StravaProvider from "next-auth/providers/strava";
 
@@ -16,22 +16,22 @@ export const authOptions: AuthOptions = {
     },
     callbacks: {
         async signIn({ user, account, profile, email, credentials }) {
-            const res = await fetch(`${frontendUrl}/api/auth/user-exists`, {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                },
-                body: JSON.stringify({ id: user.id.toString() }),
-            });
+            // const res = await fetch(`${frontendUrl}/api/auth/user-exists`, {
+            //     method: "POST",
+            //     headers: {
+            //         "Content-Type": "application/json",
+            //     },
+            //     body: JSON.stringify({ id: user.id.toString() }),
+            // });
 
-            if (!res.ok) {
-                return false;
-            }
+            // if (!res.ok) {
+            //     return false;
+            // }
 
-            const { userFound } = await res.json();
-            if (!userFound) {
-                await createUser(user);
-            }
+            // const { userFound } = await res.json();
+            // if (!userFound) {
+            await createUserIfExists(user);
+            // }
 
             if (!account) {
                 return false;

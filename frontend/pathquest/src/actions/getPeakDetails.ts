@@ -52,9 +52,6 @@ const getPeakDetails = async (
         };
     } else {
         const data = await response.json();
-        data.activities.forEach((activity: any) => {
-            if (activity.id === "12242435637") console.log(activity.startTime);
-        });
         return data;
     }
 };

@@ -1,5 +1,4 @@
 "use client";
-import { usePeaks } from "@/state/PeaksContext";
 import { Divider, List, SxProps, Typography } from "@mui/material";
 import { Box } from "@mui/system";
 import React from "react";

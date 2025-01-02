@@ -20,7 +20,7 @@ import convertUnclimbedPeaksToGEOJson from "@/helpers/convertUnclimbedPeaksToGEO
 
 const DashboardPeaksMap = () => {
     const [{ user }] = useUser();
-    const [{ peakSelection, map }, setPeaksState] = usePeaks();
+    const [{ peakSelection }, setPeaksState] = usePeaks();
     const [, dispatch] = useMessage();
 
     const theme = useTheme();
@@ -346,7 +346,6 @@ const DashboardPeaksMap = () => {
                 setPeaksState((state) => ({
                     ...state,
                     peakSelection: {
-                        ...state.peakSelection,
                         type: "unclimbed",
                         data: [
                             ...unclimbedPeaksData.features,
@@ -417,7 +416,6 @@ const DashboardPeaksMap = () => {
                 setPeaksState((state) => ({
                     ...state,
                     peakSelection: {
-                        ...state.peakSelection,
                         type: "unclimbed",
                         data: [
                             ...unclimbedPeaksData.features,
@@ -555,7 +553,6 @@ const DashboardPeaksMap = () => {
             setPeaksState((state) => ({
                 ...state,
                 peakSelection: {
-                    ...state.peakSelection,
                     type: "unclimbed",
                     data: (peakSelection.data as UnclimbedPeak[]).map(
                         (peak): UnclimbedPeak => {

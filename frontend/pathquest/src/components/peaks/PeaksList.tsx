@@ -59,6 +59,7 @@ const PeaksList = () => {
     const [{ user }] = useUser();
     const [, dispatch] = useMessage();
 
+    const [firstLoad, setFirstLoad] = React.useState(true);
     const [timeoutId, setTimeoutId] = React.useState<NodeJS.Timeout | null>(
         null
     );
@@ -110,7 +111,6 @@ const PeaksList = () => {
                 setPeaksState((state) => ({
                     ...state,
                     peakSelection: {
-                        ...state.peakSelection,
                         type: "unclimbed",
                         data: (peakSelection.data as UnclimbedPeak[]).map(
                             (peak) => {
@@ -160,7 +160,6 @@ const PeaksList = () => {
                 setPeaksState((state) => ({
                     ...state,
                     peakSelection: {
-                        ...state.peakSelection,
                         type: "unclimbed",
                         data: (peakSelection.data as UnclimbedPeak[]).map(
                             (peak) => {
@@ -224,7 +223,6 @@ const PeaksList = () => {
             setPeaksState((state) => ({
                 ...state,
                 peakSelection: {
-                    ...state.peakSelection,
                     type: "unclimbed",
                     data: (peakSelection.data as UnclimbedPeak[]).map(
                         (peak): UnclimbedPeak => {
@@ -243,13 +241,13 @@ const PeaksList = () => {
     };
 
     const refreshData = async () => {
+        console.log("refreshing data", peakSelection.type);
         if (peakSelection.type === "completed") {
             const peakSummits = await getPeakSummits();
 
             setPeaksState((state) => ({
                 ...state,
                 peakSelection: {
-                    ...state.peakSelection,
                     type: "completed",
                     data: (peakSummits ?? []).filter((peak) =>
                         peak.Name.toLowerCase().includes(search.toLowerCase())
@@ -284,11 +282,9 @@ const PeaksList = () => {
                 search,
                 showSummittedPeaks
             );
-
             setPeaksState((state) => ({
                 ...state,
                 peakSelection: {
-                    ...state.peakSelection,
                     type: "unclimbed",
                     data: newData,
                 },
@@ -308,19 +304,23 @@ const PeaksList = () => {
     };
 
     React.useEffect(() => {
-        if (timeoutId) {
-            clearTimeout(timeoutId);
-        }
-
-        const id = setTimeout(refreshData, 500);
-
-        setTimeoutId(id);
-
-        return () => {
+        if (!firstLoad) {
             if (timeoutId) {
                 clearTimeout(timeoutId);
             }
-        };
+
+            const id = setTimeout(refreshData, 500);
+
+            setTimeoutId(id);
+
+            return () => {
+                if (timeoutId) {
+                    clearTimeout(timeoutId);
+                }
+            };
+        } else {
+            setFirstLoad(false);
+        }
     }, [search, limitResultsToBbox, showSummittedPeaks]);
 
     return (

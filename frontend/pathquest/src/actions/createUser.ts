@@ -24,7 +24,7 @@ const createUser = async (user?: {
 
     const token = await getGoogleIdToken();
 
-    const apiRes = await fetch(`${backendUrl}/signup`, {
+    const userRes = await fetch(`${backendUrl}/user`, {
         method: "POST",
         cache: "no-cache",
         headers: {
@@ -32,21 +32,51 @@ const createUser = async (user?: {
             Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
-            id: user.id.toString(),
-            name: user.name,
-            email: null,
-            pic: user.image ?? null,
+            id: user.id,
         }),
     });
 
-    if (!apiRes.ok) {
-        console.error(await apiRes.text());
+    if (!userRes.ok) {
+        console.error(await userRes.text());
         return {
             success: false,
-            error: "Failed to create user",
+            error: "Failed to check user",
         };
+    }
+
+    const { userFound } = await userRes.json();
+
+    console.log(userFound);
+
+    if (!userFound) {
+        const apiRes = await fetch(`${backendUrl}/signup`, {
+            method: "POST",
+            cache: "no-cache",
+            headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify({
+                id: user.id.toString(),
+                name: user.name,
+                email: null,
+                pic: user.image ?? null,
+            }),
+        });
+
+        if (!apiRes.ok) {
+            console.error(await apiRes.text());
+            return {
+                success: false,
+                error: "Failed to create user",
+            };
+        } else {
+            revalidatePath(`${backendUrl}/user`);
+            return {
+                success: true,
+            };
+        }
     } else {
-        revalidatePath(`${backendUrl}/user`);
         return {
             success: true,
         };

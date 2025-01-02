@@ -1,23 +1,17 @@
 "use client";
 import React from "react";
 import MapboxContainer from "../common/MapboxContainer";
-import mapboxgl from "mapbox-gl";
-import { useUser } from "@/state/UserContext";
-import { useTheme } from "@mui/material";
+import { Divider, Typography, useTheme } from "@mui/material";
 import { usePeakDetail } from "@/state/PeakDetailContext";
 import loadMapDefaults from "@/helpers/loadMapDefaults";
 import initiateMap from "@/helpers/initiateMap";
+import "mapbox-gl/dist/mapbox-gl.css";
 
 const PeakDetailMap = () => {
     const [details, setPeakDetail] = usePeakDetail();
-    const [{ user }] = useUser();
-
-    const units = user?.units ?? "imperial";
 
     const mapRef = React.useRef<mapboxgl.Map | null>(null);
     const mapContainerRef = React.useRef<any>(null);
-
-    const [marker, setMarker] = React.useState<mapboxgl.Marker | null>(null);
 
     const theme = useTheme();
 
@@ -184,20 +178,32 @@ const PeakDetailMap = () => {
     }, []);
 
     return (
-        <MapboxContainer
-            sx={{
-                height: {
-                    xs: "70vh",
-                    md: "calc(100vh - 32px)",
-                },
-            }}
-        >
-            <div
-                id="map-container"
-                ref={mapContainerRef}
-                style={{ height: "100%", width: "100%" }}
+        <>
+            <Typography variant="h5" color="primary.onContainer">
+                {peak.Name}
+            </Typography>
+            <Divider
+                sx={{
+                    backgroundColor: "primary.onContainer",
+                    width: "100%",
+                    marginBottom: "12px",
+                }}
             />
-        </MapboxContainer>
+            <MapboxContainer
+                sx={{
+                    height: {
+                        xs: "70vh",
+                        md: "calc(100vh - 88px)",
+                    },
+                }}
+            >
+                <div
+                    id="map-container"
+                    ref={mapContainerRef}
+                    style={{ height: "100%", width: "100%" }}
+                />
+            </MapboxContainer>
+        </>
     );
 };
 

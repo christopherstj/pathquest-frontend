@@ -4,7 +4,7 @@ import UnclimbedPeak from "@/typeDefs/UnclimbedPeak";
 import React, { createContext, useState } from "react";
 
 interface PeakDetailState {
-    peak: UnclimbedPeak | null;
+    peak: UnclimbedPeak;
     activities: Activity[];
     summits: {
         timestamp: string;
@@ -14,7 +14,7 @@ interface PeakDetailState {
 }
 
 const usePeakDetailState = (
-    peak: UnclimbedPeak | null,
+    peak: UnclimbedPeak,
     activities: Activity[],
     summits: {
         timestamp: string;
@@ -48,7 +48,7 @@ const PeakDetailProvider = ({
     summits,
     children,
 }: {
-    peak: UnclimbedPeak | null;
+    peak: UnclimbedPeak;
     activities: Activity[];
     summits: {
         timestamp: string;

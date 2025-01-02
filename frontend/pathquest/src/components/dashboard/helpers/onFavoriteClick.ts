@@ -14,7 +14,7 @@ const onFavoriteClick = async (
     map: mapboxgl.Map | null,
     theme: Theme,
     units: "metric" | "imperial",
-    setPeaksState: React.Dispatch<React.SetStateAction<DashboardState>>,
+    setDashboardState: React.Dispatch<React.SetStateAction<DashboardState>>,
     dispatch: React.Dispatch<any>
 ) => {
     if (newValue) {
@@ -45,20 +45,12 @@ const onFavoriteClick = async (
 
             favoritePeaksSource?.setData(favoritePeaksData);
 
-            setPeaksState((state) => ({
+            setDashboardState((state) => ({
                 ...state,
-                unclimbedPeaks: [
-                    ...unclimbedPeaksData.features
-                        .map((p) => ({
-                            ...(p.properties as UnclimbedPeak),
-                            isFavorited: false,
-                        }))
-                        .sort((a, b) => (a.distance ?? 0) - (b.distance ?? 0)),
-                    ...favoritePeaksData.features.map((p) => ({
-                        ...(p.properties as UnclimbedPeak),
-                        isFavorited: true,
-                    })),
-                ],
+                favoritePeaks: (state.favoritePeaks ?? []).map((p) => ({
+                    ...(p as UnclimbedPeak),
+                    isFavorited: p.Id === peakId ? newValue : p.isFavorited,
+                })),
             }));
 
             if (openPopup && map) {
@@ -85,7 +77,7 @@ const onFavoriteClick = async (
                                     map,
                                     theme,
                                     units,
-                                    setPeaksState,
+                                    setDashboardState,
                                     dispatch
                                 );
                             },
@@ -125,20 +117,12 @@ const onFavoriteClick = async (
 
             unclimbedPeaksSource?.setData(unclimbedPeaksData);
 
-            setPeaksState((state) => ({
+            setDashboardState((state) => ({
                 ...state,
-                unclimbedPeaks: [
-                    ...unclimbedPeaksData.features
-                        .map((p) => ({
-                            ...(p.properties as UnclimbedPeak),
-                            isFavorited: false,
-                        }))
-                        .sort((a, b) => (a.distance ?? 0) - (b.distance ?? 0)),
-                    ...favoritePeaksData.features.map((p) => ({
-                        ...(p.properties as UnclimbedPeak),
-                        isFavorited: true,
-                    })),
-                ],
+                favoritePeaks: (state.favoritePeaks ?? []).map((p) => ({
+                    ...(p as UnclimbedPeak),
+                    isFavorited: p.Id === peakId ? newValue : p.isFavorited,
+                })),
             }));
 
             if (openPopup && map) {
@@ -165,7 +149,7 @@ const onFavoriteClick = async (
                                     map,
                                     theme,
                                     units,
-                                    setPeaksState,
+                                    setDashboardState,
                                     dispatch
                                 );
                             },
@@ -251,7 +235,7 @@ const onFavoriteClick = async (
                                           map,
                                           theme,
                                           units,
-                                          setPeaksState,
+                                          setDashboardState,
                                           dispatch
                                       );
                                   },
@@ -268,7 +252,7 @@ const onFavoriteClick = async (
                                           map,
                                           theme,
                                           units,
-                                          setPeaksState,
+                                          setDashboardState,
                                           dispatch
                                       );
                                   },
@@ -278,20 +262,12 @@ const onFavoriteClick = async (
             }
         }
 
-        setPeaksState((state) => ({
+        setDashboardState((state) => ({
             ...state,
-            unclimbedPeaks: [
-                ...data.features
-                    .map((p) => ({
-                        ...(p.properties as UnclimbedPeak),
-                        isFavorited: false,
-                    }))
-                    .sort((a, b) => (a.distance ?? 0) - (b.distance ?? 0)),
-                ...targetDataFeatures.features.map((p) => ({
-                    ...(p.properties as UnclimbedPeak),
-                    isFavorited: true,
-                })),
-            ],
+            favoritePeaks: (state.favoritePeaks ?? []).map((p) => ({
+                ...(p as UnclimbedPeak),
+                isFavorited: p.Id === peakId ? !newValue : p.isFavorited,
+            })),
         }));
     }
 };

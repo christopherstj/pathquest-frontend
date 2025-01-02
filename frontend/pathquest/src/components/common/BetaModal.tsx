@@ -13,20 +13,6 @@ import {
 import React from "react";
 import TextField from "./TextField";
 
-const dialogStyles: SxProps = {
-    "& .MuiPaper-root": {
-        borderRadius: "12px",
-        backgroundColor: "primary.container",
-    },
-    "& .MuiDialogTitle-root": {
-        color: "primary.onContainer",
-        borderBottom: "1px solid primary.onContainerDim",
-    },
-    "& .MuiDialogContentText-root": {
-        color: "primary.onContainerDim",
-    },
-};
-
 const buttonStyles: SxProps = {
     borderRadius: "24px",
     backgroundColor: "transparent",
@@ -58,7 +44,7 @@ const BetaModal = () => {
     }, []);
 
     return (
-        <Dialog open={open} onClose={handleClose} sx={dialogStyles}>
+        <Dialog open={open} onClose={handleClose}>
             {loading && (
                 <LinearProgress
                     color="secondary"

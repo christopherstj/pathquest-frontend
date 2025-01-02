@@ -70,9 +70,11 @@ export const darkColors: PaletteOptions = {
     },
 };
 
+const palette = createPalette(darkColors);
+
 const baseTheme = createTheme({
     palette: {
-        ...createPalette(darkColors),
+        ...palette,
         mode: "dark",
     },
     // colorSchemes: {
@@ -126,6 +128,83 @@ const baseTheme = createTheme({
                 root: {
                     textTransform: "none",
                     fontFamily: "var(--font-merriweather-sans)",
+                },
+            },
+        },
+        MuiButtonBase: {
+            styleOverrides: {
+                root: {
+                    textTransform: "none",
+                    fontFamily: "var(--font-merriweather-sans)",
+                    fontWeight: "500",
+                    transition: "background-color 0.15s",
+                },
+            },
+            variants: [
+                {
+                    props: { color: "primary" },
+                    style: {
+                        backgroundColor: palette.primary.container,
+                        color: palette.primary.onContainer,
+                        "&:hover": {
+                            backgroundColor: palette.primary.containerDim,
+                        },
+                    },
+                },
+            ],
+        },
+        MuiDialog: {
+            styleOverrides: {
+                paper: {
+                    borderRadius: "12px",
+                    backgroundColor: palette.primary.container,
+                },
+            },
+        },
+        MuiDialogTitle: {
+            styleOverrides: {
+                root: {
+                    color: palette.primary.onContainer,
+                    // borderBottom: `1px solid ${palette.primary.onContainerDim}`,
+                },
+            },
+        },
+        MuiDialogContentText: {
+            styleOverrides: {
+                root: {
+                    color: palette.primary.onContainerDim,
+                },
+            },
+        },
+        MuiFormControlLabel: {
+            variants: [
+                {
+                    props: { color: "primary" },
+                    style: {
+                        color: palette.primary.onContainer,
+                    },
+                },
+            ],
+        },
+        MuiCheckbox: {
+            variants: [
+                {
+                    props: { color: "primary" },
+                    style: {
+                        color: palette.primary.onContainer,
+                        "&.Mui-checked": {
+                            color: palette.primary.onContainer,
+                        },
+                    },
+                },
+            ],
+        },
+        MuiAutocomplete: {
+            styleOverrides: {
+                paper: {
+                    backgroundColor: palette.primary.container,
+                    color: palette.primary.onContainer,
+                    borderRadius: "12px",
                 },
             },
         },

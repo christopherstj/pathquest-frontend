@@ -10,7 +10,7 @@ import { useDashboard } from "@/state/DashboardContext";
 const containerStyles: SxProps = {
     borderRadius: "12px",
     backgroundColor: "secondary.container",
-    padding: "0px 4px",
+    padding: "8px 4px 0px 4px",
     boxShadow: 3,
     display: "flex",
     flexDirection: "column",
@@ -48,21 +48,16 @@ const listStyles: SxProps = {
 
 const IncompleteChallenges = () => {
     const [{ incompleteChallenges }] = useDashboard();
-    const [{ user }] = useUser();
-
-    if (!user) return null;
-
-    const { units } = user;
 
     return (
         <>
             <Box width="100%">
-                <Typography variant="h4" color="secondary.onContainer">
+                <Typography variant="h4" color="primary.onContainer">
                     Ongoing Challenges
                 </Typography>
                 <Divider
                     sx={{
-                        backgroundColor: "secondary.onContainer",
+                        backgroundColor: "primary.onContainer",
                         height: "2px",
                         marginTop: "12px",
                     }}

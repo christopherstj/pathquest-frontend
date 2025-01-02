@@ -1,14 +1,8 @@
 "use client";
-import { usePeaks } from "@/state/PeaksContext";
 import { Box, Divider, List, SxProps, Typography } from "@mui/material";
 import React from "react";
 import UnclimbedPeakRow from "./UnclimbedPeakRow";
 import { useUser } from "@/state/UserContext";
-import toggleFavoritePeak from "@/actions/toggleFavoritePeak";
-import { useMessage } from "@/state/MessageContext";
-import FavoritedPeak from "@/typeDefs/FavoritedPeak";
-import { GeoJSONSource } from "mapbox-gl";
-import UnclimbedPeak from "@/typeDefs/UnclimbedPeak";
 import { useDashboard } from "@/state/DashboardContext";
 
 const containerStyles: SxProps = {

@@ -5,10 +5,7 @@ import {
 } from "@mui/material";
 import React from "react";
 
-const textFieldStyles = (
-    color: "primary" | "secondary",
-    inverted: boolean
-): SxProps => ({
+export const textFieldStyles = (color: "primary" | "secondary"): SxProps => ({
     borderRadius: "12px",
     backgroundColor: `${color}.containerDim`,
     color: `${color}.onContainer`,
@@ -54,8 +51,7 @@ const TextField = ({
         ...textFieldStyles(
             !["primary", "secondary"].includes(color ?? "primary")
                 ? "primary"
-                : (color as "primary" | "secondary"),
-            inverted
+                : (color as "primary" | "secondary")
         ),
         ...sx,
     };

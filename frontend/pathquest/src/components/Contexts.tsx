@@ -4,6 +4,8 @@ import { AppRouterCacheProvider } from "@mui/material-nextjs/v14-appRouter";
 import { ThemeProvider } from "@mui/material";
 import { theme } from "@/theme/theme";
 import { SessionProvider } from "next-auth/react";
+import { LocalizationProvider } from "@mui/x-date-pickers";
+import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 
 type Props = {
     children: React.ReactNode;
@@ -11,11 +13,13 @@ type Props = {
 
 const Contexts = ({ children }: Props) => {
     return (
-        <SessionProvider>
-            <AppRouterCacheProvider>
-                <ThemeProvider theme={theme}>{children}</ThemeProvider>
-            </AppRouterCacheProvider>
-        </SessionProvider>
+        <LocalizationProvider dateAdapter={AdapterDayjs}>
+            <SessionProvider>
+                <AppRouterCacheProvider>
+                    <ThemeProvider theme={theme}>{children}</ThemeProvider>
+                </AppRouterCacheProvider>
+            </SessionProvider>
+        </LocalizationProvider>
     );
 };
 

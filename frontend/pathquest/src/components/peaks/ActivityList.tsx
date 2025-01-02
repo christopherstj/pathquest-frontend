@@ -5,6 +5,7 @@ import React from "react";
 import ActivityRow from "./ActivityRow";
 import { useUser } from "@/state/UserContext";
 import { GeoJSONSource } from "mapbox-gl";
+import PeakButtons from "./PeakButtons";
 
 const containerStyles: SxProps = {
     padding: "0px 4px",
@@ -15,6 +16,7 @@ const containerStyles: SxProps = {
         xs: "70vh",
         md: "calc(100vh - 32px)",
     },
+    height: "100%",
 };
 
 const listStyles: SxProps = {
@@ -41,7 +43,7 @@ const listStyles: SxProps = {
 };
 
 const ActivityList = () => {
-    const [{ activities, summits, map }] = usePeakDetail();
+    const [{ activities, summits, map, peak }] = usePeakDetail();
     const [{ user }] = useUser();
 
     if (!activities || !user) return null;
@@ -101,17 +103,28 @@ const ActivityList = () => {
             <Divider
                 sx={{ backgroundColor: "primary.onContainer", width: "100%" }}
             />
-            <Box sx={listStyles}>
-                {activitiesWithSummits.map((activity) => (
-                    <ActivityRow
-                        key={activity.id}
-                        activity={activity}
-                        units={units}
-                        onMouseOver={onRowHover}
-                        onMouseOut={clearSelectedActivities}
-                    />
-                ))}
-            </Box>
+            {activitiesWithSummits.length === 0 ? (
+                <Typography
+                    variant="h6"
+                    color="primary.onContainerDim"
+                    sx={{ padding: "8px" }}
+                >
+                    You haven't summited {peak?.Name ?? "this peak"} yet!
+                </Typography>
+            ) : (
+                <Box sx={listStyles}>
+                    {activitiesWithSummits.map((activity) => (
+                        <ActivityRow
+                            key={activity.id}
+                            activity={activity}
+                            units={units}
+                            onMouseOver={onRowHover}
+                            onMouseOut={clearSelectedActivities}
+                        />
+                    ))}
+                </Box>
+            )}
+            <PeakButtons />
         </Box>
     );
 };
