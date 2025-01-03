@@ -99,13 +99,15 @@ const PeakButtons = () => {
 
     return (
         <Box sx={containerStyles}>
-            <ButtonBase
-                sx={buttonStyles}
-                color="primary"
-                onClick={handleFavoriteClick}
-            >
-                {isFavorited ? "Unfavorite" : "Favorite"}
-            </ButtonBase>
+            {!peak.isSummitted && (
+                <ButtonBase
+                    sx={buttonStyles}
+                    color="primary"
+                    onClick={handleFavoriteClick}
+                >
+                    {isFavorited ? "Unfavorite" : "Favorite"}
+                </ButtonBase>
+            )}
             <ButtonBase
                 sx={buttonStyles}
                 color="primary"
