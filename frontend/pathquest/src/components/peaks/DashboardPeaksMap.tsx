@@ -596,7 +596,7 @@ const DashboardPeaksMap = () => {
                 },
             }}
         >
-            {/* @ts-ignore Bug in the mapbox search component */}
+            {/* @ts-expect-error Bug in the mapbox search component */}
             <SearchBox
                 accessToken={process.env.NEXT_PUBLIC_MAPBOX_TOKEN ?? ""}
                 map={mapRef.current ?? undefined}
