@@ -10,6 +10,13 @@ const containerStyles: SxProps = {
     borderRadius: "8px",
     overflow: "hidden",
     position: "relative",
+    "& mapbox-search-box": {
+        position: "absolute",
+        top: "10px",
+        right: "8px",
+        zIndex: 1,
+        width: "calc(100% - 56px)",
+    },
     ".mapboxgl-popup-tip": {
         borderTopColor: "background.paper",
     },

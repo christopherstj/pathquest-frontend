@@ -19,9 +19,11 @@ const getActivityDetails = async (
         return null;
     }
 
+    const userId = session.user.id;
+
     const token = await getGoogleIdToken();
 
-    const url = `${backendUrl}/activities/${activityId}`;
+    const url = `${backendUrl}/activities/${userId}/${activityId}`;
 
     const res = await fetch(url, {
         method: "GET",

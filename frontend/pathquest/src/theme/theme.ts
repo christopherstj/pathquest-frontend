@@ -121,6 +121,9 @@ const baseTheme = createTheme({
                 button: {
                     fontFamily: "var(--font-merriweather-sans)",
                 },
+                root: {
+                    color: palette.primary.onContainer,
+                },
             },
         },
         MuiButton: {
@@ -128,8 +131,54 @@ const baseTheme = createTheme({
                 root: {
                     textTransform: "none",
                     fontFamily: "var(--font-merriweather-sans)",
+                    borderRadius: "24px",
+                    color: palette.primary.onContainer,
                 },
             },
+            variants: [
+                {
+                    props: { color: "primary" },
+                    style: {
+                        "&:hover": {
+                            backgroundColor: palette.primary.containerDim,
+                        },
+                    },
+                },
+                {
+                    props: { color: "secondary" },
+                    style: {
+                        "&:hover": {
+                            backgroundColor: palette.secondary.containerDim,
+                        },
+                    },
+                },
+                {
+                    props: {
+                        variant: "outlined",
+                        color: "primary",
+                    },
+                    style: {
+                        color: palette.primary.onContainer,
+                        borderColor: palette.primary.onContainer,
+                        "&:hover": {
+                            backgroundColor: palette.primary.containerDim,
+                        },
+                    },
+                },
+                {
+                    props: {
+                        variant: "outlined",
+                        color: "secondary",
+                    },
+                    style: {
+                        color: palette.secondary.onContainer,
+                        borderColor: palette.secondary.onContainer,
+                        "&:hover": {
+                            backgroundColor: palette.secondary.containerDim,
+                        },
+                    },
+                },
+            ],
         },
         MuiButtonBase: {
             styleOverrides: {
@@ -154,6 +203,14 @@ const baseTheme = createTheme({
             ],
         },
         MuiDialog: {
+            styleOverrides: {
+                paper: {
+                    borderRadius: "12px",
+                    backgroundColor: palette.primary.container,
+                },
+            },
+        },
+        MuiPopover: {
             styleOverrides: {
                 paper: {
                     borderRadius: "12px",
@@ -207,6 +264,54 @@ const baseTheme = createTheme({
                     borderRadius: "12px",
                 },
             },
+        },
+        MuiDivider: {
+            styleOverrides: {
+                root: {
+                    height: "2px",
+                },
+            },
+            variants: [
+                {
+                    props: { color: "primary" },
+                    style: {
+                        backgroundColor: palette.primary.onContainer,
+                    },
+                },
+                {
+                    props: { color: "secondary" },
+                    style: {
+                        backgroundColor: palette.secondary.onContainer,
+                    },
+                },
+            ],
+        },
+        MuiIconButton: {
+            variants: [
+                {
+                    props: { color: "primary" },
+                    style: {
+                        color: palette.primary.onContainer,
+                    },
+                },
+            ],
+        },
+        MuiSvgIcon: {
+            styleOverrides: {
+                root: {
+                    color: palette.primary.onContainer,
+                },
+            },
+        },
+        MuiLinearProgress: {
+            variants: [
+                {
+                    props: { color: "primary" },
+                    style: {
+                        color: palette.primary.onContainer,
+                    },
+                },
+            ],
         },
     },
 });

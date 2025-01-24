@@ -11,9 +11,6 @@ import initiateMap from "@/helpers/initiateMap";
 const ActivityDetailMap = () => {
     const [{ activity, peakSummits }, setActivityDetailState] =
         useActivityDetail();
-    const [{ user }] = useUser();
-
-    const units = user?.units ?? "metric";
 
     const theme = useTheme();
 
@@ -50,7 +47,7 @@ const ActivityDetailMap = () => {
             sx={{
                 height: {
                     xs: "70vh",
-                    md: "calc(100vh - 32px)",
+                    md: "calc(100vh - 88px)",
                 },
             }}
         >

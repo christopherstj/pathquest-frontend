@@ -1,11 +1,12 @@
 "use client";
 import React from "react";
 import MapboxContainer from "../common/MapboxContainer";
-import { Divider, Typography, useTheme } from "@mui/material";
+import { Box, Divider, Typography, useTheme } from "@mui/material";
 import { usePeakDetail } from "@/state/PeakDetailContext";
 import loadMapDefaults from "@/helpers/loadMapDefaults";
 import initiateMap from "@/helpers/initiateMap";
 import "mapbox-gl/dist/mapbox-gl.css";
+import AltitudeCard from "./AltitudeCard";
 
 const PeakDetailMap = () => {
     const [details, setPeakDetail] = usePeakDetail();
@@ -179,9 +180,36 @@ const PeakDetailMap = () => {
 
     return (
         <>
-            <Typography variant="h5" color="primary.onContainer">
-                {peak.Name}
-            </Typography>
+            <Box
+                width="100%"
+                display="flex"
+                // justifyContent="space-between"
+                alignItems="center"
+                paddingBottom="8px"
+            >
+                <Typography variant="h4" color="primary.onContainer">
+                    {peak.Name}
+                </Typography>
+
+                <Box
+                    sx={{
+                        ml: {
+                            xs: "none",
+                            md: "auto",
+                        },
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "8px",
+                    }}
+                >
+                    <Typography variant="h6" color="primary.onContainerDim">
+                        {peak.Country ? `${peak.Country}` : ""}
+                        {peak.State ? ` | ${peak.State}` : ""}
+                        {peak.County ? ` | ${peak.County}` : ""}
+                    </Typography>
+                    {peak.Altitude && <AltitudeCard altitude={peak.Altitude} />}
+                </Box>
+            </Box>
             <Divider
                 sx={{
                     backgroundColor: "primary.onContainer",

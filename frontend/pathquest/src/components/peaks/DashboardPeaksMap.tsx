@@ -17,6 +17,7 @@ import { useMessage } from "@/state/MessageContext";
 import loadMapDefaults from "@/helpers/loadMapDefaults";
 import initiateMap from "@/helpers/initiateMap";
 import convertUnclimbedPeaksToGEOJson from "@/helpers/convertUnclimbedPeaksToGEOJson";
+import { SearchBox } from "@mapbox/search-js-react";
 
 const DashboardPeaksMap = () => {
     const [{ user }] = useUser();
@@ -595,6 +596,12 @@ const DashboardPeaksMap = () => {
                 },
             }}
         >
+            {/* @ts-ignore Bug in the mapbox search component */}
+            <SearchBox
+                accessToken={process.env.NEXT_PUBLIC_MAPBOX_TOKEN ?? ""}
+                map={mapRef.current ?? undefined}
+                mapboxgl={mapboxgl}
+            />
             <div
                 id="map-container"
                 ref={mapContainerRef}

@@ -16,7 +16,7 @@ const page = ({ params: { id } }: Props) => {
     return (
         <PeakDetailData peakId={id}>
             <GridContainer spacing={3}>
-                <Grid size={{ xs: 12, md: 7, lg: 8 }} paddingTop="8px">
+                <Grid size={{ xs: 12, md: 7, lg: 8 }}>
                     <PeakDetailMap />
                 </Grid>
                 <Grid size={{ xs: 12, md: 5, lg: 4 }}>

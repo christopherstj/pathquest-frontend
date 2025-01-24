@@ -97,7 +97,7 @@ const ActivityList = () => {
 
     return (
         <Box sx={containerStyles}>
-            <Typography variant="h5" color="primary.onContainer">
+            <Typography variant="h4" color="primary.onContainer">
                 Your summits
             </Typography>
             <Divider
