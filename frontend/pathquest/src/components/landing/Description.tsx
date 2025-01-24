@@ -1,7 +1,6 @@
 import { Box, Button, SxProps, Typography } from "@mui/material";
 import Link from "next/link";
 import React from "react";
-import LoginCard from "../auth/LoginCard";
 
 const containerStyles: SxProps = {
     width: "100%",
@@ -34,7 +33,14 @@ const Description = () => {
             >
                 Your path forward
             </Typography>
-            <LoginCard />
+            <Button
+                variant="contained"
+                sx={buttonStyles}
+                LinkComponent={Link}
+                href="/app"
+            >
+                Explore
+            </Button>
         </Box>
     );
 };
