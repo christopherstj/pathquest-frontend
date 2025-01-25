@@ -12,10 +12,12 @@ const getChallengeDetails = async (
     challengeId: string
 ): Promise<{
     challenge: Challenge;
-    peaks: {
-        peak: UnclimbedPeak;
-        activity?: Activity;
+    peaks: (UnclimbedPeak & {
         ascents: { timestamp: string; activityId: string; timezone?: string }[];
+    })[];
+    activityCoords: {
+        id: string;
+        coords: Activity["coords"];
     }[];
 } | null> => {
     const session = await useAuth();

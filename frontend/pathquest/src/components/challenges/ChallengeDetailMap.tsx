@@ -11,7 +11,7 @@ import onFavoriteClick from "./helpers/onFavoriteClick";
 import initiateMap from "@/helpers/initiateMap";
 
 const ChallengeDetailMap = () => {
-    const [{ challenge, peaks }, setChallengeDetailState] =
+    const [{ challenge, peaks, activityCoords }, setChallengeDetailState] =
         useChallengeDetail();
     const [{ user }] = useUser();
 
@@ -29,7 +29,7 @@ const ChallengeDetailMap = () => {
             () => {
                 addChallengeDetailMarkers(
                     mapRef.current,
-                    peaks,
+                    { peaks, activityCoords },
                     theme,
                     units,
                     (peakId: string, newValue: boolean) =>

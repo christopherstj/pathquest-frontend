@@ -78,19 +78,16 @@ const ChallengePeaksList = () => {
             <ChallengePeaksSearch value={search} setValue={setSearch} />
             <Box sx={listStyles}>
                 {peaks
-                    .filter(({ peak }) => {
+                    .filter((peak) => {
                         if (display === "completed") return peak.isSummitted;
                         if (display === "unclimbed") return !peak.isSummitted;
                         return true;
                     })
-                    .filter(({ peak }) =>
+                    .filter((peak) =>
                         peak.Name.toLowerCase().includes(search.toLowerCase())
                     )
-                    .sort(
-                        (a, b) =>
-                            (b.peak.Altitude ?? 0) - (a.peak.Altitude ?? 0)
-                    )
-                    .map(({ peak, ascents }) => (
+                    .sort((a, b) => (b.Altitude ?? 0) - (a.Altitude ?? 0))
+                    .map(({ ascents, ...peak }) => (
                         <Fragment key={peak.Id}>
                             <UnclimbedPeakRow
                                 rowColor="primary"

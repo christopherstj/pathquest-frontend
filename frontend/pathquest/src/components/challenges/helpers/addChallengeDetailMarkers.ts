@@ -15,9 +15,12 @@ let hoveredPolygonId: number | null = null;
 const addChallengeDetailMarkers = (
     map: mapboxgl.Map | null,
     data: {
-        peak: UnclimbedPeak;
-        activity?: Activity;
-    }[],
+        peaks: UnclimbedPeak[];
+        activityCoords: {
+            id: string;
+            coords: Activity["coords"];
+        }[];
+    },
     theme: Theme,
     units: "metric" | "imperial",
     onFavoriteClick: (peakId: string, newValue: boolean) => Promise<void>
@@ -28,7 +31,7 @@ const addChallengeDetailMarkers = (
 
     loadMapDefaults(map, theme, "markers");
 
-    const geoJson = convertUnclimbedPeaksToGEOJson(data.map((p) => p.peak));
+    const geoJson = convertUnclimbedPeaksToGEOJson(data.peaks);
 
     geoJson.features.forEach((peak) => {
         bounds.extend((peak.geometry as any).coordinates);
@@ -46,19 +49,20 @@ const addChallengeDetailMarkers = (
         type: "geojson",
         data: {
             type: "FeatureCollection",
-            features: data
-                .filter((p) => p.activity !== undefined)
-                .map(({ activity }) => ({
-                    id: activity!.id,
+            features: data.activityCoords
+                .filter((p) => p)
+                .map(({ coords, id }) => ({
+                    id,
                     type: "Feature",
                     geometry: {
                         type: "LineString",
-                        coordinates: (
-                            activity!.coords as [number, number][]
-                        ).map((c) => [c[1], c[0]]),
+                        coordinates: (coords as [number, number][]).map((c) => [
+                            c[1],
+                            c[0],
+                        ]),
                     },
                     properties: {
-                        ...activity,
+                        id,
                     },
                 })),
         },

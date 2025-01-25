@@ -7,19 +7,23 @@ import React, { createContext, useState } from "react";
 export interface ChallengeDetailState {
     map: mapboxgl.Map | null;
     challenge: Challenge;
-    peaks: {
-        peak: UnclimbedPeak;
-        activity?: Activity;
+    peaks: (UnclimbedPeak & {
         ascents: { timestamp: string; activityId: string; timezone?: string }[];
+    })[];
+    activityCoords: {
+        id: string;
+        coords: Activity["coords"];
     }[];
 }
 
 const useChallengeDetailState = (data: {
     challenge: Challenge;
-    peaks: {
-        peak: UnclimbedPeak;
-        activity?: Activity;
+    peaks: (UnclimbedPeak & {
         ascents: { timestamp: string; activityId: string; timezone?: string }[];
+    })[];
+    activityCoords: {
+        id: string;
+        coords: Activity["coords"];
     }[];
 }) =>
     useState<ChallengeDetailState>({
@@ -48,14 +52,16 @@ const ChallengeDetailProvider = ({
     children: React.ReactNode;
     data: {
         challenge: Challenge;
-        peaks: {
-            peak: UnclimbedPeak;
-            activity?: Activity;
+        peaks: (UnclimbedPeak & {
             ascents: {
                 timestamp: string;
                 activityId: string;
                 timezone?: string;
             }[];
+        })[];
+        activityCoords: {
+            id: string;
+            coords: Activity["coords"];
         }[];
     };
 }) => {
