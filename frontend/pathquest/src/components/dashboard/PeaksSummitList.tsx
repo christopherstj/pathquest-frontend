@@ -60,7 +60,7 @@ const PeaksSummitList = () => {
         <>
             <Box width="100%">
                 <Typography variant="h4" color="primary.onContainer">
-                    Your Most Summitted Peaks
+                    Your Recent Summits
                 </Typography>
                 <Divider
                     sx={{
