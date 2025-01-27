@@ -65,7 +65,7 @@ const RecentActivities = () => {
         <>
             <Box width="100%">
                 <Typography variant="h4" color="primary.onContainer">
-                    Recent Activities
+                    Your Recent Activities
                 </Typography>
                 <Divider
                     sx={{
