@@ -410,13 +410,9 @@ const PeaksList = () => {
                     />
                     <Virtuoso
                         className="peaks-list"
-                        data={peakSelection.data
-                            .filter((peak) =>
-                                (peak.Name ?? "").toLowerCase().includes(search)
-                            )
-                            .sort(
-                                (a, b) => (b.Altitude ?? 0) - (a.Altitude ?? 0)
-                            )}
+                        data={peakSelection.data.sort(
+                            (a, b) => (b.Altitude ?? 0) - (a.Altitude ?? 0)
+                        )}
                         itemContent={(_, peak) => (
                             <UnclimbedPeakRow
                                 key={peak.Id}

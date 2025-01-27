@@ -18,7 +18,7 @@ const page = ({ params: { id } }: Props) => {
     return (
         <ActivityDetailData id={id}>
             <GridContainer spacing={3}>
-                <Grid size={{ xs: 12, md: 7, lg: 8 }}>
+                <Grid size={{ xs: 12, md: 7, lg: 8 }} position="relative">
                     <ActivityTitle />
                     <ActivityDetailMap />
                 </Grid>

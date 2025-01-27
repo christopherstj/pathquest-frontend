@@ -1,3 +1,4 @@
+import { useAuth } from "@/auth/useAuth";
 import LoginCard from "@/components/auth/LoginCard";
 import BetaModal from "@/components/common/BetaModal";
 import Description from "@/components/landing/Description";

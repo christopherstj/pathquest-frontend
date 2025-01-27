@@ -251,6 +251,22 @@ const Map = () => {
         if (mapRef.current !== null) {
             loadMapDefaults(mapRef.current, theme, "all");
 
+            const bounds = new mapboxgl.LngLatBounds();
+
+            peakSummits?.forEach((peak) => {
+                bounds.extend([peak.Long, peak.Lat]);
+            });
+            favoritePeaks?.forEach((peak) => {
+                bounds.extend([peak.Long, peak.Lat]);
+            });
+            activities?.forEach((activity) => {
+                bounds.extend([activity.startLong, activity.startLat]);
+            });
+
+            mapRef.current.fitBounds(bounds, {
+                padding: 50,
+            });
+
             mapRef.current?.addSource("peakSummits", {
                 type: "geojson",
                 data: convertPeakSummitsToGeoJSON(peakSummits ?? []),

@@ -1,16 +1,8 @@
-import deleteActivity from "@/actions/deleteActivity";
-import { Delete, MoreVert } from "@mui/icons-material";
-import {
-    IconButton,
-    List,
-    ListItemButton,
-    ListItemIcon,
-    ListItemText,
-    Popover,
-    Typography,
-} from "@mui/material";
+import { MoreVert } from "@mui/icons-material";
+import { IconButton, List, Popover } from "@mui/material";
 import React from "react";
-import ConfirmDialog from "../common/ConfirmDialog";
+import DeleteActivityButton from "./DeleteActivityButton";
+import ReprocessActivityButton from "./ReprocessActivityButton";
 
 type Props = {
     activityId: string;
@@ -20,19 +12,6 @@ const ActivityMenu = ({ activityId }: Props) => {
     const [anchorEl, setAnchorEl] = React.useState<HTMLButtonElement | null>(
         null
     );
-    const [modalOpen, setModalOpen] = React.useState(false);
-    const [loading, setLoading] = React.useState(false);
-
-    const handleOpen = () => {
-        setModalOpen(true);
-    };
-
-    const onDelete = async () => {
-        setLoading(true);
-        await deleteActivity(activityId);
-        setLoading(false);
-        setModalOpen(false);
-    };
 
     const handleClick = (event: React.MouseEvent<HTMLButtonElement>) => {
         setAnchorEl(event.currentTarget);
@@ -65,25 +44,10 @@ const ActivityMenu = ({ activityId }: Props) => {
                 }}
             >
                 <List>
-                    <ListItemButton onClick={handleOpen}>
-                        <ListItemIcon>
-                            <Delete />
-                        </ListItemIcon>
-                        <ListItemText primary="Delete" />
-                    </ListItemButton>
+                    <DeleteActivityButton activityId={activityId} />
+                    <ReprocessActivityButton activityId={activityId} />
                 </List>
             </Popover>
-            <ConfirmDialog
-                loading={loading}
-                open={modalOpen}
-                onClose={() => setModalOpen(false)}
-                title="Delete Activity"
-                description="Are you sure you want to delete this activity? This action cannot be undone."
-                onConfirm={onDelete}
-                confirmText="Yes, Delete"
-                onCancel={() => setModalOpen(false)}
-                cancelText="Cancel"
-            />
         </>
     );
 };
