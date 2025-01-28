@@ -2,6 +2,7 @@
 import getGoogleIdToken from "@/auth/getGoogleIdToken";
 import { useAuth } from "@/auth/useAuth";
 import getBackendUrl from "@/helpers/getBackendUrl";
+import { revalidatePath } from "next/cache";
 
 const backendUrl = getBackendUrl();
 
@@ -43,6 +44,8 @@ const reprocessActivity = async (
             error: res.statusText,
         };
     }
+
+    revalidatePath(`/activities/${activityId}`);
 
     return {
         success: true,

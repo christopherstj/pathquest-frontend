@@ -5,4 +5,5 @@ export default interface Activity extends ActivityStart {
     vertProfile?: number[];
     distanceStream?: number[];
     timeStream?: number[];
+    reprocessing: boolean;
 }

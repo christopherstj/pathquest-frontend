@@ -7,9 +7,11 @@ import { useMessage } from "@/state/MessageContext";
 
 type Props = {
     activityId: string;
+    disabled?: boolean;
+    onSuccess: () => void;
 };
 
-const ReprocessChartButton = ({ activityId }: Props) => {
+const ReprocessChartButton = ({ activityId, disabled, onSuccess }: Props) => {
     const [, dispatch] = useMessage();
     const [modalOpen, setModalOpen] = React.useState(false);
     const [loading, setLoading] = React.useState(false);
@@ -18,7 +20,7 @@ const ReprocessChartButton = ({ activityId }: Props) => {
         setModalOpen(true);
     };
 
-    const onDelete = async () => {
+    const reprocess = async () => {
         setLoading(true);
         const result = await reprocessActivity(activityId);
         if (result.success) {
@@ -29,6 +31,7 @@ const ReprocessChartButton = ({ activityId }: Props) => {
                     text: "Activity reprocessing requested",
                 },
             });
+            onSuccess();
         } else {
             dispatch({
                 type: "SET_MESSAGE",
@@ -48,6 +51,7 @@ const ReprocessChartButton = ({ activityId }: Props) => {
             display="flex"
             flexDirection="column"
             alignItems="center"
+            gap="8px"
         >
             <Typography
                 variant="body1"
@@ -58,7 +62,12 @@ const ReprocessChartButton = ({ activityId }: Props) => {
                 weren't able to pull in the data for this activity. You can
                 request a reprocessing of the data to try again.
             </Typography>
-            <Button variant="outlined" onClick={handleOpen} color="primary">
+            <Button
+                variant="outlined"
+                onClick={handleOpen}
+                color="primary"
+                disabled={disabled || loading}
+            >
                 Request Reprocessing
             </Button>
             <ConfirmDialog
@@ -67,7 +76,7 @@ const ReprocessChartButton = ({ activityId }: Props) => {
                 onClose={() => setModalOpen(false)}
                 title="Request Activity Reprocessing"
                 description="Reprocessing an activity will recalculate all auto-calculated peak summits, but maintain your manual summits. It will pull fresh data for elevation, coordinates, distance, and time. Activity reprocessing usually takes only a couple minutes, but can take up to a day"
-                onConfirm={onDelete}
+                onConfirm={reprocess}
                 confirmText="Request Reprocessing"
                 onCancel={() => setModalOpen(false)}
                 cancelText="Cancel"

@@ -8,8 +8,9 @@ import ActivityMenu from "./ActivityMenu";
 const ActivityTitle = () => {
     const [
         {
-            activity: { name, id },
+            activity: { name, id, reprocessing },
         },
+        setActivityDetailState,
     ] = useActivityDetail();
 
     return (
@@ -31,7 +32,11 @@ const ActivityTitle = () => {
                 >
                     {name}
                 </Typography>
-                <ActivityMenu activityId={id} />
+                <ActivityMenu
+                    activityId={id}
+                    isReprocessing={reprocessing}
+                    setActivityDetailState={setActivityDetailState}
+                />
             </Box>
             <Divider
                 color="primary"

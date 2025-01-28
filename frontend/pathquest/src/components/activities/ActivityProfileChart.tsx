@@ -32,7 +32,6 @@ interface ChartValue {
     elevation: number;
     distance: number;
     time?: number;
-    isSummit: boolean;
 }
 
 export type ChartProps = {
@@ -44,7 +43,6 @@ export type ChartProps = {
 const getDistance = (value: ChartValue) => value.distance;
 const getElevation = (value: ChartValue) => value.elevation;
 const getTime = (value: ChartValue) => value.time;
-const getIsSummit = (value: ChartValue) => value.isSummit;
 const bisectDistance = bisector<ChartValue, number>((d) => d.distance).left;
 const bisectTime = bisector<ChartValue, number>((d) => d.time ?? 0).left;
 
@@ -69,6 +67,7 @@ const ActivityProfileChart = ({
             peakSummits,
             map,
         },
+        setActivityDetailState,
     ] = useActivityDetail();
     const [{ user }] = useUser();
 
@@ -95,7 +94,21 @@ const ActivityProfileChart = ({
     }
 
     if (!vertProfile || !distanceStream) {
-        return <ReprocessChartButton activityId={id} />;
+        return (
+            <ReprocessChartButton
+                activityId={id}
+                disabled={activity.reprocessing}
+                onSuccess={() =>
+                    setActivityDetailState((state) => ({
+                        ...state,
+                        activity: {
+                            ...state.activity,
+                            reprocessing: true,
+                        },
+                    }))
+                }
+            />
+        );
     }
 
     const units = user.units;
@@ -109,24 +122,11 @@ const ActivityProfileChart = ({
 
     const startTimeDate = dayjs(startTime).tz(timezone, true);
 
-    const data = vertProfile.map((elevation, i) => {
-        // const timestamp = timeStream
-        //     ? startTimeDate.add(timeStream[i], "seconds")
-        //     : null;
-        // const isSummit = peakSummits.some((summit) =>
-        //     summit.ascents.some(
-        //         (ascent) =>
-        //             ascent.activityId === id &&
-        //             dayjs(ascent.timestamp)
-        //                 .tz(timezone, true)
-        //                 .isSame(timestamp, "second")
-        //     )
-        // );
+    const data: ChartValue[] = vertProfile.map((elevation, i) => {
         return {
             elevation,
             distance: distanceStream[i],
             time: timeStream?.[i],
-            isSummit: false,
         };
     });
 

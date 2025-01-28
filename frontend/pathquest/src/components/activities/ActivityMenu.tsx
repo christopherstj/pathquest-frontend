@@ -3,12 +3,21 @@ import { IconButton, List, Popover } from "@mui/material";
 import React from "react";
 import DeleteActivityButton from "./DeleteActivityButton";
 import ReprocessActivityButton from "./ReprocessActivityButton";
+import { ActivityDetailState } from "@/state/ActivityDetailsContext";
 
 type Props = {
     activityId: string;
+    isReprocessing?: boolean;
+    setActivityDetailState: React.Dispatch<
+        React.SetStateAction<ActivityDetailState>
+    >;
 };
 
-const ActivityMenu = ({ activityId }: Props) => {
+const ActivityMenu = ({
+    activityId,
+    isReprocessing,
+    setActivityDetailState,
+}: Props) => {
     const [anchorEl, setAnchorEl] = React.useState<HTMLButtonElement | null>(
         null
     );
@@ -19,6 +28,16 @@ const ActivityMenu = ({ activityId }: Props) => {
 
     const handleClose = () => {
         setAnchorEl(null);
+    };
+
+    const onSuccess = () => {
+        setActivityDetailState((state) => ({
+            ...state,
+            activity: {
+                ...state.activity,
+                reprocessing: true,
+            },
+        }));
     };
 
     const open = Boolean(anchorEl);
@@ -45,7 +64,11 @@ const ActivityMenu = ({ activityId }: Props) => {
             >
                 <List>
                     <DeleteActivityButton activityId={activityId} />
-                    <ReprocessActivityButton activityId={activityId} />
+                    <ReprocessActivityButton
+                        activityId={activityId}
+                        disabled={isReprocessing}
+                        onSuccess={onSuccess}
+                    />
                 </List>
             </Popover>
         </>

@@ -8,9 +8,15 @@ import { useMessage } from "@/state/MessageContext";
 
 type Props = {
     activityId: string;
+    disabled?: boolean;
+    onSuccess: () => void;
 };
 
-const ReprocessActivityButton = ({ activityId }: Props) => {
+const ReprocessActivityButton = ({
+    activityId,
+    disabled,
+    onSuccess,
+}: Props) => {
     const [, dispatch] = useMessage();
 
     const [modalOpen, setModalOpen] = React.useState(false);
@@ -31,6 +37,7 @@ const ReprocessActivityButton = ({ activityId }: Props) => {
                     text: "Activity reprocessing requested",
                 },
             });
+            onSuccess();
         } else {
             dispatch({
                 type: "SET_MESSAGE",
@@ -46,7 +53,7 @@ const ReprocessActivityButton = ({ activityId }: Props) => {
 
     return (
         <>
-            <ListItemButton onClick={handleOpen}>
+            <ListItemButton onClick={handleOpen} disabled={loading || disabled}>
                 <ListItemIcon>
                     <Refresh />
                 </ListItemIcon>
