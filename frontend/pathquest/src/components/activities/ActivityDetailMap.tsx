@@ -46,7 +46,7 @@ const ActivityDetailMap = () => {
         <MapboxContainer
             sx={{
                 height: {
-                    xs: "70vh",
+                    xs: "50vh",
                     md: "calc(75vh - 88px)",
                 },
             }}

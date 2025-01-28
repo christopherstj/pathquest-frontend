@@ -16,7 +16,7 @@ const cardStyles: SxProps = {
     flexDirection: "column",
     gap: "12px",
     width: "100%",
-    minHeight: "70vh",
+    // minHeight: "70vh",
     maxHeight: {
         xs: "70vh",
         md: "calc(100vh - 32px)",
@@ -64,7 +64,7 @@ const ActivityPeaksList = () => {
                 <Box sx={listStyles}>
                     {peakSummits
                         .sort((a, b) => (b.Altitude ?? 0) - (a.Altitude ?? 0))
-                        .map((peak) => (
+                        .map((peak, index) => (
                             <Fragment key={peak.Id}>
                                 <UnclimbedPeakRow
                                     rowColor="primary"
@@ -85,13 +85,15 @@ const ActivityPeaksList = () => {
                                     }))}
                                     useAscentRedirect={false}
                                 />
-                                <Divider
-                                    sx={{
-                                        backgroundColor:
-                                            "primary.onContainerDim",
-                                        margin: "0 8px",
-                                    }}
-                                />
+                                {index !== peakSummits.length - 1 && (
+                                    <Divider
+                                        sx={{
+                                            backgroundColor:
+                                                "primary.onContainerDim",
+                                            margin: "0 8px",
+                                        }}
+                                    />
+                                )}
                             </Fragment>
                         ))}
                 </Box>
