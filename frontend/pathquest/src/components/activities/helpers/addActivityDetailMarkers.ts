@@ -66,9 +66,6 @@ const addActivityDetailMarkers = (
                 },
             ],
         },
-        cluster: true,
-        clusterMaxZoom: 14,
-        clusterRadius: 50,
     });
 
     map.addSource("peaks", {
@@ -87,9 +84,6 @@ const addActivityDetailMarkers = (
                 },
             })),
         },
-        cluster: true,
-        clusterMaxZoom: 14,
-        clusterRadius: 50,
     });
 
     map.addSource("coordinatePoints", {
@@ -97,54 +91,6 @@ const addActivityDetailMarkers = (
         data: {
             type: "FeatureCollection",
             features: [],
-        },
-    });
-
-    map.addLayer({
-        id: "clusters",
-        type: "circle",
-        source: "peaks",
-        filter: ["has", "point_count"],
-        paint: {
-            "circle-color": theme.palette.primary.containerDim,
-            "circle-radius": 20,
-        },
-    });
-
-    map.on("click", "clusters", (e) => {
-        const features = e.target.queryRenderedFeatures(e.point, {
-            layers: ["clusters"],
-        });
-        const clusterId = features?.[0].properties?.cluster_id;
-        (
-            e.target.getSource("peaks") as mapboxgl.GeoJSONSource
-        )?.getClusterExpansionZoom(clusterId, (err, zoom) => {
-            if (err) return;
-
-            if (features?.[0].geometry.type === "Point") {
-                e.target.easeTo({
-                    center: features?.[0].geometry.coordinates as [
-                        number,
-                        number
-                    ],
-                    zoom: zoom ?? undefined,
-                });
-            }
-        });
-    });
-
-    map.addLayer({
-        id: "cluster-count",
-        type: "symbol",
-        source: "peaks",
-        filter: ["has", "point_count"],
-        paint: {
-            "text-color": theme.palette.primary.onContainer,
-        },
-        layout: {
-            "text-field": ["get", "point_count_abbreviated"],
-            "text-font": ["DIN Offc Pro Medium", "Arial Unicode MS Bold"],
-            "text-size": 16,
         },
     });
 
@@ -190,7 +136,6 @@ const addActivityDetailMarkers = (
         id: "peaks",
         type: "symbol",
         source: "peaks",
-        filter: ["!", ["has", "point_count"]],
         paint: {
             "text-color": theme.palette.primary.container,
         },
@@ -203,6 +148,8 @@ const addActivityDetailMarkers = (
             "icon-size": 0.2,
             "icon-allow-overlap": true,
             "icon-anchor": "bottom",
+            "icon-ignore-placement": true,
+            "text-optional": true,
         },
     });
 };

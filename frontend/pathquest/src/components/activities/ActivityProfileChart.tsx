@@ -256,7 +256,7 @@ const ActivityProfileChart = ({
                     <LinearGradient
                         id="secondary-gradient"
                         from={theme.palette.secondary.onContainerDim}
-                        fromOpacity={0.5}
+                        fromOpacity={0.8}
                         to="rgba(0, 0, 0, 0)"
                         toOpacity={0.0}
                     />
