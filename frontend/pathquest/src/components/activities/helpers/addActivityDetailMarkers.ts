@@ -92,6 +92,14 @@ const addActivityDetailMarkers = (
         clusterRadius: 50,
     });
 
+    map.addSource("coordinatePoints", {
+        type: "geojson",
+        data: {
+            type: "FeatureCollection",
+            features: [],
+        },
+    });
+
     map.addLayer({
         id: "clusters",
         type: "circle",
@@ -162,6 +170,18 @@ const addActivityDetailMarkers = (
             "circle-color": theme.palette.primary.onContainerDim,
             "circle-radius": 8,
             "circle-stroke-color": theme.palette.primary.containerDim,
+            "circle-stroke-width": 1,
+        },
+    });
+
+    map.addLayer({
+        id: "coordinatePoints",
+        type: "circle",
+        source: "coordinatePoints",
+        paint: {
+            "circle-color": theme.palette.secondary.onContainerDim,
+            "circle-radius": 4,
+            "circle-stroke-color": theme.palette.secondary.containerDim,
             "circle-stroke-width": 1,
         },
     });

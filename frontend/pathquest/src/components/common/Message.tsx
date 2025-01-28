@@ -6,7 +6,7 @@ import Alert from "@mui/material/Alert";
 import { useMessage } from "@/state/MessageContext";
 
 const alertStyles = (type: "success" | "error"): SxProps => ({
-    color: "white",
+    color: type === "success" ? "primary.onContainerDim" : "white",
     ".MuiSvgIcon-root": {
         color: "white",
     },
@@ -18,7 +18,7 @@ const alertStyles = (type: "success" | "error"): SxProps => ({
     boxShadow: 3,
     width: "100%",
     backgroundColor:
-        type === "success" ? "primary.onContainerDim" : "tertiary.base",
+        type === "success" ? "primary.containerDim" : "tertiary.base",
 });
 
 const Message = () => {

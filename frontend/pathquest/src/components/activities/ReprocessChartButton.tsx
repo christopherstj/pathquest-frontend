@@ -1,7 +1,6 @@
 "use client";
 import reprocessActivity from "@/actions/reprocessActivity";
-import { Delete, Refresh } from "@mui/icons-material";
-import { ListItemButton, ListItemIcon, ListItemText } from "@mui/material";
+import { Box, Button, Typography } from "@mui/material";
 import React from "react";
 import ConfirmDialog from "../common/ConfirmDialog";
 import { useMessage } from "@/state/MessageContext";
@@ -10,9 +9,8 @@ type Props = {
     activityId: string;
 };
 
-const ReprocessActivityButton = ({ activityId }: Props) => {
+const ReprocessChartButton = ({ activityId }: Props) => {
     const [, dispatch] = useMessage();
-
     const [modalOpen, setModalOpen] = React.useState(false);
     const [loading, setLoading] = React.useState(false);
 
@@ -45,13 +43,24 @@ const ReprocessActivityButton = ({ activityId }: Props) => {
     };
 
     return (
-        <>
-            <ListItemButton onClick={handleOpen}>
-                <ListItemIcon>
-                    <Refresh />
-                </ListItemIcon>
-                <ListItemText primary="Request Reprocessing" />
-            </ListItemButton>
+        <Box
+            width="100%"
+            display="flex"
+            flexDirection="column"
+            alignItems="center"
+        >
+            <Typography
+                variant="body1"
+                color="primary.onContainer"
+                textAlign="center"
+            >
+                Looks like there's no data to display! This can happen if we
+                weren't able to pull in the data for this activity. You can
+                request a reprocessing of the data to try again.
+            </Typography>
+            <Button variant="outlined" onClick={handleOpen} color="primary">
+                Request Reprocessing
+            </Button>
             <ConfirmDialog
                 loading={loading}
                 open={modalOpen}
@@ -63,8 +72,8 @@ const ReprocessActivityButton = ({ activityId }: Props) => {
                 onCancel={() => setModalOpen(false)}
                 cancelText="Cancel"
             />
-        </>
+        </Box>
     );
 };
 
-export default ReprocessActivityButton;
+export default ReprocessChartButton;
