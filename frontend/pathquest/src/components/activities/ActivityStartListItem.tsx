@@ -109,7 +109,7 @@ const ActivityStartListItem = ({
                 </Typography>
                 <Typography variant="caption" color="primary.onContainerDim">
                     {dayjs(activity.startTime)
-                        .tz(timezone, true)
+                        .tz(timezone)
                         .format("MMM D, YYYY h:mm A")}
                 </Typography>
                 <DataRow

@@ -159,8 +159,7 @@ const UnclimbedPeakRow = ({
                                                 ? b.timezone
                                                       .split(" ")
                                                       .slice(-1)[0]
-                                                : timezone,
-                                            true
+                                                : timezone
                                         )
                                         .isBefore(
                                             dayjs(a.timestamp).tz(
@@ -168,8 +167,7 @@ const UnclimbedPeakRow = ({
                                                     ? a.timezone
                                                           .split(" ")
                                                           .slice(-1)[0]
-                                                    : timezone,
-                                                true
+                                                    : timezone
                                             )
                                         )
                                         ? -1
@@ -204,8 +202,7 @@ const UnclimbedPeakRow = ({
                                                     ? ascent.timezone
                                                           .split(" ")
                                                           .slice(-1)[0]
-                                                    : timezone,
-                                                true
+                                                    : timezone
                                             )
                                             .format("MMM D, YYYY h:mm A")}
                                     </Typography>

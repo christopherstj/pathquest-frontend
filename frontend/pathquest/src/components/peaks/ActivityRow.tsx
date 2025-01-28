@@ -145,7 +145,7 @@ const ActivityRow = ({
                 </Typography>
                 <Typography variant="caption" color="primary.onContainerDim">
                     {dayjs(activity.startTime)
-                        .tz(timezone, true)
+                        .tz(timezone)
                         .format("MMM D, YYYY h:mm A")}
                 </Typography>
                 <Button
@@ -180,7 +180,7 @@ const ActivityRow = ({
                         {activity.summits.map((summit) => (
                             <React.Fragment key={summit.timestamp}>
                                 {dayjs(summit.timestamp)
-                                    .tz(timezone, true)
+                                    .tz(timezone)
                                     .format("h:mm A")}
                                 {/* {new Date(summit.timestamp).toLocaleTimeString()} */}
                                 <br />

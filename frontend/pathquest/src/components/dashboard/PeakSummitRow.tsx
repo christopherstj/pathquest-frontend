@@ -109,8 +109,7 @@ const PeakSummitRow = ({ peakSummit, units, onRowClick }: Props) => {
                                         ? peakSummit.timezone
                                               .split(" ")
                                               .slice(-1)[0]
-                                        : timezone,
-                                    true
+                                        : timezone
                                 )
                                 .format("MMM D, YYYY h:mm A")}
                         </Typography>

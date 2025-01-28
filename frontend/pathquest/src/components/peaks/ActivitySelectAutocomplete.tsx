@@ -217,7 +217,7 @@ const ActivitySelectAutocomplete = ({ value, onValueChange, peak }: Props) => {
                                     color="primary.onContainerDim"
                                 >
                                     {dayjs(option.startTime)
-                                        .tz(timezone, true)
+                                        .tz(timezone)
                                         .format("MMM D, YYYY h:mm A")}{" "}
                                     |{" "}
                                     {getDistanceString(option.distance, units)}

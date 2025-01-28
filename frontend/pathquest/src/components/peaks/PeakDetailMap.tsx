@@ -7,18 +7,24 @@ import loadMapDefaults from "@/helpers/loadMapDefaults";
 import initiateMap from "@/helpers/initiateMap";
 import "mapbox-gl/dist/mapbox-gl.css";
 import AltitudeCard from "./AltitudeCard";
+import { useUser } from "@/state/UserContext";
 
 const PeakDetailMap = () => {
     const [details, setPeakDetail] = usePeakDetail();
+    const [{ user }] = useUser();
 
     const mapRef = React.useRef<mapboxgl.Map | null>(null);
     const mapContainerRef = React.useRef<any>(null);
 
     const theme = useTheme();
 
+    if (!user) return null;
+
     if (!details || !details.peak) return null;
 
     const { peak, activities } = details;
+
+    const units = user.units;
 
     const addMarkers = () => {
         if (!mapRef.current) return;
@@ -190,7 +196,6 @@ const PeakDetailMap = () => {
                 <Typography variant="h4" color="primary.onContainer">
                     {peak.Name}
                 </Typography>
-
                 <Box
                     sx={{
                         ml: {
@@ -207,7 +212,9 @@ const PeakDetailMap = () => {
                         {peak.State ? ` | ${peak.State}` : ""}
                         {peak.County ? ` | ${peak.County}` : ""}
                     </Typography>
-                    {peak.Altitude && <AltitudeCard altitude={peak.Altitude} />}
+                    {peak.Altitude && (
+                        <AltitudeCard altitude={peak.Altitude} units={units} />
+                    )}
                 </Box>
             </Box>
             <Divider

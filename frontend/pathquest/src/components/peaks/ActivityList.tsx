@@ -100,9 +100,6 @@ const ActivityList = () => {
             <Typography variant="h4" color="primary.onContainer">
                 Your summits
             </Typography>
-            <Divider
-                sx={{ backgroundColor: "primary.onContainer", width: "100%" }}
-            />
             {activitiesWithSummits.length === 0 ? (
                 <Typography
                     variant="h6"

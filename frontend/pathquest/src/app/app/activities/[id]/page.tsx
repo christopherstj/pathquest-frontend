@@ -60,12 +60,6 @@ const page = ({ params: { id } }: Props) => {
                         <Typography variant="h4" color="primary.onContainer">
                             Summitted Peaks
                         </Typography>
-                        <Divider
-                            color="primary"
-                            sx={{
-                                margin: "12px 0px",
-                            }}
-                        />
                     </Box>
                     <ActivityPeaksList />
                     <ActivityDetails />
