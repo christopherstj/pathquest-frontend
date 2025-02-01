@@ -91,7 +91,6 @@ const AscentModal = ({
             if (!currentActivityId || ascent.activityId === currentActivityId) {
                 onComplete(ascent);
             }
-            onClose();
         } else {
             dispatch({
                 type: "SET_MESSAGE",
@@ -139,6 +138,8 @@ const AscentModal = ({
     React.useEffect(() => {
         getNewData(ascentId);
     }, [ascentId]);
+
+    console.log(ascent?.isPublic);
 
     return (
         <Dialog open={open} onClose={onClose} fullWidth maxWidth="sm">
@@ -237,15 +238,15 @@ const AscentModal = ({
                         <FormControlLabel
                             control={
                                 <Checkbox
-                                    value={ascent.isPublic}
+                                    color="primary"
+                                    size="small"
+                                    checked={ascent.isPublic}
                                     onChange={(e) =>
                                         setAscent({
                                             ...ascent,
                                             isPublic: e.target.checked,
                                         })
                                     }
-                                    color="primary"
-                                    size="small"
                                 />
                             }
                             label={

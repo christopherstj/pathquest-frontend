@@ -137,7 +137,7 @@ const ManualSummitModal = ({ open, onClose, peak }: Props) => {
                 <FormControlLabel
                     control={
                         <Checkbox
-                            value={isPublic}
+                            checked={isPublic}
                             onChange={(e) => setIsPublic(e.target.checked)}
                             color="primary"
                         />
