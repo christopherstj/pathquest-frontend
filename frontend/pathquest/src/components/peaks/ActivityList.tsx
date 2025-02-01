@@ -6,6 +6,8 @@ import ActivityRow from "./ActivityRow";
 import { useUser } from "@/state/UserContext";
 import { GeoJSONSource } from "mapbox-gl";
 import PeakButtons from "./PeakButtons";
+import AscentModal from "./AscentModal";
+import AscentDetail from "@/typeDefs/AscentDetail";
 
 const containerStyles: SxProps = {
     padding: "0px 4px",
@@ -43,8 +45,13 @@ const listStyles: SxProps = {
 };
 
 const ActivityList = () => {
-    const [{ activities, summits, map, peak }] = usePeakDetail();
+    const [{ activities, summits, map, peak }, setPeakDetailState] =
+        usePeakDetail();
     const [{ user }] = useUser();
+
+    const [selectedSummit, setSelectedSummit] = React.useState<string | null>(
+        null
+    );
 
     if (!activities || !user) return null;
 
@@ -95,6 +102,44 @@ const ActivityList = () => {
         }
     };
 
+    const onSummitClick = (summitId: string) => {
+        setSelectedSummit(summitId);
+    };
+
+    const onSummitClose = () => {
+        setSelectedSummit(null);
+    };
+
+    const onUpdateAscent = (ascent: AscentDetail) => {
+        const newPeakSummits = summits.map((s) => {
+            if (s.id === ascent.id) {
+                return {
+                    ...s,
+                    isPublic: ascent.isPublic,
+                    timestamp: ascent.timestamp,
+                    notes: ascent.notes,
+                };
+            }
+            return s;
+        });
+
+        setPeakDetailState((state) => ({
+            ...state,
+            summits: newPeakSummits,
+        }));
+    };
+
+    const onDeleteAscent = (ascentId: string) => {
+        const newPeakSummits = summits.filter((s) => s.id !== ascentId);
+
+        setPeakDetailState((state) => ({
+            ...state,
+            summits: newPeakSummits,
+        }));
+    };
+
+    const modalOpen = Boolean(selectedSummit);
+
     return (
         <Box sx={containerStyles}>
             <Typography variant="h4" color="primary.onContainer">
@@ -117,11 +162,19 @@ const ActivityList = () => {
                             units={units}
                             onMouseOver={onRowHover}
                             onMouseOut={clearSelectedActivities}
+                            onSummitClick={onSummitClick}
                         />
                     ))}
                 </Box>
             )}
             <PeakButtons />
+            <AscentModal
+                open={modalOpen}
+                onClose={onSummitClose}
+                ascentId={selectedSummit}
+                onComplete={onUpdateAscent}
+                onDelete={onDeleteAscent}
+            />
         </Box>
     );
 };

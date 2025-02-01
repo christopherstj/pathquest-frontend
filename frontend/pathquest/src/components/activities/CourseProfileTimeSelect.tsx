@@ -1,9 +1,6 @@
 "use client";
-import { useActivityDetail } from "@/state/ActivityDetailsContext";
-import { useUser } from "@/state/UserContext";
+import dayjs from "@/helpers/dayjs";
 import React, { useMemo } from "react";
-import ReprocessChartButton from "./ReprocessChartButton";
-import { Box, Typography, useTheme } from "@mui/material";
 import {
     Tooltip,
     TooltipWithBounds,
@@ -19,56 +16,56 @@ import { GridRows, GridColumns } from "@visx/grid";
 import { localPoint } from "@visx/event";
 import ParentSize from "@visx/responsive/lib/components/ParentSize";
 import { Group } from "@visx/group";
+import { LinearGradient } from "@visx/gradient";
+import { useActivityDetail } from "@/state/ActivityDetailsContext";
+import { useUser } from "@/state/UserContext";
+import { Box, Typography, useTheme } from "@mui/material";
+import ReprocessChartButton from "./ReprocessChartButton";
+import { GeoJSONSource } from "mapbox-gl";
 import getDistanceString from "@/helpers/getDistanceString";
 import metersToFt from "@/helpers/metersToFt";
-import mapboxgl, { GeoJSONSource } from "mapbox-gl";
-import { LinearGradient } from "@visx/gradient";
-import { time } from "console";
-import dayjs from "@/helpers/dayjs";
-import numSecsToHhmmss from "@/helpers/numSecsToHhmmss";
+import getElevationString from "@/helpers/getElevationString";
 import SummitGlyph from "./SummitGlyph";
+import numSecsToHhmmss from "@/helpers/numSecsToHhmmss";
+import Activity from "@/typeDefs/Activity";
+import PeakSummit from "@/typeDefs/PeakSummit";
 
 interface ChartValue {
     elevation: number;
-    distance: number;
+    distance?: number;
     time?: number;
 }
 
-export type ChartProps = {
+export type ChartSelectProps = {
     parentWidth: number;
     parentHeight: number;
     margin?: { top: number; right: number; bottom: number; left: number };
+    value: dayjs.Dayjs | null;
+    onChange: (value: dayjs.Dayjs) => void;
+    activity: Activity;
+    peakSummits: PeakSummit[];
 };
 
 const getDistance = (value: ChartValue) => value.distance;
 const getElevation = (value: ChartValue) => value.elevation;
 const getTime = (value: ChartValue) => value.time;
-const bisectDistance = bisector<ChartValue, number>((d) => d.distance).left;
+const bisectDistance = bisector<ChartValue, number>(
+    (d) => d.distance ?? 0
+).left;
 const bisectTime = bisector<ChartValue, number>((d) => d.time ?? 0).left;
 
 const tz = dayjs.tz.guess();
 
-const ActivityProfileChart = ({
+const CourseProfileTimeSelect = ({
     parentHeight,
     parentWidth,
     margin = { top: 0, right: 0, bottom: 0, left: 0 },
-}: ChartProps) => {
-    const [
-        {
-            activity: {
-                vertProfile,
-                distanceStream,
-                coords,
-                timeStream,
-                id,
-                startTime,
-                ...activity
-            },
-            peakSummits,
-            map,
-        },
-        setActivityDetailState,
-    ] = useActivityDetail();
+    value,
+    onChange,
+    activity,
+    peakSummits,
+}: ChartSelectProps) => {
+    const { id, vertProfile, distanceStream, timeStream, startTime } = activity;
     const [{ user }] = useUser();
 
     const theme = useTheme();
@@ -89,29 +86,7 @@ const ActivityProfileChart = ({
         tooltipOpen: false,
     });
 
-    if (!user) {
-        return null;
-    }
-
-    if (!vertProfile || !distanceStream) {
-        return (
-            <ReprocessChartButton
-                activityId={id}
-                disabled={activity.reprocessing}
-                onSuccess={() =>
-                    setActivityDetailState((state) => ({
-                        ...state,
-                        activity: {
-                            ...state.activity,
-                            reprocessing: true,
-                        },
-                    }))
-                }
-            />
-        );
-    }
-
-    const units = user.units;
+    const units = user?.units;
 
     const innerWidth = parentWidth - margin.left - margin.right;
     const innerHeight = parentHeight - margin.top - margin.bottom;
@@ -119,13 +94,12 @@ const ActivityProfileChart = ({
     const timezone = activity.timezone
         ? activity.timezone.split(" ").slice(-1)[0]
         : tz;
+    const startTimeDate = dayjs(startTime).tz(timezone);
 
-    const startTimeDate = dayjs(startTime).tz(timezone, true);
-
-    const data: ChartValue[] = vertProfile.map((elevation, i) => {
+    const data: ChartValue[] = (vertProfile ?? []).map((elevation, i) => {
         return {
             elevation,
-            distance: distanceStream[i],
+            distance: distanceStream?.[i],
             time: timeStream?.[i],
         };
     });
@@ -161,10 +135,6 @@ const ActivityProfileChart = ({
     }, [margin.left, innerWidth]);
 
     const closeTooltip = () => {
-        (map?.getSource("coordinatePoints") as GeoJSONSource).setData({
-            type: "FeatureCollection",
-            features: [],
-        });
         hideTooltip();
     };
 
@@ -177,31 +147,13 @@ const ActivityProfileChart = ({
             const { x, y } = localPoint(event) || { x: 0 };
             const x0 = distanceScale.invert(x);
             const index = bisectDistance(data, x0, 1);
-            const coordsAtPoint = coords[index];
-            if (coordsAtPoint && map) {
-                (map?.getSource("coordinatePoints") as GeoJSONSource).setData({
-                    type: "FeatureCollection",
-                    features: [
-                        {
-                            type: "Feature",
-                            geometry: {
-                                type: "Point",
-                                coordinates: [
-                                    coordsAtPoint[1],
-                                    coordsAtPoint[0],
-                                ],
-                            },
-                            properties: {
-                                id: index,
-                            },
-                        },
-                    ],
-                });
-            }
             const d0 = data[index - 1];
             const d1 = data[index];
             if (d1 && getDistance(d1)) {
-                const d = x0 - getDistance(d0) > getDistance(d1) - x0 ? d1 : d0;
+                const d =
+                    x0 - (getDistance(d0) ?? 0) > (getDistance(d1) ?? 0) - x0
+                        ? d1
+                        : d0;
                 showTooltip({
                     tooltipData: d,
                     tooltipLeft: x,
@@ -215,25 +167,43 @@ const ActivityProfileChart = ({
                 });
             }
         },
-        [showTooltip, distanceScale, map, coords]
+        [showTooltip, distanceScale]
     );
 
     const getTooltipString = () => {
         if (!tooltipData) return "";
         return (
             <>
-                {getDistanceString(getDistance(tooltipData) ?? 0, units)}
+                {getDistanceString(
+                    getDistance(tooltipData) ?? 0,
+                    units ?? "metric"
+                )}
                 <br />
-                {`${Math.round(
-                    units === "metric"
-                        ? getElevation(tooltipData)
-                        : metersToFt(getElevation(tooltipData))
-                )
-                    .toString()
-                    .replace(/\B(?=(\d{3})+(?!\d))/g, ",")} ${
-                    units === "metric" ? "m" : "ft"
-                }`}
+                {getElevationString(
+                    getElevation(tooltipData) ?? 0,
+                    units ?? "metric"
+                )}
             </>
+        );
+    };
+
+    const onBarClick = (
+        event:
+            | React.TouchEvent<SVGRectElement>
+            | React.MouseEvent<SVGRectElement>
+    ) => {
+        const { x } = localPoint(event) || { x: 0 };
+        const x0 = distanceScale.invert(x);
+        if (!x0) return;
+        const index = bisectDistance(data, x0, 1);
+        const d0 = data[index - 1];
+        const d1 = data[index];
+        const d = x0 - (getTime(d0) ?? 0) > (getTime(d1) ?? 0) - x0 ? d1 : d0;
+        console.log(numSecsToHhmmss(getTime(d) ?? 0));
+        onChange(
+            dayjs(startTime)
+                .tz(timezone)
+                .add(getTime(d) ?? 0, "second")
         );
     };
 
@@ -244,6 +214,18 @@ const ActivityProfileChart = ({
     };
 
     if (parentWidth < 10) return null;
+
+    if (!user) {
+        return null;
+    }
+
+    if (!vertProfile || !distanceStream) {
+        return (
+            <Typography variant="body1">
+                No elevation data available for this activity.
+            </Typography>
+        );
+    }
 
     return (
         <Box sx={{ position: "relative" }} ref={containerRef}>
@@ -297,12 +279,14 @@ const ActivityProfileChart = ({
                         onTouchMove={handleTooltip}
                         onMouseMove={handleTooltip}
                         onMouseLeave={closeTooltip}
+                        onClick={onBarClick}
+                        onTouchEnd={onBarClick}
                     />
                     {peakSummits
                         .flatMap((s) => s.ascents)
                         .map((a, i) => {
                             const numSecs =
-                                dayjs(a.timestamp).tz(timezone, true).unix() -
+                                dayjs(a.timestamp).tz(timezone).unix() -
                                 startTimeDate.unix();
                             const x1 = timeScale(numSecs);
                             if (!x1 || x1 <= 0) return null;
@@ -327,7 +311,41 @@ const ActivityProfileChart = ({
                                 stroke="#FFFFFF"
                                 strokeWidth={1}
                                 pointerEvents="none"
-                                // strokeDasharray="5,2"
+                            />
+                        </g>
+                    )}
+                    {value && (
+                        <g>
+                            <Line
+                                from={{
+                                    x: distanceScale(
+                                        data[
+                                            bisectTime(
+                                                data,
+                                                value.unix() -
+                                                    startTimeDate.unix(),
+                                                1
+                                            )
+                                        ].distance ?? 0
+                                    ),
+                                    y: margin.top,
+                                }}
+                                to={{
+                                    x: distanceScale(
+                                        data[
+                                            bisectTime(
+                                                data,
+                                                value.unix() -
+                                                    startTimeDate.unix(),
+                                                1
+                                            )
+                                        ].distance ?? 0
+                                    ),
+                                    y: innerHeight + margin.top,
+                                }}
+                                stroke={theme.palette.primary.onContainer}
+                                strokeWidth={2}
+                                pointerEvents="none"
                             />
                         </g>
                     )}
@@ -372,12 +390,12 @@ const ActivityProfileChart = ({
 };
 
 const ResponsiveActivityProfileChart = (
-    props: Omit<ChartProps, "parentWidth" | "parentHeight">
+    props: Omit<ChartSelectProps, "parentWidth" | "parentHeight">
 ) => {
     return (
         <ParentSize>
             {({ width, height }) => (
-                <ActivityProfileChart
+                <CourseProfileTimeSelect
                     parentWidth={width}
                     parentHeight={height}
                     {...props}

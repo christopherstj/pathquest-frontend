@@ -4,6 +4,12 @@ import { useUser } from "@/state/UserContext";
 import { Box, Divider, SxProps, Typography, useTheme } from "@mui/material";
 import React, { Fragment } from "react";
 import UnclimbedPeakRow from "../dashboard/UnclimbedPeakRow";
+import Ascent from "@/typeDefs/Ascent";
+import UnclimbedPeak from "@/typeDefs/UnclimbedPeak";
+import Peak from "@/typeDefs/Peak";
+import AscentModal from "../peaks/AscentModal";
+import AscentDetail from "@/typeDefs/AscentDetail";
+import { GeoJSONSource } from "mapbox-gl";
 
 const cardStyles: SxProps = {
     borderRadius: "12px",
@@ -47,8 +53,13 @@ const listStyles: SxProps = {
 };
 
 const ActivityPeaksList = () => {
-    const [{ activity, peakSummits, map }] = useActivityDetail();
+    const [{ activity, peakSummits, map }, setActivityDetailState] =
+        useActivityDetail();
     const [{ user }] = useUser();
+
+    const [selectedSummit, setSelectedSummit] = React.useState<string | null>(
+        null
+    );
 
     const units = user?.units ?? "metric";
 
@@ -57,6 +68,72 @@ const ActivityPeaksList = () => {
             center: [long, lat],
         });
     };
+
+    const onAscentClick = (ascentId: string) => {
+        setSelectedSummit(ascentId);
+    };
+
+    const closeAscentDetail = () => {
+        setSelectedSummit(null);
+    };
+
+    const onDeleteAscent = (ascentId: string) => {
+        const newSummits = peakSummits
+            .map((peak) => {
+                return {
+                    ...peak,
+                    ascents: peak.ascents.filter((a) => a.id !== ascentId),
+                };
+            })
+            .filter((peak) => peak.ascents.length > 0);
+
+        setActivityDetailState((state) => ({
+            ...state,
+            peakSummits: newSummits,
+        }));
+
+        const source = map?.getSource("peaks") as GeoJSONSource;
+
+        if (!source) {
+            return;
+        }
+
+        source.setData({
+            type: "FeatureCollection",
+            features: newSummits.map((peak) => ({
+                type: "Feature",
+                geometry: {
+                    type: "Point",
+                    coordinates: [peak.Long, peak.Lat],
+                },
+                properties: {
+                    id: peak.Id,
+                    ...peak,
+                },
+            })),
+        });
+    };
+
+    const onUpdateAscent = (ascent: AscentDetail) => {
+        const newSummits = peakSummits.map((peak) => {
+            if (peak.Id === ascent.peakId) {
+                return {
+                    ...peak,
+                    ascents: peak.ascents.map((a) =>
+                        a.id === ascent.id ? ascent : a
+                    ),
+                };
+            }
+            return peak;
+        });
+
+        setActivityDetailState((state) => ({
+            ...state,
+            peakSummits: newSummits,
+        }));
+    };
+
+    const modalOpen = Boolean(selectedSummit);
 
     return (
         <Box sx={cardStyles}>
@@ -84,6 +161,7 @@ const ActivityPeaksList = () => {
                                         timezone: activity.timezone,
                                     }))}
                                     useAscentRedirect={false}
+                                    onSummitControlDetailClick={onAscentClick}
                                 />
                                 {index !== peakSummits.length - 1 && (
                                     <Divider
@@ -106,6 +184,14 @@ const ActivityPeaksList = () => {
                     Looks like you didn't summit any peaks on this activity!
                 </Typography>
             )}
+            <AscentModal
+                open={modalOpen}
+                onClose={closeAscentDetail}
+                ascentId={selectedSummit}
+                currentActivityId={activity.id}
+                onComplete={onUpdateAscent}
+                onDelete={onDeleteAscent}
+            />
         </Box>
     );
 };

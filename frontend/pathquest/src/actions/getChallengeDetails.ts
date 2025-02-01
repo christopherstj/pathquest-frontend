@@ -13,7 +13,12 @@ const getChallengeDetails = async (
 ): Promise<{
     challenge: Challenge;
     peaks: (UnclimbedPeak & {
-        ascents: { timestamp: string; activityId: string; timezone?: string }[];
+        ascents: {
+            id: string;
+            timestamp: string;
+            activityId: string;
+            timezone?: string;
+        }[];
     })[];
     activityCoords: {
         id: string;

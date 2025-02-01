@@ -14,9 +14,11 @@ const getPeakDetails = async (
     peak: UnclimbedPeak | null;
     activities: Activity[];
     summits: {
+        id: string;
         activityId: string;
         timestamp: string;
         timezone?: string;
+        notes?: string;
     }[];
 }> => {
     const session = await useAuth();

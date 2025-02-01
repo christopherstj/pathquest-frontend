@@ -47,7 +47,7 @@ const ActivityDetailMap = () => {
             sx={{
                 height: {
                     xs: "50vh",
-                    md: "calc(75vh - 88px)",
+                    md: "calc(75vh - 112px)",
                 },
             }}
         >

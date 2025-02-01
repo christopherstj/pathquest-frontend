@@ -171,6 +171,7 @@ const ChallengeRow = ({ challenge, onClick, isVirtualized = false }: Props) => {
                         sx={buttonStyles}
                         size="small"
                         color="primary"
+                        variant="text"
                         onClick={(e) => {
                             e.preventDefault();
                             e.stopPropagation();

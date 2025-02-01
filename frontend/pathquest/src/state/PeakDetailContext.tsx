@@ -7,8 +7,10 @@ interface PeakDetailState {
     peak: UnclimbedPeak;
     activities: Activity[];
     summits: {
+        id: string;
         timestamp: string;
         activityId: string;
+        notes?: string;
     }[];
     map: mapboxgl.Map | null;
 }
@@ -17,8 +19,10 @@ const usePeakDetailState = (
     peak: UnclimbedPeak,
     activities: Activity[],
     summits: {
+        id: string;
         timestamp: string;
         activityId: string;
+        notes?: string;
     }[]
 ) =>
     useState<PeakDetailState>({
@@ -51,8 +55,10 @@ const PeakDetailProvider = ({
     peak: UnclimbedPeak;
     activities: Activity[];
     summits: {
+        id: string;
         timestamp: string;
         activityId: string;
+        notes?: string;
     }[];
     children: React.ReactNode;
 }) => {

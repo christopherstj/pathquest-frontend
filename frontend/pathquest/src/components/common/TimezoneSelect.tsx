@@ -8,11 +8,12 @@ type Props = {
     value: string;
     onChange: (value: string) => void;
     disabled: boolean;
+    helperText?: string;
 };
 
 const timezones = Intl.supportedValuesOf("timeZone");
 
-const TimezoneSelect = ({ value, onChange, disabled }: Props) => {
+const TimezoneSelect = ({ value, onChange, disabled, helperText }: Props) => {
     return (
         <Autocomplete
             disabled={disabled}
@@ -33,6 +34,7 @@ const TimezoneSelect = ({ value, onChange, disabled }: Props) => {
                     label="Time Zone"
                     fullWidth
                     sx={textFieldStyles("primary")}
+                    helperText={helperText}
                 />
             )}
         />

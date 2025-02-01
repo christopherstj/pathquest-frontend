@@ -39,16 +39,6 @@ const rowStyles: SxProps<Theme> = (theme) => ({
     },
 });
 
-const buttonStyles: SxProps = {
-    borderRadius: "24px",
-    backgroundColor: "transparent",
-    borderColor: "primary.onContainer",
-    color: "primary.onContainer",
-    "&:hover": {
-        backgroundColor: "primary.containerDim",
-    },
-};
-
 type Props = {
     peak: PeakSummit;
     onClick: (lat: number, long: number) => void;
@@ -142,10 +132,10 @@ const CompletedPeakRow = ({ peak, onClick, units }: Props) => {
                     </Box>
                 )}
                 <Button
-                    sx={buttonStyles}
                     size="small"
                     LinkComponent={Link}
                     href={`/app/peaks/${peak.Id}`}
+                    variant="text"
                 >
                     Details
                 </Button>

@@ -8,6 +8,7 @@ import { Check } from "@mui/icons-material";
 import {
     Avatar,
     Box,
+    Button,
     IconButton,
     ListItem,
     ListItemAvatar,
@@ -116,40 +117,57 @@ const PeakSummitRow = ({ peakSummit, units, onRowClick }: Props) => {
                     </Box>
                 }
             />
-            {peakSummit.Altitude && (
-                <Box
-                    sx={{
-                        backgroundColor: `${color}.onContainerDim`,
-                        padding: {
-                            xs: "4px",
-                            md: "8px",
-                        },
-                        borderRadius: "8px",
-                        flexShrink: 0,
-                    }}
-                >
-                    <Typography
-                        variant="body1"
-                        color={`${color}.containerDim`}
-                        fontWeight="bold"
+            <Box
+                display="flex"
+                flexDirection="column"
+                justifyContent="space-between"
+                gap="4px"
+            >
+                {peakSummit.Altitude && (
+                    <Box
                         sx={{
-                            fontSize: {
-                                xs: "0.825rem",
-                                md: "1rem",
+                            backgroundColor: `${color}.onContainerDim`,
+                            padding: {
+                                xs: "4px",
+                                md: "8px",
                             },
+                            borderRadius: "8px",
+                            flexShrink: 0,
                         }}
                     >
-                        {Math.round(
-                            units === "metric"
-                                ? peakSummit.Altitude
-                                : metersToFt(peakSummit.Altitude)
-                        )
-                            .toString()
-                            .replace(/\B(?=(\d{3})+(?!\d))/g, ",")}
-                        {units === "metric" ? " m" : " ft"}
-                    </Typography>
-                </Box>
-            )}
+                        <Typography
+                            variant="body1"
+                            color={`${color}.containerDim`}
+                            fontWeight="bold"
+                            sx={{
+                                fontSize: {
+                                    xs: "0.825rem",
+                                    md: "1rem",
+                                },
+                            }}
+                        >
+                            {Math.round(
+                                units === "metric"
+                                    ? peakSummit.Altitude
+                                    : metersToFt(peakSummit.Altitude)
+                            )
+                                .toString()
+                                .replace(/\B(?=(\d{3})+(?!\d))/g, ",")}
+                            {units === "metric" ? " m" : " ft"}
+                        </Typography>
+                    </Box>
+                )}
+                <Button
+                    size="small"
+                    color="primary"
+                    LinkComponent={Link}
+                    href={`/app/peaks/${peakSummit.Id}`}
+                    onClick={(e) => e.stopPropagation()}
+                    variant="text"
+                >
+                    Details
+                </Button>
+            </Box>
         </ListItem>
     );
 };

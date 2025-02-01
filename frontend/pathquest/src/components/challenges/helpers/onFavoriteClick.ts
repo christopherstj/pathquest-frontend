@@ -8,7 +8,12 @@ import { Theme } from "@mui/material";
 
 const onFavoriteClick = async (
     peaks: (UnclimbedPeak & {
-        ascents: { timestamp: string; activityId: string; timezone?: string }[];
+        ascents: {
+            id: string;
+            timestamp: string;
+            activityId: string;
+            timezone?: string;
+        }[];
     })[],
     setChallengeDetailState: React.Dispatch<
         React.SetStateAction<ChallengeDetailState>

@@ -141,6 +141,7 @@ const ActivityStartListItem = ({
                         href={`/app/activities/${activity.id}`}
                         size="small"
                         fullWidth
+                        variant="text"
                     >
                         Details
                     </Button>

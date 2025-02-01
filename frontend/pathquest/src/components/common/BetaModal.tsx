@@ -76,17 +76,13 @@ const BetaModal = () => {
             <DialogActions>
                 <Button
                     onClick={handleClose}
-                    sx={buttonStyles}
                     disabled={loading}
+                    variant="text"
+                    color="primary"
                 >
                     Cancel
                 </Button>
-                <Button
-                    variant="outlined"
-                    onClick={onSubmit}
-                    sx={buttonStyles}
-                    disabled={loading}
-                >
+                <Button onClick={onSubmit} disabled={loading} color="primary">
                     Subscribe
                 </Button>
             </DialogActions>

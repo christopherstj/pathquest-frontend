@@ -1,21 +1,14 @@
 "use client";
 import {
-    Autocomplete,
-    Avatar,
     Button,
     Checkbox,
     Dialog,
     DialogActions,
     DialogContent,
-    DialogContentText,
     DialogTitle,
     FormControlLabel,
     LinearProgress,
-    ListItem,
-    ListItemAvatar,
-    ListItemText,
     SxProps,
-    Typography,
 } from "@mui/material";
 import React from "react";
 import TextField, { textFieldStyles } from "../common/TextField";
@@ -23,25 +16,10 @@ import dayjs from "@/helpers/dayjs";
 import { DateTimePicker } from "@mui/x-date-pickers";
 import { datePickerStyles } from "../common/DatePicker";
 import { ActivityStart } from "@/typeDefs/ActivityStart";
-import searchNearestActivities from "@/actions/searchNearestActivities";
 import UnclimbedPeak from "@/typeDefs/UnclimbedPeak";
-import { DirectionsBike, DirectionsRun } from "@mui/icons-material";
-import { useUser } from "@/state/UserContext";
-import getDistanceString from "@/helpers/getDistanceString";
-import getVerticalGainString from "@/helpers/getVerticalGainString";
-import TimezoneSelect from "./TimezoneSelect";
+import TimezoneSelect from "../common/TimezoneSelect";
 import ActivitySelectAutocomplete from "./ActivitySelectAutocomplete";
 import addManualPeakSummit from "@/actions/addManualPeakSummit";
-
-const buttonStyles: SxProps = {
-    borderRadius: "24px",
-    backgroundColor: "transparent",
-    borderColor: "primary.onContainer",
-    color: "primary.onContainer",
-    "&:hover": {
-        backgroundColor: "primary.containerDim",
-    },
-};
 
 type Props = {
     open: boolean;
@@ -105,7 +83,7 @@ const ManualSummitModal = ({ open, onClose, peak }: Props) => {
 
     return (
         <Dialog open={open} onClose={onClose}>
-            {loading && <LinearProgress />}
+            {loading && <LinearProgress color="primary" />}
             <DialogTitle>Summit this peak already?</DialogTitle>
             <DialogContent
                 sx={{
@@ -186,15 +164,15 @@ const ManualSummitModal = ({ open, onClose, peak }: Props) => {
             <DialogActions>
                 <Button
                     onClick={handleClose}
-                    sx={buttonStyles}
+                    variant="text"
+                    color="primary"
                     disabled={loading}
                 >
                     Cancel
                 </Button>
                 <Button
-                    variant="outlined"
+                    color="primary"
                     onClick={onSubmit}
-                    sx={buttonStyles}
                     disabled={loading || !timestamp}
                 >
                     Add Summit

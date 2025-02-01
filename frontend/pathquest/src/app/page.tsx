@@ -1,9 +1,6 @@
-import { useAuth } from "@/auth/useAuth";
-import LoginCard from "@/components/auth/LoginCard";
-import BetaModal from "@/components/common/BetaModal";
 import Description from "@/components/landing/Description";
 import Header from "@/components/landing/Header";
-import { Grid2 as Grid, Typography } from "@mui/material";
+import { Grid2 as Grid } from "@mui/material";
 
 export default function Home() {
     return (
@@ -23,7 +20,7 @@ export default function Home() {
             >
                 <Description />
             </Grid>
-            <BetaModal />
+            {/* <BetaModal /> */}
         </Grid>
     );
 }

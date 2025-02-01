@@ -8,7 +8,12 @@ export interface ChallengeDetailState {
     map: mapboxgl.Map | null;
     challenge: Challenge;
     peaks: (UnclimbedPeak & {
-        ascents: { timestamp: string; activityId: string; timezone?: string }[];
+        ascents: {
+            id: string;
+            timestamp: string;
+            activityId: string;
+            timezone?: string;
+        }[];
     })[];
     activityCoords: {
         id: string;
@@ -19,7 +24,12 @@ export interface ChallengeDetailState {
 const useChallengeDetailState = (data: {
     challenge: Challenge;
     peaks: (UnclimbedPeak & {
-        ascents: { timestamp: string; activityId: string; timezone?: string }[];
+        ascents: {
+            id: string;
+            timestamp: string;
+            activityId: string;
+            timezone?: string;
+        }[];
     })[];
     activityCoords: {
         id: string;
@@ -54,6 +64,7 @@ const ChallengeDetailProvider = ({
         challenge: Challenge;
         peaks: (UnclimbedPeak & {
             ascents: {
+                id: string;
                 timestamp: string;
                 activityId: string;
                 timezone?: string;

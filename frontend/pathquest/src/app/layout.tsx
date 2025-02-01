@@ -41,7 +41,10 @@ const rootContainerStyles: SxProps = {
 };
 
 const contentContainerStyles: SxProps = {
-    width: "100%",
+    width: {
+        xs: "100%",
+        md: "calc(100% - 16px)",
+    },
     minHeight: "100vh",
     position: "relative",
     padding: {

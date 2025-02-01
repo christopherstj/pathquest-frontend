@@ -1,7 +1,9 @@
+import { darkColors } from "@/theme/theme";
 import {
     SxProps,
     TextFieldProps,
     TextField as MuiTextField,
+    Theme,
 } from "@mui/material";
 import React from "react";
 
@@ -35,9 +37,17 @@ export const textFieldStyles = (color: "primary" | "secondary"): SxProps => ({
         "&:-webkit-autofill": {
             WebkitBoxShadow: `none`,
         },
+        "&.Mui-disabled": {
+            color: `${color}.onContainerDim`,
+            WebkitTextFillColor: `unset`,
+            opacity: 0.75,
+        },
     },
     ".MuiOutlinedInput-notchedOutline": {
         borderColor: `${color}.onContainer`,
+    },
+    ".MuiFormHelperText-root": {
+        color: `${color}.onContainerDim`,
     },
 });
 

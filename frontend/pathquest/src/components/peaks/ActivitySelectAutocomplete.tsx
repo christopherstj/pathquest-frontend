@@ -177,10 +177,11 @@ const ActivitySelectAutocomplete = ({ value, onValueChange, peak }: Props) => {
                         >
                             <Button
                                 onClick={getNext}
-                                sx={buttonStyles}
+                                color="primary"
                                 disabled={loading}
                                 fullWidth
                                 size="small"
+                                variant="text"
                             >
                                 Load More
                             </Button>

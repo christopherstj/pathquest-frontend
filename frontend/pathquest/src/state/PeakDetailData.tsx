@@ -33,11 +33,7 @@ const PeakDetailData = async ({ peakId, children }: Props) => {
                         Looks like something went wrong!
                     </Typography>
                     <Button
-                        sx={{
-                            borderRadius: "12px",
-                            backgroundColor: "primary.container",
-                            color: "primary.onContainer",
-                        }}
+                        variant="text"
                         color="primary"
                         LinkComponent={Link}
                         href="/app/peaks"

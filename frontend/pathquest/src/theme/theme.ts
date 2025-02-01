@@ -131,22 +131,47 @@ const baseTheme = createTheme({
                 root: {
                     textTransform: "none",
                     fontFamily: "var(--font-merriweather-sans)",
+                    fontWeight: "bold",
                     borderRadius: "24px",
-                    color: palette.primary.onContainer,
                 },
+            },
+            defaultProps: {
+                variant: "contained",
             },
             variants: [
                 {
-                    props: { color: "primary" },
+                    props: { color: "primary", variant: "text" },
                     style: {
+                        color: palette.primary.onContainerDim,
                         "&:hover": {
                             backgroundColor: palette.primary.containerDim,
                         },
                     },
                 },
                 {
-                    props: { color: "secondary" },
+                    props: { color: "secondary", variant: "text" },
                     style: {
+                        color: palette.secondary.onContainer,
+                        "&:hover": {
+                            backgroundColor: palette.secondary.containerDim,
+                        },
+                    },
+                },
+                {
+                    props: { color: "primary", variant: "contained" },
+                    style: {
+                        backgroundColor: palette.primary.container,
+                        color: palette.primary.onContainerDim,
+                        "&:hover": {
+                            backgroundColor: palette.primary.containerDim,
+                        },
+                    },
+                },
+                {
+                    props: { color: "secondary", variant: "contained" },
+                    style: {
+                        backgroundColor: palette.secondary.container,
+                        color: palette.secondary.onContainer,
                         "&:hover": {
                             backgroundColor: palette.secondary.containerDim,
                         },
@@ -158,7 +183,7 @@ const baseTheme = createTheme({
                         color: "primary",
                     },
                     style: {
-                        color: palette.primary.onContainer,
+                        color: palette.primary.onContainerDim,
                         borderColor: palette.primary.onContainer,
                         "&:hover": {
                             backgroundColor: palette.primary.containerDim,
@@ -171,7 +196,7 @@ const baseTheme = createTheme({
                         color: "secondary",
                     },
                     style: {
-                        color: palette.secondary.onContainer,
+                        color: palette.secondary.onContainerDim,
                         borderColor: palette.secondary.onContainer,
                         "&:hover": {
                             backgroundColor: palette.secondary.containerDim,

@@ -3,12 +3,13 @@ import getDistanceString from "@/helpers/getDistanceString";
 import hexToRgb from "@/helpers/hexToRgb";
 import Activity from "@/typeDefs/Activity";
 import { ActivityStart } from "@/typeDefs/ActivityStart";
-import { DirectionsBike, DirectionsRun } from "@mui/icons-material";
+import { DirectionsBike, DirectionsRun, MoreVert } from "@mui/icons-material";
 import {
     Avatar,
     Box,
     Button,
     ButtonBase,
+    IconButton,
     SxProps,
     Theme,
     Typography,
@@ -73,8 +74,10 @@ type Props = {
     activity:
         | (Activity & {
               summits: {
+                  id: string;
                   timestamp: string;
                   activityId: string;
+                  notes?: string;
               }[];
           })
         | ActivityStart;
@@ -82,6 +85,7 @@ type Props = {
     onMouseOver: (activityId: string) => void;
     onMouseOut: () => void;
     onClick?: (lat: number, long: number) => void;
+    onSummitClick?: (summitId: string) => void;
 };
 
 const tz = dayjs.tz.guess();
@@ -92,6 +96,7 @@ const ActivityRow = ({
     onMouseOver,
     onMouseOut,
     onClick,
+    onSummitClick,
 }: Props) => {
     const getIcon = () => {
         if (activity.sport === "Run") {
@@ -112,13 +117,15 @@ const ActivityRow = ({
             sx={rowStyles}
             onMouseEnter={() => onMouseOver(activity.id)}
             onMouseLeave={onMouseOut}
-            onClick={() => {
-                if (onClick) {
-                    onClick(activity.startLat, activity.startLong);
-                } else {
-                    onMouseOver(activity.id);
-                }
-            }}
+            {...(onClick
+                ? {
+                      onClick: () =>
+                          onClick(activity.startLat, activity.startLong),
+                  }
+                : {
+                      LinkComponent: Link,
+                      href: `/app/activities/${activity.id}`,
+                  })}
         >
             <Avatar
                 sx={{
@@ -148,18 +155,99 @@ const ActivityRow = ({
                         .tz(timezone)
                         .format("MMM D, YYYY h:mm A")}
                 </Typography>
-                <Button
-                    sx={stravaButtonStyles}
-                    size="small"
-                    LinkComponent={Link}
-                    href={`https://www.strava.com/activities/${activity.id}`}
-                    target="_blank"
-                    onClick={(e) => e.stopPropagation()}
-                >
-                    View on Strava
-                </Button>
+                {onClick ? (
+                    <Button
+                        sx={stravaButtonStyles}
+                        variant="text"
+                        size="small"
+                        LinkComponent={Link}
+                        href={`https://www.strava.com/activities/${activity.id}`}
+                        target="_blank"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        View on Strava
+                    </Button>
+                ) : "summits" in activity && activity.summits.length > 0 ? (
+                    <>
+                        <Typography
+                            variant="caption"
+                            color="primary.onContainerDim"
+                        >
+                            Summit{activity.summits.length > 1 ? "s" : ""}:
+                        </Typography>
+                        {activity.summits.map((summit, index) => (
+                            <Box
+                                key={summit.timestamp}
+                                width="100%"
+                                display="flex"
+                                flexWrap="wrap"
+                                paddingBottom="8px"
+                                {...(index !== activity.summits.length - 1 && {
+                                    borderBottom: "1px solid",
+                                    borderBottomColor: "primary.onContainerDim",
+                                })}
+                            >
+                                <Typography
+                                    variant="caption"
+                                    color="primary.onContainerDim"
+                                >
+                                    {dayjs(summit.timestamp)
+                                        .tz(timezone)
+                                        .format("h:mm A")}
+                                </Typography>
+                                {onSummitClick && (
+                                    <IconButton
+                                        sx={{
+                                            ...buttonStyles,
+                                            padding: "0",
+                                            fontSize: "0.75rem",
+                                            marginLeft: "8px",
+                                        }}
+                                        size="small"
+                                        color="primary"
+                                        onClick={(e) => {
+                                            e.preventDefault();
+                                            e.stopPropagation();
+                                            onSummitClick(summit.id);
+                                        }}
+                                    >
+                                        <MoreVert fontSize="small" />
+                                    </IconButton>
+                                )}
+                                {summit.notes && (
+                                    <Typography
+                                        variant="caption"
+                                        color="primary.onContainerDim"
+                                        flexBasis="100%"
+                                        sx={{
+                                            display: "-webkit-box",
+                                            WebkitLineClamp: "1",
+                                            WebkitBoxOrient: "vertical",
+                                            overflow: "hidden",
+                                        }}
+                                    >
+                                        {summit.notes}
+                                    </Typography>
+                                )}
+                            </Box>
+                        ))}
+                    </>
+                ) : (
+                    activity.peakSummits !== null &&
+                    activity.peakSummits !== undefined && (
+                        <DataRow
+                            label="Peak Summits:"
+                            value={activity.peakSummits}
+                        />
+                    )
+                )}
             </Box>
-            <Box display="flex" flexDirection="column" alignItems="center">
+            <Box
+                display="flex"
+                flexDirection="column"
+                alignItems="center"
+                gap="4px"
+            >
                 <DataRow
                     label="Distance:"
                     value={getDistanceString(activity.distance, units)}
@@ -170,23 +258,73 @@ const ActivityRow = ({
                         value={getVerticalGainString(activity.gain, units)}
                     />
                 )}
-                {"summits" in activity && activity.summits.length > 0 ? (
-                    <Typography
-                        variant="caption"
-                        color="primary.onContainerDim"
-                    >
-                        Summit{activity.summits.length > 1 ? "s" : ""}:{" "}
-                        {activity.summits.length > 1 ? <br /> : ""}
-                        {activity.summits.map((summit) => (
-                            <React.Fragment key={summit.timestamp}>
-                                {dayjs(summit.timestamp)
-                                    .tz(timezone)
-                                    .format("h:mm A")}
-                                {/* {new Date(summit.timestamp).toLocaleTimeString()} */}
-                                <br />
-                            </React.Fragment>
+                {onClick &&
+                "summits" in activity &&
+                activity.summits.length > 0 ? (
+                    <>
+                        <Typography
+                            variant="caption"
+                            color="primary.onContainerDim"
+                        >
+                            Summit{activity.summits.length > 1 ? "s" : ""}:
+                        </Typography>
+                        {activity.summits.map((summit, index) => (
+                            <Box
+                                key={summit.timestamp}
+                                width="100%"
+                                display="flex"
+                                flexWrap="wrap"
+                                paddingBottom="8px"
+                                {...(index !== activity.summits.length - 1 && {
+                                    borderBottom: "1px solid",
+                                    borderBottomColor: "primary.onContainerDim",
+                                })}
+                            >
+                                <Typography
+                                    variant="caption"
+                                    color="primary.onContainerDim"
+                                >
+                                    {dayjs(summit.timestamp)
+                                        .tz(timezone)
+                                        .format("h:mm A")}
+                                </Typography>
+                                {onSummitClick && (
+                                    <IconButton
+                                        sx={{
+                                            ...buttonStyles,
+                                            padding: "0",
+                                            fontSize: "0.75rem",
+                                            marginLeft: "8px",
+                                        }}
+                                        size="small"
+                                        color="primary"
+                                        onClick={(e) => {
+                                            e.preventDefault();
+                                            e.stopPropagation();
+                                            onSummitClick(summit.id);
+                                        }}
+                                    >
+                                        <MoreVert fontSize="small" />
+                                    </IconButton>
+                                )}
+                                {summit.notes && (
+                                    <Typography
+                                        variant="caption"
+                                        color="primary.onContainerDim"
+                                        flexBasis="100%"
+                                        sx={{
+                                            display: "-webkit-box",
+                                            WebkitLineClamp: "1",
+                                            WebkitBoxOrient: "vertical",
+                                            overflow: "hidden",
+                                        }}
+                                    >
+                                        {summit.notes}
+                                    </Typography>
+                                )}
+                            </Box>
                         ))}
-                    </Typography>
+                    </>
                 ) : (
                     activity.peakSummits !== null &&
                     activity.peakSummits !== undefined && (
@@ -196,16 +334,31 @@ const ActivityRow = ({
                         />
                     )
                 )}
-                <Button
-                    sx={buttonStyles}
-                    LinkComponent={Link}
-                    href={`/app/activities/${activity.id}`}
-                    size="small"
-                    fullWidth
-                    onClick={(e) => e.stopPropagation()}
-                >
-                    Details
-                </Button>
+                {onClick ? (
+                    <Button
+                        sx={{ ...buttonStyles, marginTop: "auto" }}
+                        LinkComponent={Link}
+                        href={`/app/activities/${activity.id}`}
+                        size="small"
+                        variant="text"
+                        fullWidth
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        Details
+                    </Button>
+                ) : (
+                    <Button
+                        sx={{ ...stravaButtonStyles, marginTop: "auto" }}
+                        variant="text"
+                        size="small"
+                        LinkComponent={Link}
+                        href={`https://www.strava.com/activities/${activity.id}`}
+                        target="_blank"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        View on Strava
+                    </Button>
+                )}
             </Box>
         </ButtonBase>
     );

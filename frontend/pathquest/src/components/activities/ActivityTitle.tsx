@@ -22,7 +22,7 @@ const ActivityTitle = () => {
             <Box
                 sx={{
                     display: "flex",
-                    alignItems: "center",
+                    alignItems: "flex-start",
                     pr: {
                         xs: "48px",
                         md: "0px",

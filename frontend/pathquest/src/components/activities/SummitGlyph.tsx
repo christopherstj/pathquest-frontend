@@ -7,14 +7,7 @@ type Props = { left: number; top: number };
 const SummitGlyph = ({ left, top }: Props) => {
     return (
         <CustomGlyph left={left - 12.5} top={top - 35}>
-            <PeakSummit
-                width={25}
-                height={30}
-                // sx={{
-                //     height: "30px",
-                //     width: "25px",
-                // }}
-            />
+            <PeakSummit width={25} height={30} />
         </CustomGlyph>
     );
 };

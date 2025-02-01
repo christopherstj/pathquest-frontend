@@ -1,8 +1,16 @@
 "use client";
 import dayjs from "@/helpers/dayjs";
 import metersToFt from "@/helpers/metersToFt";
+import Ascent from "@/typeDefs/Ascent";
 import UnclimbedPeak from "@/typeDefs/UnclimbedPeak";
-import { Check, Star, StarBorder } from "@mui/icons-material";
+import {
+    Check,
+    Edit,
+    Launch,
+    MoreVert,
+    Star,
+    StarBorder,
+} from "@mui/icons-material";
 import {
     ListItem,
     ListItemAvatar,
@@ -34,12 +42,9 @@ type Props = {
     onFavoriteClick?: (peakId: string, newValue: boolean) => void;
     onRowClick: (lat: number, long: number) => void;
     rowColor: "primary" | "secondary";
-    ascents?: {
-        timestamp: string;
-        activityId: string;
-        timezone?: string;
-    }[];
+    ascents?: Ascent[];
     useAscentRedirect?: boolean;
+    onSummitControlDetailClick?: (ascentId: string) => void;
 };
 
 const timezone = dayjs.tz.guess();
@@ -52,6 +57,7 @@ const UnclimbedPeakRow = ({
     rowColor,
     ascents,
     useAscentRedirect = true,
+    onSummitControlDetailClick,
 }: Props) => {
     const color =
         (peak.Altitude ?? 0) < 1000
@@ -174,38 +180,92 @@ const UnclimbedPeakRow = ({
                                         : 1
                                 )
                                 .map((ascent, index) => (
-                                    <Typography
+                                    <Box
                                         key={index}
-                                        variant="caption"
-                                        color={`${rowColor}.onContainerDim`}
-                                        {...(useAscentRedirect && {
-                                            component: Link,
-                                            onClick: (e: any) =>
-                                                e.stopPropagation(),
-                                            href: `/app/activities/${ascent.activityId}`,
-                                        })}
-                                        sx={{
-                                            opacity: 0.75,
-                                            ...(useAscentRedirect
-                                                ? {
-                                                      cursor: "pointer",
-                                                      "&:hover": {
-                                                          opacity: 1,
-                                                      },
-                                                  }
-                                                : {}),
-                                        }}
+                                        display="flex"
+                                        flexWrap="wrap"
+                                        gap="4px"
                                     >
-                                        {dayjs(ascent.timestamp)
-                                            .tz(
-                                                ascent.timezone
-                                                    ? ascent.timezone
-                                                          .split(" ")
-                                                          .slice(-1)[0]
-                                                    : timezone
-                                            )
-                                            .format("MMM D, YYYY h:mm A")}
-                                    </Typography>
+                                        <Typography
+                                            variant="caption"
+                                            color={`${rowColor}.onContainerDim`}
+                                            {...(useAscentRedirect && {
+                                                component: Link,
+                                                onClick: (e: any) =>
+                                                    e.stopPropagation(),
+                                                href: `/app/activities/${ascent.activityId}`,
+                                            })}
+                                            sx={{
+                                                opacity: 0.75,
+                                                ...(useAscentRedirect
+                                                    ? {
+                                                          cursor: "pointer",
+                                                          "&:hover": {
+                                                              opacity: 1,
+                                                          },
+                                                      }
+                                                    : {}),
+                                            }}
+                                        >
+                                            {dayjs(ascent.timestamp)
+                                                .tz(
+                                                    ascent.timezone
+                                                        ? ascent.timezone
+                                                              .split(" ")
+                                                              .slice(-1)[0]
+                                                        : timezone
+                                                )
+                                                .format(
+                                                    "MMM D, YYYY h:mm A"
+                                                )}{" "}
+                                            {useAscentRedirect && (
+                                                <Launch
+                                                    sx={{
+                                                        fontSize: "0.75rem",
+                                                        verticalAlign: "middle",
+                                                        marginLeft: "4px",
+                                                    }}
+                                                />
+                                            )}
+                                        </Typography>
+                                        {onSummitControlDetailClick && (
+                                            <>
+                                                <IconButton
+                                                    sx={{
+                                                        ...buttonStyles,
+                                                        padding: "0",
+                                                        fontSize: "0.75rem",
+                                                        marginLeft: "4px",
+                                                    }}
+                                                    size="small"
+                                                    color="primary"
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        onSummitControlDetailClick(
+                                                            ascent.id
+                                                        );
+                                                    }}
+                                                >
+                                                    <MoreVert fontSize="small" />
+                                                </IconButton>
+                                            </>
+                                        )}
+                                        {ascent.notes && (
+                                            <Typography
+                                                flexBasis="100%"
+                                                variant="caption"
+                                                color={`${rowColor}.onContainerDim`}
+                                                sx={{
+                                                    display: "-webkit-box",
+                                                    WebkitLineClamp: "1",
+                                                    WebkitBoxOrient: "vertical",
+                                                    overflow: "hidden",
+                                                }}
+                                            >
+                                                {ascent.notes}
+                                            </Typography>
+                                        )}
+                                    </Box>
                                 ))}
                     </Box>
                 }
@@ -254,6 +314,7 @@ const UnclimbedPeakRow = ({
                     LinkComponent={Link}
                     href={`/app/peaks/${peak.Id}`}
                     onClick={(e) => e.stopPropagation()}
+                    variant="text"
                 >
                     Details
                 </Button>
