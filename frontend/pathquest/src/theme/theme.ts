@@ -239,7 +239,7 @@ const baseTheme = createTheme({
             styleOverrides: {
                 paper: {
                     borderRadius: "12px",
-                    backgroundColor: palette.primary.container,
+                    backgroundColor: palette.background.paper,
                 },
             },
         },
