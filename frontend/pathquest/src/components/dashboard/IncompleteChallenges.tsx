@@ -69,9 +69,8 @@ const IncompleteChallenges = () => {
                         {incompleteChallenges
                             .sort(
                                 (a, b) =>
-                                    b.total -
-                                    b.completed -
-                                    (a.total - a.completed)
+                                    (a.total - a.completed) / a.total -
+                                    (b.total - b.completed) / b.total
                             )
                             .map((challenge) => (
                                 <ChallengeRow
