@@ -88,7 +88,11 @@ const ChallengeList = () => {
     return (
         <Virtuoso
             className="challenge-list"
-            data={challenges}
+            data={challenges.sort(
+                (a, b) =>
+                    (a.total - a.completed) / a.total -
+                    (b.total - b.completed) / b.total
+            )}
             itemContent={(_, challenge) => (
                 <ChallengeRow
                     challenge={challenge}
