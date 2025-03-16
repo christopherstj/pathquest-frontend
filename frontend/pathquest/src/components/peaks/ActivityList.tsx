@@ -16,7 +16,7 @@ const containerStyles: SxProps = {
     gap: "8px",
     maxHeight: {
         xs: "70vh",
-        md: "calc(100vh - 32px)",
+        md: "calc(80vh - 32px)",
     },
     height: "100%",
 };
@@ -73,23 +73,28 @@ const ActivityList = () => {
         if (map) {
             const activity = activities.find((a) => a.id === activityId);
             if (!activity) return;
-            (map.getSource("selectedActivities") as GeoJSONSource).setData({
-                type: "FeatureCollection",
-                features: [
-                    {
-                        type: "Feature",
-                        geometry: {
-                            type: "LineString",
-                            coordinates: (
-                                activity.coords as [number, number][]
-                            ).map((c) => [c[1], c[0]]),
+            const source = map.getSource("selectedActivities") as
+                | GeoJSONSource
+                | undefined;
+            if (source) {
+                source.setData({
+                    type: "FeatureCollection",
+                    features: [
+                        {
+                            type: "Feature",
+                            geometry: {
+                                type: "LineString",
+                                coordinates: (
+                                    activity.coords as [number, number][]
+                                ).map((c) => [c[1], c[0]]),
+                            },
+                            properties: {
+                                id: activity.id,
+                            },
                         },
-                        properties: {
-                            id: activity.id,
-                        },
-                    },
-                ],
-            });
+                    ],
+                });
+            }
         }
     };
 

@@ -5,6 +5,7 @@ import { Divider, Grid2 as Grid, Typography } from "@mui/material";
 import PeakDetailMap from "@/components/peaks/PeakDetailMap";
 import PeakDetailData from "@/state/PeakDetailData";
 import ActivityList from "@/components/peaks/ActivityList";
+import PeakWeather from "@/components/peaks/PeakWeather";
 
 type Props = {
     params: {
@@ -21,6 +22,9 @@ const page = ({ params: { id } }: Props) => {
                 </Grid>
                 <Grid size={{ xs: 12, md: 5, lg: 4 }}>
                     <ActivityList />
+                </Grid>
+                <Grid size={{ xs: 12 }}>
+                    <PeakWeather peakId={id} />
                 </Grid>
             </GridContainer>
         </PeakDetailData>
