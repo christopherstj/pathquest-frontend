@@ -1,8 +1,10 @@
 export default interface Challenge {
-    id: number;
+    id: string;
     name: string;
     region?: string;
     centerLat?: number;
     centerLong?: number;
     numPeaks: number;
+    isFavorited: boolean;
+    isPublic: boolean | null;
 }

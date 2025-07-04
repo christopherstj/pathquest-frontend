@@ -24,8 +24,8 @@ const rowStyles =
         borderRadius: "12px",
         backgroundColor: "primary.containerDim",
         position: "relative",
-        overflow: "hidden",
-        minHeight: "54px",
+        // overflow: "hidden",
+        // minHeight: "54px",
         width: {
             xs: "100%",
             md: "auto",

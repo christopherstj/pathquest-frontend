@@ -1,7 +1,7 @@
 "use server";
 import getGoogleIdToken from "@/auth/getGoogleIdToken";
-import { useAuth } from "@/auth/useAuth";
 import getBackendUrl from "@/helpers/getBackendUrl";
+import { User } from "@/typeDefs/User";
 import { revalidatePath } from "next/cache";
 
 const backendUrl = getBackendUrl();
@@ -14,6 +14,7 @@ const createUser = async (user?: {
 }): Promise<{
     success: boolean;
     error?: string;
+    user?: User;
 }> => {
     if (!user) {
         return {
@@ -44,9 +45,7 @@ const createUser = async (user?: {
         };
     }
 
-    const { userFound } = await userRes.json();
-
-    console.log(userFound);
+    const { userFound, user: userObject } = await userRes.json();
 
     if (!userFound) {
         const apiRes = await fetch(`${backendUrl}/signup`, {
@@ -71,14 +70,17 @@ const createUser = async (user?: {
                 error: "Failed to create user",
             };
         } else {
+            const newUser = (await apiRes.json()).user;
             revalidatePath(`${backendUrl}/user`);
             return {
                 success: true,
+                user: newUser,
             };
         }
     } else {
         return {
             success: true,
+            user: userObject,
         };
     }
 };

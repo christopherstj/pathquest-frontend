@@ -62,7 +62,7 @@ const ChallengeDetailMap = () => {
             sx={{
                 height: {
                     xs: "70vh",
-                    md: "calc(100vh - 32px)",
+                    md: "calc(100vh - 88px)",
                 },
             }}
         >
