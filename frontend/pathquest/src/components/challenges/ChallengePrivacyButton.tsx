@@ -10,9 +10,7 @@ import {
 } from "@mui/material";
 import React from "react";
 
-type Props = {};
-
-const ChallengePrivacyButton = (props: Props) => {
+const ChallengePrivacyButton = () => {
     const [{ challenge, ...peaksDetailState }, setChallengeDetail] =
         useChallengeDetail();
     const [, dispatch] = useMessage();
