@@ -117,15 +117,17 @@ const ActivityRow = ({
             sx={rowStyles}
             onMouseEnter={() => onMouseOver(activity.id)}
             onMouseLeave={onMouseOut}
-            {...(onClick
-                ? {
-                      onClick: () =>
-                          onClick(activity.startLat, activity.startLong),
-                  }
-                : {
-                      LinkComponent: Link,
-                      href: `/app/activities/${activity.id}`,
-                  })}
+            LinkComponent={Link}
+            href={`/app/activities/${activity.id}`}
+            // {...(onClick
+            //     ? {
+            //           onClick: () =>
+            //               onClick(activity.startLat, activity.startLong),
+            //       }
+            //     : {
+            //           LinkComponent: Link,
+            //           href: `/app/activities/${activity.id}`,
+            //       })}
         >
             <Avatar
                 sx={{
@@ -337,14 +339,18 @@ const ActivityRow = ({
                 {onClick ? (
                     <Button
                         sx={{ ...buttonStyles, marginTop: "auto" }}
-                        LinkComponent={Link}
-                        href={`/app/activities/${activity.id}`}
                         size="small"
                         variant="text"
                         fullWidth
-                        onClick={(e) => e.stopPropagation()}
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            e.preventDefault();
+                            if (activity.startLat && activity.startLong) {
+                                onClick(activity.startLat, activity.startLong);
+                            }
+                        }}
                     >
-                        Details
+                        Fly to Start
                     </Button>
                 ) : (
                     <Button

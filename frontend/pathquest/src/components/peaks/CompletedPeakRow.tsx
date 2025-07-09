@@ -56,10 +56,11 @@ const CompletedPeakRow = ({ peak, onClick, units }: Props) => {
     return (
         <ButtonBase
             sx={rowStyles}
+            LinkComponent={Link}
+            href={`/app/peaks/${peak.Id}`}
             onClick={(e) => {
                 e.preventDefault();
                 e.stopPropagation();
-                onClick(peak.Lat, peak.Long);
             }}
         >
             <Avatar
@@ -133,11 +134,14 @@ const CompletedPeakRow = ({ peak, onClick, units }: Props) => {
                 )}
                 <Button
                     size="small"
-                    LinkComponent={Link}
-                    href={`/app/peaks/${peak.Id}`}
                     variant="text"
+                    onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        onClick(peak.Lat, peak.Long);
+                    }}
                 >
-                    Details
+                    Fly to Peak
                 </Button>
             </Box>
         </ButtonBase>

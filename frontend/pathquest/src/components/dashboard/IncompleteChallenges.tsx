@@ -1,11 +1,12 @@
 "use client";
 import { useMessage } from "@/state/MessageContext";
 import { useUser } from "@/state/UserContext";
-import { Box, Divider, List, SxProps, Typography } from "@mui/material";
+import { Box, Button, Divider, List, SxProps, Typography } from "@mui/material";
 import React from "react";
 import UnclimbedPeakRow from "./UnclimbedPeakRow";
 import ChallengeRow from "../challenges/ChallengeRow";
 import { useDashboard } from "@/state/DashboardContext";
+import Link from "next/link";
 
 const containerStyles: SxProps = {
     borderRadius: "12px",
@@ -15,6 +16,7 @@ const containerStyles: SxProps = {
     display: "flex",
     flexDirection: "column",
     width: "100%",
+    alignItems: "center",
     height: {
         xs: "70vh",
         md: "calc(60vh - 66px)",
@@ -47,14 +49,37 @@ const listStyles: SxProps = {
 };
 
 const IncompleteChallenges = () => {
-    const [{ incompleteChallenges }] = useDashboard();
+    const [{ favoriteChallenges, map }] = useDashboard();
+
+    const onRowClick = (lat: number | undefined, long: number | undefined) => {
+        if (!lat || !long || !map) return;
+        map.flyTo({
+            center: [long, lat],
+            zoom: 10,
+        });
+    };
 
     return (
         <>
             <Box width="100%">
-                <Typography variant="h4" color="primary.onContainer">
-                    Ongoing Challenges
-                </Typography>
+                <Box display="flex" justifyContent="space-between">
+                    <Typography
+                        variant="h5"
+                        component="h4"
+                        color="primary.onContainer"
+                    >
+                        Accepted Challenges
+                    </Typography>
+                    <Button
+                        size="small"
+                        color="primary"
+                        variant="text"
+                        LinkComponent={Link}
+                        href="/app/challenges"
+                    >
+                        All Challenges
+                    </Button>
+                </Box>
                 <Divider
                     sx={{
                         backgroundColor: "primary.onContainer",
@@ -64,9 +89,9 @@ const IncompleteChallenges = () => {
                 />
             </Box>
             <Box sx={containerStyles}>
-                {incompleteChallenges && incompleteChallenges.length > 0 ? (
+                {favoriteChallenges && favoriteChallenges.length > 0 ? (
                     <Box sx={listStyles}>
-                        {incompleteChallenges
+                        {favoriteChallenges
                             .sort(
                                 (a, b) =>
                                     (a.total - a.completed) / a.total -
@@ -76,17 +101,29 @@ const IncompleteChallenges = () => {
                                 <ChallengeRow
                                     challenge={challenge}
                                     key={challenge.id}
+                                    onClick={onRowClick}
                                 />
                             ))}
                     </Box>
                 ) : (
-                    <Typography
-                        variant="body1"
-                        color="secondary.onContainerDim"
-                        textAlign="center"
-                    >
-                        Looks like something went wrong. Please try again later.
-                    </Typography>
+                    <>
+                        <Typography
+                            variant="body1"
+                            color="secondary.onContainerDim"
+                            textAlign="center"
+                        >
+                            Looks like you haven't accepted any challenges yet!
+                        </Typography>
+                        <Button
+                            size="small"
+                            color="primary"
+                            variant="text"
+                            LinkComponent={Link}
+                            href="/app/challenges"
+                        >
+                            View Challenges
+                        </Button>
+                    </>
                 )}
             </Box>
         </>

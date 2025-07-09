@@ -1,9 +1,10 @@
 "use client";
 import { useUser } from "@/state/UserContext";
-import { Box, Divider, List, SxProps, Typography } from "@mui/material";
+import { Box, Button, Divider, List, SxProps, Typography } from "@mui/material";
 import React from "react";
 import UnclimbedPeakRow from "./UnclimbedPeakRow";
 import { useDashboard } from "@/state/DashboardContext";
+import Link from "next/link";
 
 const containerStyles: SxProps = {
     borderRadius: "12px",
@@ -67,9 +68,24 @@ const FavoritePeaks = ({
     return (
         <>
             <Box width="100%">
-                <Typography variant="h4" color="primary.onContainer">
-                    Your Favorite Peaks
-                </Typography>
+                <Box display="flex" justifyContent="space-between">
+                    <Typography
+                        variant="h5"
+                        component="h4"
+                        color="primary.onContainer"
+                    >
+                        Favorite Peaks
+                    </Typography>
+                    <Button
+                        size="small"
+                        color="primary"
+                        variant="text"
+                        LinkComponent={Link}
+                        href="/app/peaks"
+                    >
+                        All Peaks
+                    </Button>
+                </Box>
                 <Divider
                     sx={{
                         backgroundColor: "primary.onContainer",

@@ -41,7 +41,9 @@ const PeakSummitRow = ({ peakSummit, units, onRowClick }: Props) => {
                 paddingRight: "0",
                 gap: "8px",
             }}
-            onClick={() => onRowClick(peakSummit.Lat, peakSummit.Long)}
+            component={Link}
+            href={`/app/peaks/${peakSummit.Id}`}
+            onClick={(e) => e.stopPropagation()}
         >
             <ListItemAvatar>
                 <Avatar
@@ -160,12 +162,14 @@ const PeakSummitRow = ({ peakSummit, units, onRowClick }: Props) => {
                 <Button
                     size="small"
                     color="primary"
-                    LinkComponent={Link}
-                    href={`/app/peaks/${peakSummit.Id}`}
-                    onClick={(e) => e.stopPropagation()}
                     variant="text"
+                    onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        onRowClick(peakSummit.Lat, peakSummit.Long);
+                    }}
                 >
-                    Details
+                    Fly to Peak
                 </Button>
             </Box>
         </ListItem>

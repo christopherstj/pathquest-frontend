@@ -75,7 +75,11 @@ const UnclimbedPeakRow = ({
                 cursor: "pointer",
                 alignItems: "stretch",
             }}
-            onClick={() => onRowClick(peak.Lat, peak.Long)}
+            component={Link}
+            href={`/app/peaks/${peak.Id}`}
+            onClick={(e) => {
+                e.stopPropagation();
+            }}
         >
             <ListItemAvatar
                 sx={{
@@ -311,12 +315,14 @@ const UnclimbedPeakRow = ({
                     sx={buttonStyles}
                     size="small"
                     color="primary"
-                    LinkComponent={Link}
-                    href={`/app/peaks/${peak.Id}`}
-                    onClick={(e) => e.stopPropagation()}
+                    onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        onRowClick(peak.Lat, peak.Long);
+                    }}
                     variant="text"
                 >
-                    Details
+                    Fly to Peak
                 </Button>
             </Box>
         </ListItem>

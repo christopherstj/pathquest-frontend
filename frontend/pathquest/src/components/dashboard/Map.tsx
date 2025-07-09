@@ -26,9 +26,12 @@ import { ActivityStart } from "@/typeDefs/ActivityStart";
 import getActivityCoords from "@/actions/getActivityCoords";
 import ActivityPopup from "../activities/ActivityPopup";
 import { useRouter } from "next/navigation";
-import RecentActivities from "./RecentActivities";
 
-const Map = () => {
+type Props = {
+    children?: React.ReactNode;
+};
+
+const Map = ({ children }: Props) => {
     const [dashboardState, setDashboardState] = useDashboard();
     const [{ user }] = useUser();
     const [, dispatch] = useMessage();
@@ -41,7 +44,7 @@ const Map = () => {
 
     const theme = useTheme();
 
-    const { peakSummits, favoritePeaks, incompleteChallenges, activities } =
+    const { peakSummits, favoritePeaks, favoriteChallenges, activities } =
         dashboardState;
 
     const mapRef = React.useRef<mapboxgl.Map | null>(null);
@@ -286,7 +289,7 @@ const Map = () => {
                 type: "geojson",
                 data: {
                     type: "FeatureCollection",
-                    features: (incompleteChallenges ?? []).map((d) => ({
+                    features: (favoriteChallenges ?? []).map((d) => ({
                         type: "Feature",
                         geometry: {
                             type: "Point",
@@ -470,22 +473,7 @@ const Map = () => {
                     />
                 </MapboxContainer>
             </Grid>
-            <Grid
-                size={{ xs: 12, md: 6, lg: 4 }}
-                display="flex"
-                flexDirection="column"
-                gap="16px"
-            >
-                <PeaksSummitList />
-            </Grid>
-            <Grid
-                size={{ xs: 12, md: 6, lg: 4 }}
-                display="flex"
-                flexDirection="column"
-                gap="16px"
-            >
-                <RecentActivities />
-            </Grid>
+            {children}
             <Grid
                 size={{ xs: 12, md: 6, lg: 4 }}
                 display="flex"

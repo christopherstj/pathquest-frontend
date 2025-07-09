@@ -101,13 +101,13 @@ const containerStyles: SxProps = {
             color: "tertiary.onContainer",
             textDecoration: "none",
             fontFamily: "var(--font-merriweather-sans)",
-            padding: "4px 12px",
-            borderRadius: "8px",
+            padding: "4px",
+            borderRadius: "12px",
             border: "1px solid",
-            borderColor: "tertiary.onContainer",
+            borderColor: "tertiary.onContainerDim",
             width: "100%",
             "&:hover": {
-                textDecoration: "underline",
+                backgroundColor: "tertiary.containerDim",
             },
         },
         ".tag-tertiary": {

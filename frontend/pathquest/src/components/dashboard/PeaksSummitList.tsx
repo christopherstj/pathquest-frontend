@@ -1,5 +1,12 @@
 "use client";
-import { Divider, List, SxProps, Typography } from "@mui/material";
+import {
+    Button,
+    Divider,
+    Link,
+    List,
+    SxProps,
+    Typography,
+} from "@mui/material";
 import { Box } from "@mui/system";
 import React from "react";
 import PeakSummtRow from "./PeakSummitRow";
@@ -59,9 +66,24 @@ const PeaksSummitList = () => {
     return (
         <>
             <Box width="100%">
-                <Typography variant="h4" color="primary.onContainer">
-                    Your Recent Summits
-                </Typography>
+                <Box display="flex" justifyContent="space-between">
+                    <Typography
+                        variant="h5"
+                        component="h4"
+                        color="primary.onContainer"
+                    >
+                        Recent Summits
+                    </Typography>
+                    <Button
+                        size="small"
+                        color="primary"
+                        variant="text"
+                        LinkComponent={Link}
+                        href="/app/peaks"
+                    >
+                        All Peaks
+                    </Button>
+                </Box>
                 <Divider
                     sx={{
                         backgroundColor: "primary.onContainer",
@@ -73,9 +95,9 @@ const PeaksSummitList = () => {
             <Box sx={containerStyles}>
                 {peakSummits && peakSummits.length > 0 ? (
                     <List sx={listStyles}>
-                        {peakSummits.map((peak) => (
+                        {peakSummits.map((peak, index) => (
                             <PeakSummtRow
-                                key={peak.Id}
+                                key={index}
                                 peakSummit={peak}
                                 units={units}
                                 onRowClick={onRowClick}

@@ -142,7 +142,7 @@ const baseTheme = createTheme({
                 {
                     props: { color: "primary", variant: "text" },
                     style: {
-                        color: palette.primary.onContainerDim,
+                        color: palette.primary.onContainer,
                         "&:hover": {
                             backgroundColor: palette.primary.containerDim,
                         },

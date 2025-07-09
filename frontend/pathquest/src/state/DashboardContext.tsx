@@ -15,21 +15,21 @@ export interface DashboardState {
     activities: ActivityStart[] | null;
     peakSummits: (Peak & ManualPeakSummit)[] | null;
     favoritePeaks: FavoritedPeak[] | null;
-    incompleteChallenges: ChallengeProgress[] | null;
+    favoriteChallenges: ChallengeProgress[] | null;
 }
 
 const useDashboardState = (
     peakSummits: (Peak & ManualPeakSummit)[] | null,
     favoritePeaks: FavoritedPeak[] | null,
     activities: ActivityStart[] | null,
-    incompleteChallenges: ChallengeProgress[] | null
+    favoriteChallenges: ChallengeProgress[] | null
 ) =>
     useState<DashboardState>({
         map: null,
         activities,
         peakSummits,
         favoritePeaks,
-        incompleteChallenges,
+        favoriteChallenges,
     });
 
 export const DashboardContext = createContext<ReturnType<
@@ -49,19 +49,19 @@ const DashboardProvider = ({
     activities,
     peakSummits,
     favoritePeaks,
-    incompleteChallenges,
+    favoriteChallenges,
 }: {
     children: React.ReactNode;
     peakSummits: (Peak & ManualPeakSummit)[] | null;
     activities: ActivityStart[];
     favoritePeaks: FavoritedPeak[];
-    incompleteChallenges: ChallengeProgress[];
+    favoriteChallenges: ChallengeProgress[];
 }) => {
     const [state, setState] = useDashboardState(
         peakSummits,
         favoritePeaks,
         activities,
-        incompleteChallenges
+        favoriteChallenges
     );
 
     return (

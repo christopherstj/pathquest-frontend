@@ -1,5 +1,5 @@
 import getFavoritePeaks from "@/actions/getFavoritePeaks";
-import getIncompleteChallenges from "@/actions/getIncompleteChallenges";
+import getFavoriteChallenges from "@/actions/getFavoriteChallenges";
 import getPeakSummits from "@/actions/getPeakSummits";
 import getRecentActivities from "@/actions/getRecentActivities";
 import React from "react";
@@ -13,15 +13,15 @@ type Props = {
 const DashboardData = async ({ children }: Props) => {
     const peakSummits = await getRecentSummits();
     const favoritePeaks = await getFavoritePeaks();
-    const incompleteChallenges = await getIncompleteChallenges();
-    const activities = await getRecentActivities();
+    const favoriteChallenges = await getFavoriteChallenges();
+    const activities = await getRecentActivities(true);
 
     return (
         <DashboardProvider
             {...{
                 peakSummits,
                 favoritePeaks,
-                incompleteChallenges,
+                favoriteChallenges,
                 activities,
             }}
         >

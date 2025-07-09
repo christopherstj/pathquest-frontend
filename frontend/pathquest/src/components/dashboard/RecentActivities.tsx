@@ -6,7 +6,8 @@ import ActivityRow from "../peaks/ActivityRow";
 import getCoords from "../activities/helpers/getCoords";
 import clearCoords from "../activities/helpers/clearCoords";
 import { useUser } from "@/state/UserContext";
-import { Box, Divider, SxProps, Typography } from "@mui/material";
+import { Box, Button, Divider, SxProps, Typography } from "@mui/material";
+import Link from "next/link";
 
 const containerStyles: SxProps = {
     borderRadius: "12px",
@@ -64,9 +65,24 @@ const RecentActivities = () => {
     return (
         <>
             <Box width="100%">
-                <Typography variant="h4" color="primary.onContainer">
-                    Your Recent Activities
-                </Typography>
+                <Box display="flex" justifyContent="space-between">
+                    <Typography
+                        variant="h5"
+                        component="h4"
+                        color="primary.onContainer"
+                    >
+                        Activities with Summits
+                    </Typography>
+                    <Button
+                        size="small"
+                        color="primary"
+                        variant="text"
+                        LinkComponent={Link}
+                        href="/app/activities"
+                    >
+                        All Activities
+                    </Button>
+                </Box>
                 <Divider
                     sx={{
                         backgroundColor: "primary.onContainer",
