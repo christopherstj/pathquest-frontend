@@ -67,7 +67,6 @@ const ActivityMessage = (props: Props) => {
             }}
             open={showMessage}
             onClose={handleClose}
-            action={<></>}
         >
             <Alert sx={alertSx}>
                 {messageText}{" "}
