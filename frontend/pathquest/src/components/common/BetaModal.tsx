@@ -1,5 +1,5 @@
 "use client";
-import createUserInterest from "@/actions/createUserInterest";
+import createUserInterest from "@/actions/users/createUserInterest";
 import {
     Button,
     Dialog,

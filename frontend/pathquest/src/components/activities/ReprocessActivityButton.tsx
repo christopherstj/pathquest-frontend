@@ -1,5 +1,5 @@
 "use client";
-import reprocessActivity from "@/actions/reprocessActivity";
+import reprocessActivity from "@/actions/activities/reprocessActivity";
 import { Delete, Refresh } from "@mui/icons-material";
 import { ListItemButton, ListItemIcon, ListItemText } from "@mui/material";
 import React from "react";

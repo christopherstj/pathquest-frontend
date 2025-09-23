@@ -1,5 +1,5 @@
 "use client";
-import getPeaks from "@/actions/getPeaks";
+import getPeaks from "@/actions/peaks/getPeaks";
 import Peak from "@/typeDefs/Peak";
 import { Box, LinearProgress, SxProps } from "@mui/material";
 import React from "react";

@@ -1,5 +1,5 @@
 "use client";
-import getAllChallenges from "@/actions/getAllChallenges";
+import getAllChallenges from "@/actions/challenges/getAllChallenges";
 import { useChallengeDashboard } from "@/state/ChallengeDashboardContext";
 import { GeoJSONSource } from "mapbox-gl";
 import React from "react";

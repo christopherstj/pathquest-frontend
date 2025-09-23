@@ -1,4 +1,4 @@
-import getChallenges from "@/actions/getChallenges";
+import getChallenges from "@/actions/challenges/getChallenges";
 import ChallengesSearch from "@/components/challenges/ChallengesSearch";
 import GridContainer from "@/components/common/GridContainer";
 import { Grid2 as Grid, SxProps, Typography } from "@mui/material";

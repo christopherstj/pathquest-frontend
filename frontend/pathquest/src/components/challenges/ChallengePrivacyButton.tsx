@@ -1,4 +1,4 @@
-import updateChallengeFavorite from "@/actions/updateChallengeFavorite";
+import updateChallengeFavorite from "@/actions/challenges/updateChallengeFavorite";
 import { useChallengeDetail } from "@/state/ChallengeDetailContext";
 import { useMessage } from "@/state/MessageContext";
 import { Visibility, VisibilityOff } from "@mui/icons-material";

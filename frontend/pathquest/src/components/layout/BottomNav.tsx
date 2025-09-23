@@ -1,7 +1,7 @@
 import { Box, SxProps } from "@mui/material";
 import React from "react";
 import LinkButton from "./LinkButton";
-import UserButton from "./UserButton";
+import UserButton from "./UserMenu";
 
 const bottomNavStyles: SxProps = {
     position: "fixed",

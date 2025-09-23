@@ -1,4 +1,4 @@
-import getPeaks from "@/actions/getPeaks";
+import getPeaks from "@/actions/peaks/getPeaks";
 import GridContainer from "@/components/common/GridContainer";
 import { Metadata } from "next";
 import React from "react";

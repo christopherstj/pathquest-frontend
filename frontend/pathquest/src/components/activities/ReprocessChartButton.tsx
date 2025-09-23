@@ -1,5 +1,5 @@
 "use client";
-import reprocessActivity from "@/actions/reprocessActivity";
+import reprocessActivity from "@/actions/activities/reprocessActivity";
 import { Box, Button, Typography } from "@mui/material";
 import React from "react";
 import ConfirmDialog from "../common/ConfirmDialog";

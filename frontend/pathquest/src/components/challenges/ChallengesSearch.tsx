@@ -1,5 +1,5 @@
 "use client";
-import getChallenges from "@/actions/getChallenges";
+import getChallenges from "@/actions/challenges/getChallenges";
 import Challenge from "@/typeDefs/Challenge";
 import { Box, LinearProgress, SxProps } from "@mui/material";
 import React from "react";

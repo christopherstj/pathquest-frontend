@@ -2,7 +2,7 @@ import UnclimbedPeak from "@/typeDefs/UnclimbedPeak";
 import mapboxgl, { GeoJSONSource, MapMouseEvent } from "mapbox-gl";
 import UnclimbedPopup from "../UnclimbedPopup";
 import { Theme } from "@mui/material";
-import toggleFavoritePeak from "@/actions/toggleFavoritePeak";
+import toggleFavoritePeak from "@/actions/peaks/toggleFavoritePeak";
 import { PeaksState } from "@/state/PeaksContext";
 import FavoritePopup from "../FavoritePopup";
 import { DashboardState } from "@/state/DashboardContext";

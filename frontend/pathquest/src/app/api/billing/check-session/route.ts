@@ -1,4 +1,3 @@
-import processHistoricalData from "@/actions/processHistoricalData";
 import getGoogleIdToken from "@/auth/getGoogleIdToken";
 import { useAuth } from "@/auth/useAuth";
 import getBackendUrl from "@/helpers/getBackendUrl";

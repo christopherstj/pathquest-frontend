@@ -3,7 +3,7 @@ import Activity from "@/typeDefs/Activity";
 import UnclimbedPeak from "@/typeDefs/UnclimbedPeak";
 import setChallengeDetailFavorite from "./setChallengeDetailFavorite";
 import addUncimbedPeakMarker from "./addUnclimbedPeakMarker";
-import toggleFavoritePeak from "@/actions/toggleFavoritePeak";
+import toggleFavoritePeak from "@/actions/peaks/toggleFavoritePeak";
 import { Theme } from "@mui/material";
 
 const onFavoriteClick = async (

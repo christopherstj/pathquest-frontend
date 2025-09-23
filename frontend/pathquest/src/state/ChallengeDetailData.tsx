@@ -1,4 +1,4 @@
-import getChallengeDetails from "@/actions/getChallengeDetails";
+import getChallengeDetails from "@/actions/challenges/getChallengeDetails";
 import React from "react";
 import ChallengeDetailProvider from "./ChallengeDetailContext";
 

@@ -1,4 +1,4 @@
-import getUser from "@/actions/getUser";
+import getUser from "@/actions/users/getUser";
 import React from "react";
 import UserContext from "./UserContext";
 

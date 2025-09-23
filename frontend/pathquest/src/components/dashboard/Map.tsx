@@ -23,7 +23,7 @@ import initiateMap from "@/helpers/initiateMap";
 import { useDashboard } from "@/state/DashboardContext";
 import UnclimbedPopup from "./UnclimbedPopup";
 import { ActivityStart } from "@/typeDefs/ActivityStart";
-import getActivityCoords from "@/actions/getActivityCoords";
+import getActivityCoords from "@/actions/activities/getActivityCoords";
 import ActivityPopup from "../activities/ActivityPopup";
 import { useRouter } from "next/navigation";
 
@@ -254,21 +254,27 @@ const Map = ({ children }: Props) => {
         if (mapRef.current !== null) {
             loadMapDefaults(mapRef.current, theme, "all");
 
-            const bounds = new mapboxgl.LngLatBounds();
+            if (
+                (peakSummits ?? []).length > 0 ||
+                (favoritePeaks ?? []).length > 0 ||
+                (activities ?? []).length > 0
+            ) {
+                const bounds = new mapboxgl.LngLatBounds();
 
-            peakSummits?.forEach((peak) => {
-                bounds.extend([peak.Long, peak.Lat]);
-            });
-            favoritePeaks?.forEach((peak) => {
-                bounds.extend([peak.Long, peak.Lat]);
-            });
-            activities?.forEach((activity) => {
-                bounds.extend([activity.startLong, activity.startLat]);
-            });
+                peakSummits?.forEach((peak) => {
+                    bounds.extend([peak.Long, peak.Lat]);
+                });
+                favoritePeaks?.forEach((peak) => {
+                    bounds.extend([peak.Long, peak.Lat]);
+                });
+                activities?.forEach((activity) => {
+                    bounds.extend([activity.startLong, activity.startLat]);
+                });
 
-            mapRef.current.fitBounds(bounds, {
-                padding: 50,
-            });
+                mapRef.current.fitBounds(bounds, {
+                    padding: 50,
+                });
+            }
 
             mapRef.current?.addSource("peakSummits", {
                 type: "geojson",

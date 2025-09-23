@@ -1,6 +1,6 @@
 "use client";
-import addChallengeFavorite from "@/actions/addChallengeFavorite";
-import deleteChallengeFavorite from "@/actions/deleteChallengeFavorite";
+import addChallengeFavorite from "@/actions/challenges/addChallengeFavorite";
+import deleteChallengeFavorite from "@/actions/challenges/deleteChallengeFavorite";
 import { useChallengeDetail } from "@/state/ChallengeDetailContext";
 import { useMessage } from "@/state/MessageContext";
 import { Star, StarBorder } from "@mui/icons-material";

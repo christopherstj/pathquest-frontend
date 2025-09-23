@@ -1,5 +1,6 @@
-import getUser from "@/actions/getUser";
+import getUser from "@/actions/users/getUser";
 import { useAuth } from "@/auth/useAuth";
+import ActivityMessage from "@/components/common/ActivityMessage";
 import { Metadata } from "next";
 import { redirect } from "next/navigation";
 import React from "react";
@@ -27,13 +28,18 @@ const layout = async ({ children }: Props) => {
         redirect("/logout");
     }
 
-    const isSubscribed = user.isSubscribed || user.isLifetimeFree;
+    // const isSubscribed = user.isSubscribed || user.isLifetimeFree;
 
-    if (!isSubscribed) {
-        redirect("/checkout");
-    }
+    // if (!isSubscribed) {
+    //     redirect("/checkout");
+    // }
 
-    return <>{children}</>;
+    return (
+        <>
+            {children}
+            <ActivityMessage />
+        </>
+    );
 };
 
 export default layout;

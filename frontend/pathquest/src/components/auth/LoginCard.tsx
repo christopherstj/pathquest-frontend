@@ -14,6 +14,7 @@ const paperStyles: SxProps = {
     gap: "1rem",
     boxShadow: 5,
     borderRadius: "12px",
+    maxWidth: "400px",
 };
 
 const LoginCard = () => {
@@ -37,6 +38,15 @@ const LoginCard = () => {
                 Adventure awaits! Log in to start your journey.
             </Typography>
             <StravaLoginButton />
+            <Typography
+                variant="body2"
+                color="primary.onContainerDim"
+                textAlign="center"
+            >
+                If this is your first time here, a new account will be
+                automatically created for you, and we'll start processing your
+                historical data!
+            </Typography>
         </Paper>
     );
 };

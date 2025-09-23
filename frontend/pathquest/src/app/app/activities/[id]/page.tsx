@@ -1,4 +1,4 @@
-import getActivityDetails from "@/actions/getActivityDetails";
+import getActivityDetails from "@/actions/activities/getActivityDetails";
 import GridContainer from "@/components/common/GridContainer";
 import ActivityDetailData from "@/state/ActivityDetailData";
 import React from "react";

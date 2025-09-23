@@ -17,16 +17,16 @@ const getPeakSummits = async (): Promise<PeakSummit[]> => {
 
     const backendUrl = getBackendUrl();
 
-    const apiRes = await fetch(`${backendUrl}/peaks/summits`, {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-            userId,
-        }),
-    });
+    const apiRes = await fetch(
+        `${backendUrl}/peaks/summits/${userId}?requestingUserId=${userId}`,
+        {
+            method: "GET",
+            headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${token}`,
+            },
+        }
+    );
 
     if (!apiRes.ok) {
         console.error(await apiRes.text());

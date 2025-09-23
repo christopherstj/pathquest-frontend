@@ -1,21 +1,27 @@
 "use server";
 import getGoogleIdToken from "@/auth/getGoogleIdToken";
 import getBackendUrl from "@/helpers/getBackendUrl";
+import ServerActionResult from "@/typeDefs/ServerActionResult";
 import { User } from "@/typeDefs/User";
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 
 const backendUrl = getBackendUrl();
 
-const createUser = async (user?: {
-    id: string | number;
-    name?: string | null;
-    email?: string | null;
-    image?: string | null;
-}): Promise<{
-    success: boolean;
-    error?: string;
-    user?: User;
-}> => {
+const createUser = async (
+    user: {
+        id: string | number;
+        name?: string | null;
+        email?: string | null;
+        image?: string | null;
+    },
+    stravaCreds: {
+        accessToken?: string;
+        refreshToken?: string;
+        providerAccountId: string;
+        expiresAt?: number;
+    }
+): Promise<ServerActionResult<User>> => {
     if (!user) {
         return {
             success: false,
@@ -60,6 +66,7 @@ const createUser = async (user?: {
                 name: user.name,
                 email: null,
                 pic: user.image ?? null,
+                stravaCreds,
             }),
         });
 
@@ -74,13 +81,13 @@ const createUser = async (user?: {
             revalidatePath(`${backendUrl}/user`);
             return {
                 success: true,
-                user: newUser,
+                data: newUser,
             };
         }
     } else {
         return {
             success: true,
-            user: userObject,
+            data: userObject,
         };
     }
 };

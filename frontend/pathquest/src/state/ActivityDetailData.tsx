@@ -1,4 +1,4 @@
-import getActivityDetails from "@/actions/getActivityDetails";
+import getActivityDetails from "@/actions/activities/getActivityDetails";
 import React from "react";
 import ActivityDetailProvider from "./ActivityDetailsContext";
 

@@ -1,6 +1,8 @@
 "use client";
+import deleteUser from "@/actions/users/deleteUser";
 import { useIsMobile } from "@/helpers/useIsMobile";
-import { Landscape, Logout } from "@mui/icons-material";
+import { useMessage } from "@/state/MessageContext";
+import { Delete, Landscape, Logout } from "@mui/icons-material";
 import {
     Box,
     Fab,
@@ -17,6 +19,7 @@ import {
 import { signOut, useSession } from "next-auth/react";
 import Link from "next/link";
 import React from "react";
+import DeleteButton from "./DeleteButton";
 
 const fabStyles = (isMobile: boolean): SxProps => ({
     width: "40px",
@@ -149,6 +152,7 @@ const UserButton = () => {
                             <ListItemText primary="Sign Out" />
                         </ListItemButton>
                     </ListItem>
+                    <DeleteButton />
                 </List>
             </Popover>
         </>

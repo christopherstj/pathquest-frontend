@@ -12,4 +12,6 @@ export interface User {
     units: "imperial" | "metric";
     isSubscribed: boolean;
     isLifetimeFree: boolean;
+    historicalDataProcessed: boolean;
+    processingActivityCount?: number;
 }

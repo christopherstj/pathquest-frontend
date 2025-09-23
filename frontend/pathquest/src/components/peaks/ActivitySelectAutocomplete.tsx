@@ -12,7 +12,7 @@ import {
 } from "@mui/material";
 import React from "react";
 import ActivityIcon from "../common/customIcons/Activity";
-import searchNearestActivities from "@/actions/searchNearestActivities";
+import searchNearestActivities from "@/actions/activities/searchNearestActivities";
 import UnclimbedPeak from "@/typeDefs/UnclimbedPeak";
 import TextField, { textFieldStyles } from "../common/TextField";
 import dayjs from "@/helpers/dayjs";

@@ -5,7 +5,7 @@ import { GeoJSONSource } from "mapbox-gl";
 import React, { useCallback } from "react";
 import convertUnclimbedPeaksToGEOJson from "@/helpers/convertUnclimbedPeaksToGEOJson";
 import convertPeakSummitsToGeoJSON from "@/helpers/convertPeakSummitsToGeoJSON";
-import getUnclimbedPeaksWithBounds from "@/actions/getUnclimbedPeaksWithBounds";
+import getUnclimbedPeaksWithBounds from "@/actions/peaks/getUnclimbedPeaksWithBounds";
 import { useMessage } from "@/state/MessageContext";
 
 const buttonGroupStyles: SxProps = {

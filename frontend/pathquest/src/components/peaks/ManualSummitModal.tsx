@@ -19,7 +19,7 @@ import { ActivityStart } from "@/typeDefs/ActivityStart";
 import UnclimbedPeak from "@/typeDefs/UnclimbedPeak";
 import TimezoneSelect from "../common/TimezoneSelect";
 import ActivitySelectAutocomplete from "./ActivitySelectAutocomplete";
-import addManualPeakSummit from "@/actions/addManualPeakSummit";
+import addManualPeakSummit from "@/actions/peaks/addManualPeakSummit";
 
 type Props = {
     open: boolean;

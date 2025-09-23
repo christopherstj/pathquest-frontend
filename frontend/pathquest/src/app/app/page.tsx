@@ -1,4 +1,4 @@
-import getUser from "@/actions/getUser";
+import getUser from "@/actions/users/getUser";
 import { redirect } from "next/navigation";
 import React from "react";
 import { Grid2 as Grid } from "@mui/material";

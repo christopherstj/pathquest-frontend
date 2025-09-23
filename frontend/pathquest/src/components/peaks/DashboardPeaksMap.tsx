@@ -12,7 +12,7 @@ import MapboxContainer from "../common/MapboxContainer";
 import UnclimbedPopup from "../dashboard/UnclimbedPopup";
 import UnclimbedPeak from "@/typeDefs/UnclimbedPeak";
 import FavoritePopup from "../dashboard/FavoritePopup";
-import toggleFavoritePeak from "@/actions/toggleFavoritePeak";
+import toggleFavoritePeak from "@/actions/peaks/toggleFavoritePeak";
 import { useMessage } from "@/state/MessageContext";
 import loadMapDefaults from "@/helpers/loadMapDefaults";
 import initiateMap from "@/helpers/initiateMap";

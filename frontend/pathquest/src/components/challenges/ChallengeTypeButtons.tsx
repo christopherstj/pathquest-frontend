@@ -1,5 +1,5 @@
 "use client";
-import getAllChallenges from "@/actions/getAllChallenges";
+import getAllChallenges from "@/actions/challenges/getAllChallenges";
 import { useChallengeDashboard } from "@/state/ChallengeDashboardContext";
 import { Button, ButtonGroup, SxProps } from "@mui/material";
 import React, { useCallback } from "react";

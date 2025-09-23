@@ -1,10 +1,10 @@
-import getFavoritePeaks from "@/actions/getFavoritePeaks";
-import getFavoriteChallenges from "@/actions/getFavoriteChallenges";
-import getPeakSummits from "@/actions/getPeakSummits";
-import getRecentActivities from "@/actions/getRecentActivities";
+import getFavoritePeaks from "@/actions/peaks/getFavoritePeaks";
+import getFavoriteChallenges from "@/actions/challenges/getFavoriteChallenges";
+import getPeakSummits from "@/actions/peaks/getPeakSummits";
+import getRecentActivities from "@/actions/activities/getRecentActivities";
 import React from "react";
 import DashboardProvider from "./DashboardContext";
-import getRecentSummits from "@/actions/getRecentSummits";
+import getRecentSummits from "@/actions/peaks/getRecentSummits";
 
 type Props = {
     children: React.ReactNode;

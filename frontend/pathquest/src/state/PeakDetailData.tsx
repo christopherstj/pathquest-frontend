@@ -1,4 +1,4 @@
-import getPeakDetails from "@/actions/getPeakDetails";
+import getPeakDetails from "@/actions/peaks/getPeakDetails";
 import React from "react";
 import PeakDetailProvider, { PeakDetailContext } from "./PeakDetailContext";
 import GridContainer from "@/components/common/GridContainer";

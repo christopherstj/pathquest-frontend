@@ -1,5 +1,5 @@
 "use client";
-import deleteActivity from "@/actions/deleteActivity";
+import deleteActivity from "@/actions/activities/deleteActivity";
 import { Delete } from "@mui/icons-material";
 import { ListItemButton, ListItemIcon, ListItemText } from "@mui/material";
 import React from "react";

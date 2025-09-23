@@ -1,4 +1,4 @@
-import getActivityStarts from "@/actions/getActivityStarts";
+import getActivityStarts from "@/actions/activities/getActivityStarts";
 import { ActivitiesState } from "@/state/ActivitiesContext";
 import { GeoJSONSource } from "mapbox-gl";
 

@@ -4,7 +4,7 @@ import getSession from "./helpers/getSession";
 import Stripe from "stripe";
 import { useRouter } from "next/navigation";
 import { Box, LinearProgress, SxProps, Typography } from "@mui/material";
-import processHistoricalData from "@/actions/processHistoricalData";
+import processHistoricalData from "@/actions/users/processHistoricalData";
 
 const cardStyles: SxProps = {
     borderRadius: "12px",

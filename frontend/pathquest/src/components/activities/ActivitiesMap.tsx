@@ -13,7 +13,7 @@ import { ActivityStart } from "@/typeDefs/ActivityStart";
 import SelectedActivities from "./SelectedActivities";
 import ActivityPopup from "./ActivityPopup";
 import { useRouter } from "next/navigation";
-import getActivityCoords from "@/actions/getActivityCoords";
+import getActivityCoords from "@/actions/activities/getActivityCoords";
 import initiateMap from "@/helpers/initiateMap";
 
 const ActivitiesMap = () => {

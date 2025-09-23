@@ -16,6 +16,7 @@ import {
     Typography,
 } from "@mui/material";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import React from "react";
 
 const timezone = dayjs.tz.guess();
@@ -27,12 +28,18 @@ type Props = {
 };
 
 const PeakSummitRow = ({ peakSummit, units, onRowClick }: Props) => {
+    const router = useRouter();
+
     const color =
         (peakSummit.Altitude ?? 0) < 1000
             ? "primary"
             : (peakSummit.Altitude ?? 0) < 3000
             ? "secondary"
             : "tertiary";
+
+    const redirectToActivity = (activityId: string) => {
+        router.push(`/app/activities/${activityId}`);
+    };
 
     return (
         <ListItem
@@ -85,14 +92,17 @@ const PeakSummitRow = ({ peakSummit, units, onRowClick }: Props) => {
                             {peakSummit.State ? ` | ${peakSummit.State}` : ""}
                             {peakSummit.County ? ` | ${peakSummit.County}` : ""}
                         </Typography>
-
                         <Typography
                             variant="caption"
                             color={`primary.onContainerDim`}
                             {...(peakSummit.activityId && {
-                                component: Link,
-                                onClick: (e: any) => e.stopPropagation(),
-                                href: `/app/activities/${peakSummit.activityId}`,
+                                onClick: (e: any) => {
+                                    e.stopPropagation();
+                                    if (peakSummit.activityId)
+                                        redirectToActivity(
+                                            peakSummit.activityId
+                                        );
+                                },
                             })}
                             sx={{
                                 opacity: 0.75,

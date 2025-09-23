@@ -1,4 +1,6 @@
-import createUserIfExists from "@/actions/createUser";
+import createUserIfNotExists from "@/actions/users/createUser";
+import getIsUserSubscribed from "@/actions/users/getIsUserSubscribed";
+import getUser from "@/actions/users/getUser";
 import NextAuth, { AuthOptions } from "next-auth";
 import StravaProvider from "next-auth/providers/strava";
 
@@ -16,57 +18,39 @@ export const authOptions: AuthOptions = {
     },
     callbacks: {
         async signIn({ user, account, profile, email, credentials }) {
-            // const res = await fetch(`${frontendUrl}/api/auth/user-exists`, {
-            //     method: "POST",
-            //     headers: {
-            //         "Content-Type": "application/json",
-            //     },
-            //     body: JSON.stringify({ id: user.id.toString() }),
-            // });
-
-            // if (!res.ok) {
-            //     return false;
-            // }
-
-            // const { userFound } = await res.json();
-            // if (!userFound) {
-            await createUserIfExists(user);
-            // }
-
-            if (!account) {
+            if (
+                !user.id ||
+                !account?.access_token ||
+                !account?.providerAccountId ||
+                !account?.refresh_token ||
+                !account?.expires_at
+            ) {
                 return false;
             }
-
-            const {
-                access_token,
-                refresh_token,
-                providerAccountId,
-                expires_at,
-            } = account;
-
-            await fetch(`${frontendUrl}/api/auth/strava-creds`, {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                },
-                body: JSON.stringify({
-                    access_token,
-                    refresh_token,
-                    providerAccountId,
-                    expires_at,
-                }),
-            });
+            const stravaCreds = {
+                accessToken: account?.access_token,
+                refreshToken: account?.refresh_token,
+                providerAccountId: account?.providerAccountId,
+                expiresAt: account?.expires_at,
+            };
+            await createUserIfNotExists(user, stravaCreds);
             return true;
         },
-        async jwt({ token, user, account }) {
+        async jwt({ token, user }) {
             if (user) {
-                token = { ...token, user };
+                // token = { ...token, userId: user.id, subscribed: false };
+                const isSubscribed = await getIsUserSubscribed(user.id);
+
+                token.userId = user.id;
+                token.subscribed = isSubscribed;
             }
             return token;
         },
         async session({ session, token }) {
-            // @ts-expect-error User token assignment is handled by the jwt callback
-            session.user = token.user;
+            if (session.user && token.userId) {
+                session.user.id = token.userId as string;
+                session.user.subscribed = token.subscribed as boolean;
+            }
             return session;
         },
     },

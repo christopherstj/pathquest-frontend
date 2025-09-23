@@ -1,5 +1,5 @@
 "use client";
-import toggleFavoritePeak from "@/actions/toggleFavoritePeak";
+import toggleFavoritePeak from "@/actions/peaks/toggleFavoritePeak";
 import { usePeakDetail } from "@/state/PeakDetailContext";
 import { Box, Button, ButtonBase, SxProps } from "@mui/material";
 import { GeoJSONSource } from "mapbox-gl";

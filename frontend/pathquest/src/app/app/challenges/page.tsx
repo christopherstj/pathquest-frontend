@@ -1,4 +1,4 @@
-import getAllChallenges from "@/actions/getAllChallenges";
+import getAllChallenges from "@/actions/challenges/getAllChallenges";
 import GridContainer from "@/components/common/GridContainer";
 import ChallengeDashboardProvider from "@/state/ChallengeDashboardContext";
 import React from "react";

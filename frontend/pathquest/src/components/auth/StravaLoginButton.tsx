@@ -42,7 +42,6 @@ const StravaLoginButton = () => {
             variant="outlined"
             sx={buttonStyles(false)}
             fullWidth
-            // startIcon={<StravaIcon sx={{ color: "primary.onContainer" }} />}
             onClick={login}
         >
             <Image src={stravaButton} height={48} alt="Log in with Strava" />

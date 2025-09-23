@@ -1,4 +1,4 @@
-import getPeakDetails from "@/actions/getPeakDetails";
+import getPeakDetails from "@/actions/peaks/getPeakDetails";
 import GridContainer from "@/components/common/GridContainer";
 import React from "react";
 import { Divider, Grid2 as Grid, Typography } from "@mui/material";

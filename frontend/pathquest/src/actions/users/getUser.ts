@@ -3,10 +3,13 @@ import getGoogleIdToken from "@/auth/getGoogleIdToken";
 import { useAuth } from "@/auth/useAuth";
 import getBackendUrl from "@/helpers/getBackendUrl";
 import { User } from "@/typeDefs/User";
+import { redirect } from "next/navigation";
 
 const backendUrl = getBackendUrl();
 
-const getUser = async (): Promise<{
+const getUser = async (
+    userId: string | null = null
+): Promise<{
     userFound: boolean;
     user?: User;
     error?: string;
@@ -15,7 +18,9 @@ const getUser = async (): Promise<{
 
     const id = session?.user?.id;
 
-    if (!id) {
+    const requestedUserId = userId || id;
+
+    if (!requestedUserId) {
         return {
             userFound: false,
             error: "No user id found",
@@ -24,17 +29,17 @@ const getUser = async (): Promise<{
 
     const token = await getGoogleIdToken();
 
-    const apiRes = await fetch(`${backendUrl}/user`, {
-        method: "POST",
-        cache: "no-cache",
-        headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-            id,
-        }),
-    });
+    const apiRes = await fetch(
+        `${backendUrl}/user/${requestedUserId}?requestingUserId=${id}`,
+        {
+            method: "GET",
+            cache: "no-cache",
+            headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${token}`,
+            },
+        }
+    );
 
     if (!apiRes.ok) {
         console.error(await apiRes.text());
@@ -43,7 +48,11 @@ const getUser = async (): Promise<{
             error: apiRes.statusText,
         };
     } else {
-        return await apiRes.json();
+        const user: User = await apiRes.json();
+        return {
+            userFound: true,
+            user,
+        };
     }
 };
 

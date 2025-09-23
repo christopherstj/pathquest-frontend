@@ -1,4 +1,4 @@
-import getActvitiyCoords from "@/actions/getActivityCoords";
+import getActvitiyCoords from "@/actions/activities/getActivityCoords";
 
 const getCoords = async (activityId: string, map: mapboxgl.Map | null) => {
     const coords = await getActvitiyCoords(activityId);

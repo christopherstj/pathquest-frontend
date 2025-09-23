@@ -9,7 +9,7 @@ import CourseProfileTimeSelect from "../activities/CourseProfileTimeSelect";
 import { Edit } from "@mui/icons-material";
 import Activity from "@/typeDefs/Activity";
 import PeakSummit from "@/typeDefs/PeakSummit";
-import getActivityDetails from "@/actions/getActivityDetails";
+import getActivityDetails from "@/actions/activities/getActivityDetails";
 
 type Props = {
     value: dayjs.Dayjs | null;

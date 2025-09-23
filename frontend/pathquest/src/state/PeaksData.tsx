@@ -1,8 +1,8 @@
-import getPeakSummits from "@/actions/getPeakSummits";
+import getPeakSummits from "@/actions/peaks/getPeakSummits";
 import React from "react";
 import PeaksProvider from "./PeaksContext";
-import getUnclimbedPeaks from "@/actions/getUnclimbedPeaks";
-import getFavoritePeaks from "@/actions/getFavoritePeaks";
+import getUnclimbedPeaks from "@/actions/peaks/getUnclimbedPeaks";
+import getFavoritePeaks from "@/actions/peaks/getFavoritePeaks";
 
 type Props = {
     children: React.ReactNode;

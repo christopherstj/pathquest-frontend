@@ -15,11 +15,11 @@ import { Virtuoso } from "react-virtuoso";
 import TextField from "../common/TextField";
 import UnclimbedPeakRow from "../dashboard/UnclimbedPeakRow";
 import { GeoJSONSource } from "mapbox-gl";
-import toggleFavoritePeak from "@/actions/toggleFavoritePeak";
+import toggleFavoritePeak from "@/actions/peaks/toggleFavoritePeak";
 import { useMessage } from "@/state/MessageContext";
-import getUnclimbedPeaksWithBounds from "@/actions/getUnclimbedPeaksWithBounds";
+import getUnclimbedPeaksWithBounds from "@/actions/peaks/getUnclimbedPeaksWithBounds";
 import convertUnclimbedPeaksToGEOJson from "@/helpers/convertUnclimbedPeaksToGEOJson";
-import getPeakSummits from "@/actions/getPeakSummits";
+import getPeakSummits from "@/actions/peaks/getPeakSummits";
 
 const cardStyles: SxProps = {
     borderRadius: "12px",

@@ -1,5 +1,5 @@
 "use client";
-import getAscentDetails from "@/actions/getAscentDetails";
+import getAscentDetails from "@/actions/peaks/getAscentDetails";
 import dayjs from "@/helpers/dayjs";
 import Ascent from "@/typeDefs/Ascent";
 import AscentDetail from "@/typeDefs/AscentDetail";
@@ -25,9 +25,9 @@ import { Delete, Edit, Launch } from "@mui/icons-material";
 import NotesDisplay from "./NotesDisplay";
 import AscentTimestampDisplay from "./AscentTimestampDisplay";
 import OtherAscents from "./OtherAscents";
-import updateAscent from "@/actions/updateAscent";
+import updateAscent from "@/actions/peaks/updateAscent";
 import { useMessage } from "@/state/MessageContext";
-import deleteAscent from "@/actions/deleteAscent";
+import deleteAscent from "@/actions/peaks/deleteAscent";
 
 type Props = {
     open: boolean;

@@ -1,7 +1,7 @@
 import { Drawer, Stack, SxProps } from "@mui/material";
 import React from "react";
 import LinkButton from "./LinkButton";
-import UserButton from "./UserButton";
+import UserButton from "./UserMenu";
 
 const DRAWER_WIDTH = 80;
 
