@@ -11,9 +11,7 @@ import { signOut } from "next-auth/react";
 import React from "react";
 import ConfirmDialog from "../common/ConfirmDialog";
 
-type Props = {};
-
-const DeleteButton = (props: Props) => {
+const DeleteButton = () => {
     const [, dispatch] = useMessage();
 
     const [modalOpen, setModalOpen] = React.useState(false);

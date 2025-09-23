@@ -26,9 +26,7 @@ const alertSx: SxProps = {
     backgroundColor: "secondary.containerDim",
 };
 
-type Props = {};
-
-const ActivityMessage = (props: Props) => {
+const ActivityMessage = () => {
     const [{ user }] = useUser();
 
     const [messageText, setMessageText] = React.useState<string | null>(null);
