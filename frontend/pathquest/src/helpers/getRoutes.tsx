@@ -1,38 +1,38 @@
 import {
-    Checklist,
-    Dashboard,
-    DirectionsRun,
     Home,
-    Landscape,
-    QuestionMark,
-} from "@mui/icons-material";
+    LayoutDashboard,
+    CircleQuestionMark,
+    MountainSnow,
+    ListCheck,
+    Footprints,
+} from "lucide-react";
 
 const getRoutes = (authedRoutes: boolean) => {
     const publicLinks = [
         {
             href: "/",
             label: "Home",
-            icon: <Home />,
+            icon: Home,
         },
         {
             href: "/app",
             label: "Dashboard",
-            icon: <Dashboard />,
+            icon: LayoutDashboard,
         },
         {
             href: "/about",
             label: "About",
-            icon: <QuestionMark />,
+            icon: CircleQuestionMark,
         },
         {
-            href: "/peaks",
+            href: "/m/peaks",
             label: "Peaks",
-            icon: <Landscape />,
+            icon: MountainSnow,
         },
         {
-            href: "/challenges",
+            href: "/m/challenges",
             label: "Challenges",
-            icon: <Checklist />,
+            icon: ListCheck,
         },
     ];
 
@@ -40,22 +40,22 @@ const getRoutes = (authedRoutes: boolean) => {
         {
             href: "/app",
             label: "Dashboard",
-            icon: <Dashboard />,
+            icon: LayoutDashboard,
         },
         {
             href: "/app/peaks",
             label: "Peaks",
-            icon: <Landscape />,
+            icon: MountainSnow,
         },
         {
             href: "/app/challenges",
             label: "Challenges",
-            icon: <Checklist />,
+            icon: ListCheck,
         },
         {
             href: "/app/activities",
             label: "Activities",
-            icon: <DirectionsRun />,
+            icon: Footprints,
         },
     ];
 

@@ -1,15 +1,13 @@
-import type { Metadata } from "next";
-import "./globals.css";
-import Contexts from "@/components/Contexts";
-import { Box, GlobalStyles, SxProps } from "@mui/material";
-import InitColorSchemeScript from "@mui/material/InitColorSchemeScript";
-import { Raleway, Merriweather_Sans } from "next/font/google";
-import Nav from "@/components/layout/Nav";
-import UserData from "@/state/UserData";
-import Message from "@/components/common/Message";
-import MessageProvider from "@/state/MessageContext";
-import mapboxgl from "mapbox-gl";
+import ThemeProvider from "@/providers/ThemeProvider";
 import { Analytics } from "@vercel/analytics/react";
+import { Metadata } from "next";
+import { Merriweather_Sans, Raleway } from "next/font/google";
+import React from "react";
+import { SessionProvider } from "next-auth/react";
+import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
+import NextAuthProvider from "@/providers/NextAuthProvider";
+import { AppSidebar } from "@/components/app/layout/AppSidebar";
+import "./globals.css";
 
 const raleway = Raleway({
     variable: "--font-raleway",
@@ -29,61 +27,42 @@ export const metadata: Metadata = {
         "PathQuest is a modern adventure catalog and challenge tracker.",
 };
 
-const rootContainerStyles: SxProps = {
-    display: "grid",
-    gridTemplateColumns: {
-        xs: "1fr",
-        md: "80px 1fr",
-    },
-    width: "100vw",
-    minHeight: "100vh",
-    backgroundColor: "background.default",
-};
-
-const contentContainerStyles: SxProps = {
-    width: {
-        xs: "100%",
-        md: "calc(100% - 16px)",
-    },
-    minHeight: "100vh",
-    position: "relative",
-    padding: {
-        xs: "8px",
-        md: "16px",
-    },
-    paddingBottom: {
-        xs: "72px",
-        md: "16px",
-    },
-};
-
-export default function RootLayout({
-    children,
-}: Readonly<{
+type Props = {
     children: React.ReactNode;
-}>) {
-    mapboxgl.accessToken = process.env.NEXT_PUBLIC_MAPBOX_TOKEN ?? "";
+};
+
+const layout = ({ children }: Props) => {
     return (
         <html lang="en" suppressHydrationWarning>
+            <head>
+                <meta
+                    name="viewport"
+                    content="width=device-width, initial-scale=1.0"
+                />
+                <link rel="icon" href="/favicon.ico" />
+                <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+            </head>
             <body
                 className={`${raleway.variable} ${merriweatherSans.variable}`}
             >
-                <InitColorSchemeScript attribute="class" />
-                <Contexts>
-                    <UserData>
-                        <MessageProvider>
-                            <Box sx={rootContainerStyles}>
-                                <Nav />
-                                <Box sx={contentContainerStyles}>
-                                    {children}
-                                    <Message />
-                                </Box>
-                            </Box>
-                        </MessageProvider>
-                    </UserData>
-                </Contexts>
+                <NextAuthProvider>
+                    <ThemeProvider
+                        attribute="class"
+                        defaultTheme="dark"
+                        enableSystem={false}
+                    >
+                        <SidebarProvider>
+                            <AppSidebar />
+                            <main className="w-full min-h-screen">
+                                {children}
+                            </main>
+                        </SidebarProvider>
+                    </ThemeProvider>
+                </NextAuthProvider>
                 <Analytics />
             </body>
         </html>
     );
-}
+};
+
+export default layout;

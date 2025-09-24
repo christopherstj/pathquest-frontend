@@ -1,27 +1,26 @@
-import BetaModal from "@/components/common/BetaModal";
-import Description from "@/components/landing/Description";
-import Header from "@/components/landing/Header";
-import { Grid2 as Grid } from "@mui/material";
+import React from "react";
+import Image from "next/image";
+import logo from "@/public/images/logo-no-background.svg";
+import { Button } from "@/components/ui/button";
+import Link from "next/link";
 
-export default function Home() {
+const page = () => {
     return (
-        <Grid container spacing={1} minHeight="100%">
-            <Grid
-                size={{ xs: 12, md: 6 }}
-                display="flex"
-                justifyContent="center"
-                alignItems="center"
-            >
-                <Header />
-            </Grid>
-            <Grid
-                size={{ xs: 12, md: 5 }}
-                display="flex"
-                justifyContent="center"
-            >
-                <Description />
-            </Grid>
-            <BetaModal />
-        </Grid>
+        <div className="h-screen w-full flex items-center justify-center">
+            <div className="md:h-full xs:basis-full md:basis-1/2 flex flex-col items-center justify-center gap-4 bg-radial">
+                <Image src={logo} alt="PathQuest Logo" width={300} />
+                <h1 className="text-6xl font-bold">PathQuest</h1>
+            </div>
+            <div className="xs:basis-full md:basis-1/2 flex flex-col items-center justify-center gap-4">
+                <h3 className="text-center text-lg text-primary-foreground">
+                    Your adventure starts here.
+                </h3>
+                <Button asChild className="rounded-full bg-accent text-white">
+                    <Link href="/m/peaks">Explore</Link>
+                </Button>
+            </div>
+        </div>
     );
-}
+};
+
+export default page;

@@ -16,11 +16,7 @@ const getUnclimbedPeaksWithBounds = async (
 ): Promise<UnclimbedPeak[]> => {
     const session = await useAuth();
 
-    if (!session) {
-        return [];
-    }
-
-    const userId = session.user.id ?? "";
+    const userId = session?.user.id ?? "";
 
     const token = await getGoogleIdToken();
 

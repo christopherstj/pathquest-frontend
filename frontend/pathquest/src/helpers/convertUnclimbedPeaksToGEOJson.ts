@@ -1,7 +1,7 @@
-import UnclimbedPeak from "@/typeDefs/UnclimbedPeak";
+import Peak from "@/typeDefs/Peak";
 
 const convertUnclimbedPeaksToGEOJson = (
-    unclimbedPeaks: UnclimbedPeak[]
+    unclimbedPeaks: Peak[]
 ): GeoJSON.FeatureCollection => {
     const geoJson: GeoJSON.FeatureCollection = {
         type: "FeatureCollection",

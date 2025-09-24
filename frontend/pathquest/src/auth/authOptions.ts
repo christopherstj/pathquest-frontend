@@ -38,11 +38,11 @@ export const authOptions: AuthOptions = {
         },
         async jwt({ token, user }) {
             if (user) {
-                // token = { ...token, userId: user.id, subscribed: false };
-                const isSubscribed = await getIsUserSubscribed(user.id);
+                const userObj = await getUser(user.id);
 
                 token.userId = user.id;
-                token.subscribed = isSubscribed;
+                token.subscribed = userObj?.user?.isSubscribed ?? false;
+                token.name = userObj?.user?.name ?? null;
             }
             return token;
         },
@@ -50,6 +50,7 @@ export const authOptions: AuthOptions = {
             if (session.user && token.userId) {
                 session.user.id = token.userId as string;
                 session.user.subscribed = token.subscribed as boolean;
+                session.user.name = token.name as string | null;
             }
             return session;
         },
