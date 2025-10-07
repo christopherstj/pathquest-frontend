@@ -8,10 +8,10 @@ import PeaksSearchInput from "./PeaksSearchInput";
 import BoundsToggle from "./BoundsToggle";
 import Peak from "@/typeDefs/Peak";
 import PeaksList from "./PeaksList";
+import { SearchBox } from "@mapbox/search-js-react";
+import mapboxgl from "mapbox-gl";
 
-type Props = {};
-
-const PeakSearch = (props: Props) => {
+const PeakSearch = () => {
     const map = useMapStore((state) => state.map);
 
     const [search, setSearch] = React.useState("");
@@ -21,6 +21,7 @@ const PeakSearch = (props: Props) => {
         null
     );
     const [peaks, setPeaks] = React.useState<Peak[]>([]);
+    const [mapboxSearch, setMapboxSearch] = React.useState("");
 
     const getNewData = useCallback(async () => {
         if (!map) return;
@@ -83,14 +84,25 @@ const PeakSearch = (props: Props) => {
 
     return (
         <>
-            <div className="absolute top-2.5 left-12 flex flex-col items-start gap-2">
+            <div></div> {/* spacer for grid */}
+            <div className="pointer-events-auto w-full h-0">
+                {!firstLoad && (
+                    // @ts-expect-error Bug in the mapbox search library, this works
+                    <SearchBox
+                        accessToken={process.env.NEXT_PUBLIC_MAPBOX_TOKEN ?? ""}
+                        map={map ?? undefined}
+                        mapboxgl={mapboxgl}
+                        value={mapboxSearch}
+                        onChange={setMapboxSearch}
+                    />
+                )}
+            </div>
+            <div className="w-full flex flex-col gap-2 pointer-events-auto">
                 <PeaksSearchInput value={search} onChange={onSearchChange} />
                 <BoundsToggle
                     value={limitResultsToBbox}
                     onChange={setLimitResultsToBbox}
                 />
-            </div>
-            <div className="absolute top-2.5 bottom-2.5 right-2.5 w-[350px]">
                 <PeaksList peaks={peaks} />
             </div>
         </>

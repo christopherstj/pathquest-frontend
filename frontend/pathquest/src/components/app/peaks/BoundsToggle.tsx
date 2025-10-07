@@ -13,7 +13,7 @@ const BoundsToggle = ({ value, onChange }: Props) => {
         <Toggle
             pressed={value}
             onPressedChange={onChange}
-            className="bg-primary-dim z-10 p-2 rounded-full shadow-lg data-[state=on]:bg-primary-foreground data-[state=on]:text-primary"
+            className="bg-primary-dim z-10 p-2 rounded-full shadow-lg data-[state=on]:bg-primary-foreground data-[state=on]:text-primary flex-0 mouse-pointer"
         >
             {value ? <SquareCheckBig /> : <SquareDashed />}
             Limit To Map Bounds

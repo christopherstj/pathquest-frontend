@@ -9,11 +9,12 @@ type Props = {
 
 const PeaksSearchInput = ({ value, onChange }: Props) => {
     return (
-        <div className="bg-primary-dim z-10 p-2 rounded-lg shadow-lg w-[300px]">
+        <div className="bg-primary-dim z-10 p-2 rounded-lg shadow-lg w-full flex-0">
             <Input
                 className="w-full"
                 value={value}
                 onChange={(e) => onChange(e.target.value)}
+                placeholder="Search Peaks"
             />
         </div>
     );

@@ -9,7 +9,8 @@ export default interface Peak {
     Country?: string;
     distance?: number;
     isFavorited?: boolean;
-    isSummitted?: boolean;
+    summits?: number;
+    publicSummits?: number;
     ascents?: {
         id: string;
         timestamp: string;

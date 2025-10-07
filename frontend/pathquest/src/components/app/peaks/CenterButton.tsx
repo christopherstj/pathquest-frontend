@@ -12,7 +12,9 @@ type Props = {
 const CenterButton = ({ lat, lng }: Props) => {
     const map = useMapStore((state) => state.map);
 
-    const onClick = () => {
+    const onClick = (e: React.MouseEvent<HTMLButtonElement>) => {
+        e.preventDefault();
+        e.stopPropagation();
         if (map) {
             map.flyTo({
                 center: [lng, lat],

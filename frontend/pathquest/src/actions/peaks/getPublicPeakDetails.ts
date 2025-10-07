@@ -1,16 +1,19 @@
 "use server";
 import getGoogleIdToken from "@/auth/getGoogleIdToken";
 import getBackendUrl from "@/helpers/getBackendUrl";
+import Peak from "@/typeDefs/Peak";
+import ServerActionResult from "@/typeDefs/ServerActionResult";
 
 const backendUrl = getBackendUrl();
 
-const getPublicPeakDetails = async (peakId: string): Promise<any> => {
+const getPublicPeakDetails = async (
+    peakId: string
+): Promise<ServerActionResult<Peak>> => {
     const token = await getGoogleIdToken();
 
-    const apiRes = await fetch(`${backendUrl}/public/peak/${peakId}`, {
+    const apiRes = await fetch(`${backendUrl}/peaks/${peakId}`, {
         method: "GET",
         headers: {
-            "Content-Type": "application/json",
             Authorization: `Bearer ${token}`,
         },
     });
@@ -23,7 +26,12 @@ const getPublicPeakDetails = async (peakId: string): Promise<any> => {
         };
     }
 
-    return await apiRes.json();
+    const { peak } = await apiRes.json();
+
+    return {
+        success: true,
+        data: peak as Peak,
+    };
 };
 
 export default getPublicPeakDetails;

@@ -9,7 +9,7 @@ type Props = {
 
 const PeaksList = ({ peaks }: Props) => {
     return (
-        <div className="absolute bg-primary rounded-lg overflow-hidden shadow-lg h-full w-full">
+        <div className="bg-primary rounded-lg overflow-hidden shadow-lg h-full w-full">
             <Virtuoso
                 className="h-full w-full"
                 data={peaks}

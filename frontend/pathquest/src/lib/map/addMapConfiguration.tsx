@@ -2,10 +2,19 @@ import mapboxgl from "mapbox-gl";
 import colors from "../theme/colors";
 import loadMapDefaults from "./loadMapDefaults";
 import oklchToHex from "../utils/oklchToHex";
+import Peak from "@/typeDefs/Peak";
+import PeakPopup from "@/components/app/peaks/PeakPopup";
+import renderPopup from "./renderPopup";
+import { useRouter } from "next/navigation";
 
-const addMapConfiguration = (map: mapboxgl.Map | null) => {
+const addMapConfiguration = (
+    map: mapboxgl.Map | null,
+    router: ReturnType<typeof useRouter>
+) => {
     if (map !== null) {
         loadMapDefaults(map, "all");
+
+        // SOURCES
 
         map?.addSource("peakSummits", {
             type: "geojson",
@@ -23,6 +32,13 @@ const addMapConfiguration = (map: mapboxgl.Map | null) => {
             cluster: true,
             clusterMaxZoom: 14,
             clusterRadius: 50,
+        });
+        map?.addSource("selectedPeaks", {
+            type: "geojson",
+            data: {
+                type: "FeatureCollection",
+                features: [],
+            },
         });
         map?.addSource("favoritePeaks", {
             type: "geojson",
@@ -52,6 +68,8 @@ const addMapConfiguration = (map: mapboxgl.Map | null) => {
                 features: [],
             },
         });
+
+        // LAYERS
 
         map.addLayer({
             id: "activities",
@@ -98,6 +116,17 @@ const addMapConfiguration = (map: mapboxgl.Map | null) => {
             layout: {
                 "icon-image": "marker-secondary",
                 "icon-size": 0.2,
+                "icon-allow-overlap": true,
+                "icon-anchor": "bottom",
+            },
+        });
+        map?.addLayer({
+            id: "selectedPeaks",
+            type: "symbol",
+            source: "selectedPeaks",
+            layout: {
+                "icon-image": "marker-secondary",
+                "icon-size": 0.6,
                 "icon-allow-overlap": true,
                 "icon-anchor": "bottom",
             },
@@ -158,6 +187,38 @@ const addMapConfiguration = (map: mapboxgl.Map | null) => {
                 "icon-allow-overlap": true,
                 "icon-anchor": "bottom",
             },
+        });
+
+        // INTERACTIONS
+
+        map?.on("click", "unclimbedPeaks", (e) => {
+            e.originalEvent?.stopPropagation();
+            const feature = e.features?.[0];
+
+            if (feature?.geometry.type === "Point" && map) {
+                const coordinates = feature.geometry.coordinates.slice();
+
+                while (Math.abs(e.lngLat.lng - coordinates[0]) > 180) {
+                    coordinates[0] +=
+                        e.lngLat.lng > coordinates[0] ? 360 : -360;
+                }
+
+                const peak = feature.properties as Peak;
+
+                const popup = (
+                    <PeakPopup
+                        peak={peak}
+                        onRouteChange={() => {
+                            router.push(`/m/peaks/${peak.Id}`);
+                            document
+                                .querySelectorAll(".mapboxgl-popup")
+                                .forEach((p) => p.remove());
+                        }}
+                    />
+                );
+
+                renderPopup(map, coordinates as [number, number], popup);
+            }
         });
     }
 };
