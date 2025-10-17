@@ -1,4 +1,5 @@
 import getPublicPeakDetails from "@/actions/peaks/getPublicPeakDetails";
+import PeakDetailMapInteraction from "@/components/app/peaks/PeakDetailMapInteraction";
 import PeakTitle from "@/components/app/peaks/PeakTitle";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
@@ -19,7 +20,8 @@ const page = async (props: Props) => {
     return (
         <>
             <div className="absolute pointer-events-none inset-0 grid grid-cols-[32px_minmax(0,1fr)] md:grid-cols-[32px_minmax(0,1fr)_250px] lg:grid-cols-[32px_minmax(0,1fr)_300px] p-2.5 gap-2">
-                <div></div> {/* spacer for grid */}
+                <PeakDetailMapInteraction peak={peakDetails.data} />{" "}
+                {/* spacer for grid */}
                 <div className="w-full flex items-start pointer-events-auto gap-2">
                     <Link href="/m/peaks">
                         <Button

@@ -6,6 +6,7 @@ import Peak from "@/typeDefs/Peak";
 import PeakPopup from "@/components/app/peaks/PeakPopup";
 import renderPopup from "./renderPopup";
 import { useRouter } from "next/navigation";
+import { parse, oklch, formatHex } from "culori";
 
 const addMapConfiguration = (
     map: mapboxgl.Map | null,
@@ -113,7 +114,15 @@ const addMapConfiguration = (
             type: "symbol",
             source: "unclimbedPeaks",
             filter: ["!", ["has", "point_count"]],
+            paint: {
+                "text-color": formatHex(parse(colors.secondaryDim)),
+            },
             layout: {
+                "text-field": ["get", "Name"],
+                "text-anchor": "top",
+                "text-offset": [0, 1],
+                "text-size": 12,
+                "text-optional": true,
                 "icon-image": "marker-secondary",
                 "icon-size": 0.2,
                 "icon-allow-overlap": true,
@@ -124,7 +133,15 @@ const addMapConfiguration = (
             id: "selectedPeaks",
             type: "symbol",
             source: "selectedPeaks",
+            paint: {
+                "text-color": formatHex(parse(colors.secondaryDim)),
+            },
             layout: {
+                "text-field": ["get", "Name"],
+                "text-anchor": "top",
+                "text-offset": [0, 1],
+                "text-size": 16,
+                "text-optional": true,
                 "icon-image": "marker-secondary",
                 "icon-size": 0.6,
                 "icon-allow-overlap": true,
