@@ -60,6 +60,22 @@ const addMapConfiguration = (
         // LAYERS
 
         map.addLayer({
+            id: "activities-border",
+            type: "line",
+            source: "activities",
+            layout: {
+                "line-join": "round",
+                "line-cap": "round",
+            },
+            paint: {
+                "line-color": isSatellite
+                    ? "rgba(0, 0, 0, 0.8)"
+                    : "rgba(255, 255, 255, 0.8)",
+                "line-width": 5,
+            },
+        });
+
+        map.addLayer({
             id: "activities",
             type: "line",
             source: "activities",
@@ -68,7 +84,9 @@ const addMapConfiguration = (
                 "line-cap": "round",
             },
             paint: {
-                "line-color": formatHex(parse(colors.primaryDim)),
+                "line-color": isSatellite
+                    ? formatHex(parse(colors.primaryForeground))
+                    : formatHex(parse(colors.primaryDim)),
                 "line-width": 3,
             },
         });

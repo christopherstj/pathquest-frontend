@@ -1,15 +1,18 @@
 "use client";
+import convertActivitiesToGeoJSON from "@/helpers/convertActivitiesToGeoJSON";
 import convertPeaksToGeoJSON from "@/helpers/convertPeaksToGeoJSON";
 import getNewData from "@/helpers/getNewData";
 import { useMapStore } from "@/providers/MapProvider";
+import Activity from "@/typeDefs/Activity";
 import Peak from "@/typeDefs/Peak";
 import React, { useCallback } from "react";
 
 type Props = {
     peak?: Peak;
+    activities?: Activity[];
 };
 
-const PeakDetailMapInteraction = ({ peak }: Props) => {
+const PeakDetailMapInteraction = ({ peak, activities }: Props) => {
     const map = useMapStore((state) => state.map);
 
     const [peaks, setPeaks] = React.useState<Peak[]>([]);
@@ -39,14 +42,14 @@ const PeakDetailMapInteraction = ({ peak }: Props) => {
 
         console.log("Setting data source for selectedPeaks");
 
-        let source = map.getSource("selectedPeaks") as
+        let peaksSource = map.getSource("selectedPeaks") as
             | mapboxgl.GeoJSONSource
             | undefined;
 
         let attempts = 0;
         const maxAttempts = 5;
 
-        while (!source && attempts < maxAttempts) {
+        while (!peaksSource && attempts < maxAttempts) {
             console.log(
                 `selectedPeaks source not found. Retrying... (${
                     attempts + 1
@@ -54,13 +57,13 @@ const PeakDetailMapInteraction = ({ peak }: Props) => {
             );
             attempts++;
             await new Promise((resolve) => setTimeout(resolve, 500));
-            source = map.getSource("selectedPeaks") as
+            peaksSource = map.getSource("selectedPeaks") as
                 | mapboxgl.GeoJSONSource
                 | undefined;
         }
 
-        if (source) {
-            source.setData(
+        if (peaksSource) {
+            peaksSource.setData(
                 peak
                     ? convertPeaksToGeoJSON([peak])
                     : {
@@ -71,16 +74,78 @@ const PeakDetailMapInteraction = ({ peak }: Props) => {
         } else {
             console.log("No source found for selectedPeaks");
         }
+
+        if (!activities) return;
+
+        let activitiesSource = map.getSource("activities") as
+            | mapboxgl.GeoJSONSource
+            | undefined;
+
+        let activityStartsSource = map.getSource("activityStarts") as
+            | mapboxgl.GeoJSONSource
+            | undefined;
+
+        attempts = 0;
+
+        while (
+            (!activitiesSource || !activityStartsSource) &&
+            attempts < maxAttempts
+        ) {
+            console.log(
+                `activities sources not found. Retrying... (${
+                    attempts + 1
+                }/${maxAttempts})`
+            );
+            attempts++;
+            await new Promise((resolve) => setTimeout(resolve, 500));
+            activitiesSource = map.getSource("activities") as
+                | mapboxgl.GeoJSONSource
+                | undefined;
+            activityStartsSource = map.getSource("activityStarts") as
+                | mapboxgl.GeoJSONSource
+                | undefined;
+        }
+
+        if (activitiesSource && activityStartsSource) {
+            const [lineStrings, starts] =
+                convertActivitiesToGeoJSON(activities);
+
+            activitiesSource.setData(lineStrings);
+            activityStartsSource.setData(starts);
+        } else {
+            console.log("No source found for activities");
+        }
     };
 
     const removeDataSource = () => {
         if (!map) return;
-        const source = map.getSource("selectedPeaks") as
+        const peaksSource = map.getSource("selectedPeaks") as
+            | mapboxgl.GeoJSONSource
+            | undefined;
+        const activitiesSource = map.getSource("activities") as
             | mapboxgl.GeoJSONSource
             | undefined;
 
-        if (source) {
-            source.setData({
+        const activityStartsSource = map.getSource("activityStarts") as
+            | mapboxgl.GeoJSONSource
+            | undefined;
+
+        if (peaksSource) {
+            peaksSource.setData({
+                type: "FeatureCollection",
+                features: [],
+            });
+        }
+
+        if (activitiesSource) {
+            activitiesSource.setData({
+                type: "FeatureCollection",
+                features: [],
+            });
+        }
+
+        if (activityStartsSource) {
+            activityStartsSource.setData({
                 type: "FeatureCollection",
                 features: [],
             });

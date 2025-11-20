@@ -6,6 +6,7 @@ import primaryChallenge from "@/public/images/challenge-primary.png";
 import secondaryChallenge from "@/public/images/challenge-secondary.png";
 import tertiaryChallenge from "@/public/images/challenge-tertiary.png";
 import colors from "../theme/colors";
+import { formatHex, parse } from "culori";
 
 const loadMapDefaults = (
     map: mapboxgl.Map,
@@ -29,7 +30,7 @@ const loadMapDefaults = (
             "line-cap": "round",
         },
         paint: {
-            "line-color": colors.primaryDim,
+            "line-color": formatHex(parse(colors.primaryDim)),
             "line-opacity": 0.4,
             "line-width": 1,
         },

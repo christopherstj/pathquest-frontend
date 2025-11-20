@@ -21,17 +21,24 @@ const UserButton = () => {
         await signOut();
     };
 
-    console.log(session);
-
     if (!session) {
         const redirectTo = encodeURIComponent(redirectPath || "/");
         return (
-            <Button
-                asChild
-                className="rounded-md bg-accent hover:bg-accent/80 text-white"
-            >
-                <Link href={`/login?redirect=${redirectTo}`}>Login</Link>
-            </Button>
+            <div className="flex flex-col gap-1">
+                <Button
+                    asChild
+                    className="rounded-md bg-accent hover:bg-accent/80 text-white"
+                >
+                    <Link href={`/signup?redirect=${redirectTo}`}>Signup</Link>
+                </Button>
+                <Button
+                    asChild
+                    className="rounded-md bg-primary hover:bg-primary-foreground-dim/20 text-white"
+                    size="sm"
+                >
+                    <Link href={`/login?redirect=${redirectTo}`}>Login</Link>
+                </Button>
+            </div>
         );
     }
 

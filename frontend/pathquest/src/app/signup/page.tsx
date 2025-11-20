@@ -1,5 +1,5 @@
 import redirectLogin from "@/actions/auth/redirectLogin";
-import LoginCard from "@/components/app/login/LoginCard";
+import SignupCard from "@/components/app/login/SignupCard";
 import { Metadata } from "next";
 import React from "react";
 
@@ -8,7 +8,7 @@ interface Props {
 }
 
 export const metadata: Metadata = {
-    title: "PathQuest | Login",
+    title: "PathQuest | Signup",
 };
 
 const page = ({ searchParams }: Props) => {
@@ -18,7 +18,7 @@ const page = ({ searchParams }: Props) => {
 
     return (
         <div className="h-screen w-full flex flex-col items-center justify-center">
-            <LoginCard redirectUrl={redirectUrl} />
+            <SignupCard redirectUrl={redirectUrl} />
         </div>
     );
 };

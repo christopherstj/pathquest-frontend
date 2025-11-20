@@ -36,6 +36,7 @@ const Map = () => {
             // Save current source data before style change
             const sourceIds = [
                 "peaks",
+                "selectedPeaks",
                 "challenges",
                 "activities",
                 "activityStarts",

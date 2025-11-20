@@ -39,7 +39,7 @@ const page = async (props: Props) => {
     return (
         <>
             <div className="absolute pointer-events-none inset-0 grid grid-cols-[160px_minmax(0,1fr)] md:grid-cols-[160px_minmax(0,1fr)_250px] lg:grid-cols-[160px_minmax(0,1fr)_300px] p-2.5 gap-2">
-                <PeakDetailMapInteraction peak={peak} />
+                <PeakDetailMapInteraction peak={peak} activities={activities} />
                 {/* spacer for grid */}
                 <div className="w-full h-0 flex items-start pointer-events-auto gap-2">
                     <PeakTitle
