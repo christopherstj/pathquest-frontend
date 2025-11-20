@@ -9,9 +9,11 @@ import colors from "../theme/colors";
 
 const loadMapDefaults = (
     map: mapboxgl.Map,
+    isFirstLoad: boolean,
     imagesToLoad: "markers" | "challenges" | "all" = "markers"
 ) => {
-    map.addControl(new mapboxgl.NavigationControl(), "top-left");
+    if (isFirstLoad)
+        map.addControl(new mapboxgl.NavigationControl(), "bottom-left");
 
     map.addLayer({
         id: "countours",

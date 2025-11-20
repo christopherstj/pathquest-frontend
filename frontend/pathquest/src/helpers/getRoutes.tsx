@@ -9,21 +9,21 @@ import {
 
 const getRoutes = (authedRoutes: boolean) => {
     const publicLinks = [
-        {
-            href: "/",
-            label: "Home",
-            icon: Home,
-        },
-        {
-            href: "/app",
-            label: "Dashboard",
-            icon: LayoutDashboard,
-        },
-        {
-            href: "/about",
-            label: "About",
-            icon: CircleQuestionMark,
-        },
+        // {
+        //     href: "/",
+        //     label: "Home",
+        //     icon: Home,
+        // },
+        // {
+        //     href: "/app",
+        //     label: "Dashboard",
+        //     icon: LayoutDashboard,
+        // },
+        // {
+        //     href: "/about",
+        //     label: "About",
+        //     icon: CircleQuestionMark,
+        // },
         {
             href: "/m/peaks",
             label: "Peaks",
@@ -37,11 +37,11 @@ const getRoutes = (authedRoutes: boolean) => {
     ];
 
     const privateLinks = [
-        {
-            href: "/app",
-            label: "Dashboard",
-            icon: LayoutDashboard,
-        },
+        // {
+        //     href: "/app",
+        //     label: "Dashboard",
+        //     icon: LayoutDashboard,
+        // },
         {
             href: "/app/peaks",
             label: "Peaks",

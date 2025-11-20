@@ -52,8 +52,8 @@ const layout = ({ children }: Props) => {
                         enableSystem={false}
                     >
                         <SidebarProvider>
-                            <AppSidebar />
                             <main className="w-full min-h-screen">
+                                {/* <AppSidebar /> */}
                                 {children}
                             </main>
                         </SidebarProvider>

@@ -1,6 +1,6 @@
 export interface StravaCreds {
     access_token: string;
     refresh_token: string;
-    providerAccountId: string;
+    provider_account_id: string;
     expires_at: number;
 }

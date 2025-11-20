@@ -2,9 +2,9 @@
 import getGoogleIdToken from "@/auth/getGoogleIdToken";
 import getBackendUrl from "@/helpers/getBackendUrl";
 import { useAuth } from "@/auth/useAuth";
-import UnclimbedPeak from "@/typeDefs/UnclimbedPeak";
 import Activity from "@/typeDefs/Activity";
 import Challenge from "@/typeDefs/Challenge";
+import Peak from "@/typeDefs/Peak";
 
 const backendUrl = getBackendUrl();
 
@@ -12,14 +12,7 @@ const getChallengeDetails = async (
     challengeId: string
 ): Promise<{
     challenge: Challenge;
-    peaks: (UnclimbedPeak & {
-        ascents: {
-            id: string;
-            timestamp: string;
-            activityId: string;
-            timezone?: string;
-        }[];
-    })[];
+    peaks: Peak[];
     activityCoords: {
         id: string;
         coords: Activity["coords"];

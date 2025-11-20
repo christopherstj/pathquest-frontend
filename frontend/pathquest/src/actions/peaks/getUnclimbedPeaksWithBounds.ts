@@ -2,7 +2,7 @@
 import getGoogleIdToken from "@/auth/getGoogleIdToken";
 import { useAuth } from "@/auth/useAuth";
 import getBackendUrl from "@/helpers/getBackendUrl";
-import UnclimbedPeak from "@/typeDefs/UnclimbedPeak";
+import Peak from "@/typeDefs/Peak";
 
 const backendUrl = getBackendUrl();
 
@@ -13,7 +13,7 @@ const getUnclimbedPeaksWithBounds = async (
     },
     search?: string,
     showSummittedPeaks?: boolean
-): Promise<UnclimbedPeak[]> => {
+): Promise<Peak[]> => {
     const session = await useAuth();
 
     const userId = session?.user.id ?? "";
@@ -41,7 +41,7 @@ const getUnclimbedPeaksWithBounds = async (
         return [];
     }
 
-    const data: UnclimbedPeak[] = await apiRes.json();
+    const data: Peak[] = await apiRes.json();
 
     return data;
 };

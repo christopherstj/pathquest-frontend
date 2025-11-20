@@ -73,6 +73,7 @@
     --chart-4: oklch(0.828 0.189 84.429);
     --chart-5: oklch(0.769 0.188 70.08);
     --sidebar: oklch(0.985 0 0);
+    /* --sidebar: transparent; */
     --sidebar-foreground: oklch(0.145 0 0);
     --sidebar-primary: oklch(0.205 0 0);
     --sidebar-primary-foreground: oklch(0.985 0 0);
@@ -95,10 +96,10 @@
     --primary-foreground: oklch(0.9 0.1 178.97);
     --primary-dim: oklch(0.35 0.019 178.97);
     --primary-foreground-dim: oklch(0.75 0.1 178.97);
-    --secondary: oklch(0.2538 0.0188 213.55);
-    --secondary-foreground: oklch(0.9 0.02 213.55);
-    --secondary-dim: oklch(0.3293 0.0264 213.55);
-    --secondary-foreground-dim: oklch(0.75 0.03 213.55);
+    --secondary: oklch(0.2538 0.03 232.24);
+    --secondary-foreground: oklch(0.9 0.05 232.24);
+    --secondary-dim: oklch(0.3293 0.04 232.24);
+    --secondary-foreground-dim: oklch(0.75 0.055 232.24);
     --muted: oklch(0.269 0.01 178.97);
     --muted-foreground: oklch(0.708 0.01 178.97);
     --accent: oklch(0.6733 0.1597 329.57);
@@ -112,7 +113,8 @@
     --chart-3: oklch(0.769 0.188 70.08);
     --chart-4: oklch(0.627 0.265 303.9);
     --chart-5: oklch(0.645 0.246 16.439);
-    --sidebar: oklch(0.2429 0.03 178.97);
+    /* --sidebar: oklch(0.2429 0.03 178.97); */
+    --sidebar: transparent;
     --sidebar-foreground: oklch(0.9 0.02 178.97);
     --sidebar-primary: oklch(0.35 0.02 178.97);
     --sidebar-primary-foreground: oklch(0.75 0.1 178.97);
@@ -179,7 +181,7 @@ h6 {
 .mapbox-search-box {
     flex: 1;
     z-index: 1;
-    width: calc(100% - 56px);
+    width: calc(100% - 168px);
     pointer-events: auto;
 }
 

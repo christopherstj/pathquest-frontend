@@ -1,5 +1,5 @@
 export default interface UserChallengeFavorite {
-    userId: string;
-    challengeId: string;
-    isPublic: boolean;
+    user_id: string;
+    challenge_id: string;
+    is_public: boolean;
 }

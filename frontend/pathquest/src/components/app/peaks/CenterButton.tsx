@@ -7,12 +7,13 @@ import React from "react";
 type Props = {
     lat: number;
     lng: number;
+    color: "primary" | "secondary";
 };
 
-const CenterButton = ({ lat, lng }: Props) => {
+const CenterButton = ({ lat, lng, color }: Props) => {
     const map = useMapStore((state) => state.map);
 
-    const onClick = (e: React.MouseEvent<HTMLButtonElement>) => {
+    const onClick = (e: React.MouseEvent<SVGSVGElement>) => {
         e.preventDefault();
         e.stopPropagation();
         if (map) {
@@ -24,14 +25,15 @@ const CenterButton = ({ lat, lng }: Props) => {
     };
 
     return (
-        <Button
-            variant="ghost"
-            size="icon"
-            className="text-primary-foreground-dim rounded-full hover:bg-primary-dim hover:text-primary-foreground-dim"
+        <MapPin
+            className={`
+                ${
+                    color === "primary"
+                        ? "text-primary-foreground-dim hover:bg-primary-dim hover:text-primary-foreground"
+                        : "text-secondary-foreground-dim hover:bg-secondary-dim hover:text-secondary-foreground"
+                } rounded-full w-4 h-4 p-0`}
             onClick={onClick}
-        >
-            <MapPin />
-        </Button>
+        />
     );
 };
 

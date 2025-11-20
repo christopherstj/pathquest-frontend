@@ -2,7 +2,7 @@
 import getGoogleIdToken from "@/auth/getGoogleIdToken";
 import { useAuth } from "@/auth/useAuth";
 import getBackendUrl from "@/helpers/getBackendUrl";
-import UnclimbedPeak from "@/typeDefs/UnclimbedPeak";
+import Peak from "@/typeDefs/Peak";
 
 const backendUrl = getBackendUrl();
 
@@ -11,7 +11,7 @@ const searchNearestPeaks = async (
     lng: number,
     page: number,
     search?: string
-): Promise<UnclimbedPeak[]> => {
+): Promise<Peak[]> => {
     const session = await useAuth();
 
     if (!session) {

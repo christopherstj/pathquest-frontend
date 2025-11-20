@@ -28,10 +28,10 @@ export const authOptions: AuthOptions = {
                 return false;
             }
             const stravaCreds = {
-                accessToken: account?.access_token,
-                refreshToken: account?.refresh_token,
-                providerAccountId: account?.providerAccountId,
-                expiresAt: account?.expires_at,
+                access_token: account?.access_token,
+                refresh_token: account?.refresh_token,
+                provider_account_id: account?.providerAccountId,
+                expires_at: account?.expires_at,
             };
             await createUserIfNotExists(user, stravaCreds);
             return true;
@@ -41,7 +41,7 @@ export const authOptions: AuthOptions = {
                 const userObj = await getUser(user.id);
 
                 token.userId = user.id;
-                token.subscribed = userObj?.user?.isSubscribed ?? false;
+                token.subscribed = userObj?.user?.is_subscribed ?? false;
                 token.name = userObj?.user?.name ?? null;
             }
             return token;

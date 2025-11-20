@@ -1,9 +1,17 @@
-import { ActivityStart } from "./ActivityStart";
-
-export default interface Activity extends ActivityStart {
+export default interface Activity {
+    title?: string;
+    id: string;
+    user_id: string;
+    start_coords: [number, number];
+    distance: number;
     coords: [number, number][];
-    vertProfile?: number[];
-    distanceStream?: number[];
-    timeStream?: number[];
+    vert_profile?: number[];
+    distance_stream?: number[];
+    time_stream?: number[];
+    start_time: string;
+    sport?: string;
+    timezone?: string;
+    gain?: number;
     reprocessing: boolean;
+    peak_summits?: number;
 }

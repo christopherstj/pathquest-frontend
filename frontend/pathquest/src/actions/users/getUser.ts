@@ -2,7 +2,7 @@
 import getGoogleIdToken from "@/auth/getGoogleIdToken";
 import { useAuth } from "@/auth/useAuth";
 import getBackendUrl from "@/helpers/getBackendUrl";
-import { User } from "@/typeDefs/User";
+import User from "@/typeDefs/User";
 import { redirect } from "next/navigation";
 
 const backendUrl = getBackendUrl();
@@ -49,6 +49,7 @@ const getUser = async (
         };
     } else {
         const user: User = await apiRes.json();
+
         return {
             userFound: true,
             user,

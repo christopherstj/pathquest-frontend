@@ -1,15 +1,14 @@
 import Activity from "./Activity";
 
 export interface ActivityStart {
-    startTime: number;
+    start_time: string;
     sport?: string;
     timezone?: string;
     gain?: number;
-    peakSummits?: number;
+    peak_summits?: number;
     name?: string;
     id: string;
-    userId: string;
-    startLat: number;
-    startLong: number;
+    user_id: string;
+    start_coords?: [number, number];
     distance: number;
 }

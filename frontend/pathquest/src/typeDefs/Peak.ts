@@ -1,20 +1,17 @@
+import Summit from "./Summit";
+
 export default interface Peak {
-    Id: string;
-    Name: string;
-    Lat: number;
-    Long: number;
-    Altitude?: number;
-    County?: string;
-    State?: string;
-    Country?: string;
+    id: string;
+    name?: string;
+    location_coords?: [number, number];
+    elevation?: number;
+    county?: string;
+    state?: string;
+    country?: string;
+    is_favorited?: boolean;
     distance?: number;
-    isFavorited?: boolean;
     summits?: number;
-    publicSummits?: number;
-    ascents?: {
-        id: string;
-        timestamp: string;
-        activityId: string;
-        notes?: string;
-    }[];
+    public_summits?: number;
+    num_challenges?: number;
+    ascents?: Summit[];
 }

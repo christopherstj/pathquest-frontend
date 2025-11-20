@@ -1,6 +1,7 @@
-import React from "react";
-import Map from "./Map";
+import React, { Suspense } from "react";
+import Map from "@/components/app/map/Map";
 import MapProvider from "@/providers/MapProvider";
+import { AppSidebar } from "@/components/app/layout/AppSidebar";
 
 type Props = {
     children: React.ReactNode;
@@ -12,7 +13,12 @@ const layout = (props: Props) => {
     return (
         <MapProvider>
             <div className="h-screen w-full relative">
-                <Map />
+                <Suspense
+                    fallback={<div className="h-full w-full bg-background" />}
+                >
+                    <Map />
+                </Suspense>
+                <AppSidebar />
                 {content}
             </div>
         </MapProvider>

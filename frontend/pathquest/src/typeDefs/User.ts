@@ -1,17 +1,16 @@
-export interface User {
+export default interface User {
     id: string;
     name: string;
-    pic: string;
-    updateDescription: boolean;
     email?: string;
+    pic: string;
+    update_description: boolean;
     city?: string;
     state?: string;
     country?: string;
-    lat?: number;
-    long?: number;
+    location_coords?: [number, number] | null;
     units: "imperial" | "metric";
-    isSubscribed: boolean;
-    isLifetimeFree: boolean;
-    historicalDataProcessed: boolean;
-    processingActivityCount?: number;
+    is_subscribed: boolean;
+    is_lifetime_free: boolean;
+    historical_data_processed: boolean;
+    processing_activity_count?: number;
 }

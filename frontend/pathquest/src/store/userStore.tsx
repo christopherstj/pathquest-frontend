@@ -1,6 +1,5 @@
-import { User } from "@/typeDefs/User";
+import User from "@/typeDefs/User";
 import { createStore } from "zustand/vanilla";
-import { useStore } from "zustand";
 
 export type UserState = {
     user: User | null;

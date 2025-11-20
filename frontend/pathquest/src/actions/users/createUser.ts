@@ -2,9 +2,9 @@
 import getGoogleIdToken from "@/auth/getGoogleIdToken";
 import getBackendUrl from "@/helpers/getBackendUrl";
 import ServerActionResult from "@/typeDefs/ServerActionResult";
-import { User } from "@/typeDefs/User";
+import { StravaCreds } from "@/typeDefs/StravaCreds";
+import User from "@/typeDefs/User";
 import { revalidatePath } from "next/cache";
-import { redirect } from "next/navigation";
 
 const backendUrl = getBackendUrl();
 
@@ -15,12 +15,7 @@ const createUser = async (
         email?: string | null;
         image?: string | null;
     },
-    stravaCreds: {
-        accessToken?: string;
-        refreshToken?: string;
-        providerAccountId: string;
-        expiresAt?: number;
-    }
+    stravaCreds: StravaCreds
 ): Promise<ServerActionResult<User>> => {
     if (!user) {
         return {
@@ -78,7 +73,7 @@ const createUser = async (
             };
         } else {
             const newUser = (await apiRes.json()).user;
-            revalidatePath(`${backendUrl}/user`);
+            // revalidatePath(`${backendUrl}/user`);
             return {
                 success: true,
                 data: newUser,

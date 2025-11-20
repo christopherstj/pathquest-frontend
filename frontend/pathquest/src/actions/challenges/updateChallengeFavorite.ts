@@ -27,9 +27,9 @@ const updateChallengeFavorite = async (
     const userId = session.user?.id;
 
     const body: UserChallengeFavorite = {
-        challengeId,
-        userId,
-        isPublic: newPrivacy,
+        challenge_id: challengeId,
+        user_id: userId,
+        is_public: newPrivacy,
     };
 
     const url = `${backendUrl}/challenges/favorite`;

@@ -1,61 +1,54 @@
 "use server";
-
 import getGoogleIdToken from "@/auth/getGoogleIdToken";
 import { useAuth } from "@/auth/useAuth";
 import getBackendUrl from "@/helpers/getBackendUrl";
 import Activity from "@/typeDefs/Activity";
-import UnclimbedPeak from "@/typeDefs/UnclimbedPeak";
+import Challenge from "@/typeDefs/Challenge";
+import Peak from "@/typeDefs/Peak";
+import ServerActionResult from "@/typeDefs/ServerActionResult";
+import Summit from "@/typeDefs/Summit";
 
 const backendUrl = getBackendUrl();
 
 const getPeakDetails = async (
     peakId: string
-): Promise<{
-    peak: UnclimbedPeak | null;
-    activities: Activity[];
-    summits: {
-        id: string;
-        activityId: string;
-        timestamp: string;
-        timezone?: string;
-        notes?: string;
-    }[];
-}> => {
+): Promise<
+    ServerActionResult<{
+        peak: Peak;
+        publicSummits: Summit[];
+        challenges: Challenge[];
+        activities?: Activity[];
+    }>
+> => {
     const session = await useAuth();
+    const userId = session?.user.id;
 
-    if (!session) {
-        return {
-            peak: null,
-            activities: [],
-            summits: [],
-        };
-    }
+    const token = await getGoogleIdToken();
 
-    const userId = session.user.id;
-
-    const idToken = await getGoogleIdToken();
-
-    const response = await fetch(
-        `${backendUrl}/peaks/details/${peakId}?userId=${userId}`,
+    const apiRes = await fetch(
+        `${backendUrl}/peaks/${peakId}${userId ? `?userId=${userId}` : ""}`,
         {
             method: "GET",
             headers: {
-                Authorization: `Bearer ${idToken}`,
+                Authorization: `Bearer ${token}`,
             },
         }
     );
 
-    if (!response.ok) {
-        console.error(await response.text());
+    if (!apiRes.ok) {
+        console.error(await apiRes.text());
         return {
-            peak: null,
-            activities: [],
-            summits: [],
+            success: false,
+            error: "Failed to fetch peak details",
         };
-    } else {
-        const data = await response.json();
-        return data;
     }
+
+    const data = await apiRes.json();
+
+    return {
+        success: true,
+        data,
+    };
 };
 
 export default getPeakDetails;

@@ -1,6 +1,4 @@
-import { User } from "@/typeDefs/User";
 import { createStore } from "zustand/vanilla";
-import { useStore } from "zustand";
 import { Map } from "mapbox-gl";
 
 export type MapState = {

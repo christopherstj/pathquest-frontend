@@ -3,11 +3,10 @@ import getGoogleIdToken from "@/auth/getGoogleIdToken";
 import getBackendUrl from "@/helpers/getBackendUrl";
 import { useAuth } from "@/auth/useAuth";
 import Peak from "@/typeDefs/Peak";
-import FavoritedPeak from "@/typeDefs/FavoritedPeak";
 
 const backendUrl = getBackendUrl();
 
-const getFavoritePeaks = async (): Promise<FavoritedPeak[]> => {
+const getFavoritePeaks = async (): Promise<Peak[]> => {
     const session = await useAuth();
 
     if (!session) {

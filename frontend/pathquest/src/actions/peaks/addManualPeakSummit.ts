@@ -28,11 +28,11 @@ const addManualPeakSummit = async (
 
     const data: ManualPeakSummit = {
         id: `${userId}-${peakId}-${summitDate}`,
-        userId: userId,
-        peakId: peakId,
-        activityId: activityId,
+        user_id: userId,
+        peak_id: peakId,
+        activity_id: activityId,
         notes: notes,
-        isPublic: isPublic,
+        is_public: isPublic,
         timestamp: summitDate,
         timezone: timezone,
     };
