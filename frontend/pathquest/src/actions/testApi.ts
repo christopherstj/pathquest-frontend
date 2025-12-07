@@ -1,3 +1,4 @@
+// UNUSED - Test API endpoint, likely for development only
 "use server";
 
 import getGoogleIdToken from "@/auth/getGoogleIdToken";

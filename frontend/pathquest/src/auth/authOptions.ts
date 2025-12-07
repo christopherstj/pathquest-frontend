@@ -36,13 +36,18 @@ export const authOptions: AuthOptions = {
             await createUserIfNotExists(user, stravaCreds);
             return true;
         },
-        async jwt({ token, user }) {
-            if (user) {
-                const userObj = await getUser(user.id);
+        async jwt({ token, user, trigger }) {
+            // On sign in or when update() is called
+            // console.log("JWT callback triggered:", { token, user, trigger });
+            if (user || trigger === "update") {
+                const userObj = await getUser(
+                    (token.userId as string) || user?.id
+                );
 
-                token.userId = user.id;
+                token.userId = user?.id || token.userId;
                 token.subscribed = userObj?.user?.is_subscribed ?? false;
                 token.name = userObj?.user?.name ?? null;
+                token.email = userObj?.user?.email ?? null;
             }
             return token;
         },
@@ -51,6 +56,7 @@ export const authOptions: AuthOptions = {
                 session.user.id = token.userId as string;
                 session.user.subscribed = token.subscribed as boolean;
                 session.user.name = token.name as string | null;
+                session.user.email = token.email as string | null;
             }
             return session;
         },

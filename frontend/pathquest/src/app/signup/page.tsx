@@ -14,8 +14,6 @@ export const metadata: Metadata = {
 const page = ({ searchParams }: Props) => {
     const redirectUrl = searchParams.redirect as string | undefined;
 
-    redirectLogin();
-
     return (
         <div className="h-screen w-full flex flex-col items-center justify-center">
             <SignupCard redirectUrl={redirectUrl} />

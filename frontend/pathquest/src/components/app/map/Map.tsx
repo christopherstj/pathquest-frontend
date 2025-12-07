@@ -10,6 +10,7 @@ import getMapStateFromURL from "@/helpers/getMapStateFromURL";
 import updateMapURL from "@/helpers/updateMapURL";
 import SatelliteButton from "./SatelliteButton";
 import ThreeDButton from "./ThreeDButton";
+import { useSession } from "next-auth/react";
 
 const Map = () => {
     const setMap = useMapStore((state) => state.setMap);

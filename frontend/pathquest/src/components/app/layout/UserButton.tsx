@@ -1,8 +1,8 @@
 "use client";
 import { Button } from "@/components/ui/button";
-import { signOut, useSession } from "next-auth/react";
+import { signIn, signOut, useSession } from "next-auth/react";
 import Link from "next/link";
-import { usePathname, useSearchParams } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import React from "react";
 
 const UserButton = () => {
@@ -16,6 +16,18 @@ const UserButton = () => {
     const redirectPath = `${pathname}${queryString ? `?${queryString}` : ""}`;
 
     const name = session?.user?.name;
+
+    console.log(session);
+
+    const login = async () => {
+        const res = await signIn("strava", {
+            redirect: false,
+        });
+
+        // if (!res?.ok) {
+        //     router.push(`/signup?redirect=${encodeURIComponent(redirectPath)}`);
+        // }
+    };
 
     const logout = async () => {
         await signOut();
@@ -32,11 +44,13 @@ const UserButton = () => {
                     <Link href={`/signup?redirect=${redirectTo}`}>Signup</Link>
                 </Button>
                 <Button
-                    asChild
+                    // asChild
                     className="rounded-md bg-primary hover:bg-primary-foreground-dim/20 text-white"
                     size="sm"
+                    onClick={login}
                 >
-                    <Link href={`/login?redirect=${redirectTo}`}>Login</Link>
+                    Login
+                    {/* <Link href={`/login?redirect=${redirectTo}`}>Login</Link> */}
                 </Button>
             </div>
         );

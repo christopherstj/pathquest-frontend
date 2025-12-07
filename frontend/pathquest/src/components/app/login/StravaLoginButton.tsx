@@ -13,7 +13,11 @@ const StravaLoginButton = ({ redirectUrl }: Props) => {
     const login = async () => {
         const res = await signIn("strava", {
             redirect: true,
-            callbackUrl: redirectUrl || `${window.location.origin}/m/peaks`,
+            callbackUrl: `/signup/email-form${
+                redirectUrl
+                    ? `?redirectUrl=${encodeURIComponent(redirectUrl)}`
+                    : ""
+            }`,
         });
     };
 
