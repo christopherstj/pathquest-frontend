@@ -24,7 +24,7 @@ const updateUser = async (updateData: {
 
     const token = await getGoogleIdToken();
 
-    const apiRes = await fetch(`${backendUrl}/user/${id}`, {
+    const apiRes = await fetch(`${backendUrl}/users/${id}`, {
         method: "PUT",
         cache: "no-cache",
         headers: {

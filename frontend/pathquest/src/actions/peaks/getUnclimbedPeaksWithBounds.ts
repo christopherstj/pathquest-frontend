@@ -16,8 +16,6 @@ const getUnclimbedPeaksWithBounds = async (
 ): Promise<Peak[]> => {
     const session = await useAuth();
 
-    const userId = session?.user.id ?? "";
-
     const token = await getGoogleIdToken();
 
     const searchString = search ? `&search=${encodeURIComponent(search)}` : "";
@@ -25,8 +23,8 @@ const getUnclimbedPeaksWithBounds = async (
     const showSummitted = showSummittedPeaks ? "&showSummittedPeaks=true" : "";
 
     const url = bounds
-        ? `${backendUrl}/peaks/summits/unclimbed?userId=${userId}&northWestLat=${bounds.northwest[0]}&northWestLng=${bounds.northwest[1]}&southEastLat=${bounds.southeast[0]}&southEastLng=${bounds.southeast[1]}${searchString}${showSummitted}`
-        : `${backendUrl}/peaks/summits/unclimbed?userId=${userId}${searchString}${showSummitted}`;
+        ? `${backendUrl}/peaks/summits/unclimbed?northWestLat=${bounds.northwest[0]}&northWestLng=${bounds.northwest[1]}&southEastLat=${bounds.southeast[0]}&southEastLng=${bounds.southeast[1]}${searchString}${showSummitted}`
+        : `${backendUrl}/peaks/summits/unclimbed?${searchString}${showSummitted}`;
 
     const apiRes = await fetch(url, {
         method: "GET",

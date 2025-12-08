@@ -15,12 +15,8 @@ const getRecentActivities = async (summitsOnly?: boolean) => {
 
     const idToken = await getGoogleIdToken();
 
-    const userId = session.user.id;
-
     const response = await fetch(
-        `${backendUrl}/activities/recent?userId=${userId}${
-            summitsOnly ? "&summitsOnly=true" : ""
-        }`,
+        `${backendUrl}/activities/recent${summitsOnly ? "?summitsOnly=true" : ""}`,
         {
             method: "GET",
             headers: {

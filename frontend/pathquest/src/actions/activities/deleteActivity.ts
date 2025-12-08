@@ -16,9 +16,7 @@ const deleteActivity = async (activityId: string) => {
 
     const token = await getGoogleIdToken();
 
-    const userId = session.user.id;
-
-    const url = `${backendUrl}/activities/${userId}/${activityId}`;
+    const url = `${backendUrl}/activities/${activityId}`;
 
     const res = await fetch(url, {
         method: "DELETE",

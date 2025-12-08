@@ -71,7 +71,7 @@ Next.js 14 App Router structure with route groups and parallel routes.
 - Handles authentication callbacks
 
 ### Actions (`src/actions/`)
-Server actions for data fetching and mutations. Organized by domain.
+Server actions for data fetching and mutations. Organized by domain. Backend calls now target the `/api` prefix via `getBackendUrl()`; private endpoints include a bearer from `getGoogleIdToken`, while public reads omit the header.
 
 #### Activities (`actions/activities/`)
 - `deleteActivity.ts` - Deletes an activity

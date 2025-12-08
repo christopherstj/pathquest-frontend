@@ -20,7 +20,7 @@ const getRecentSummits = async (): Promise<
 
     const userId = session.user.id;
 
-    const peaksUrl = `${backendUrl}/peaks/summits/recent?userId=${userId}`;
+    const peaksUrl = `${backendUrl}/peaks/summits/recent`;
 
     const peaksRes = await fetch(peaksUrl, {
         method: "GET",

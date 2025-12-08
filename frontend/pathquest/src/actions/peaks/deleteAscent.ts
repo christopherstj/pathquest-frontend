@@ -20,19 +20,14 @@ const deleteAscent = async (
         };
     }
 
-    const userId = session.user.id;
-
     const token = await getGoogleIdToken();
 
-    const res = await fetch(
-        `${backendUrl}/peaks/ascent/${ascentId}?userId=${userId}`,
-        {
-            method: "DELETE",
-            headers: {
-                Authorization: `Bearer ${token}`,
-            },
-        }
-    );
+    const res = await fetch(`${backendUrl}/peaks/ascent/${ascentId}`, {
+        method: "DELETE",
+        headers: {
+            Authorization: `Bearer ${token}`,
+        },
+    });
 
     if (!res.ok) {
         console.error(await res.text());

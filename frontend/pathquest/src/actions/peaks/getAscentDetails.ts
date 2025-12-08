@@ -23,7 +23,7 @@ const getAscentDetails = async (
 
     const token = await getGoogleIdToken();
 
-    const url = `${backendUrl}/peaks/ascent/${ascentId}?userId=${userId}`;
+    const url = `${backendUrl}/peaks/ascent/${ascentId}`;
 
     const response = await fetch(url, {
         method: "GET",

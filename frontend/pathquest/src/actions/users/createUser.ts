@@ -26,7 +26,24 @@ const createUser = async (
 
     const token = await getGoogleIdToken();
 
-    const userRes = await fetch(`${backendUrl}/user`, {
+    const existingRes = await fetch(`${backendUrl}/users/${user.id}`, {
+        method: "GET",
+        cache: "no-cache",
+        headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+        },
+    });
+
+    if (existingRes.ok) {
+        const existingUser = await existingRes.json();
+        return {
+            success: true,
+            data: existingUser,
+        };
+    }
+
+    const apiRes = await fetch(`${backendUrl}/auth/signup`, {
         method: "POST",
         cache: "no-cache",
         headers: {
@@ -34,55 +51,25 @@ const createUser = async (
             Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
-            id: user.id,
+            id: user.id.toString(),
+            name: user.name,
+            email: null,
+            pic: user.image ?? null,
+            stravaCreds,
         }),
     });
 
-    if (!userRes.ok) {
-        console.error(await userRes.text());
+    if (!apiRes.ok) {
+        console.error(await apiRes.text());
         return {
             success: false,
-            error: "Failed to check user",
+            error: "Failed to create user",
         };
-    }
-
-    const { userFound, user: userObject } = await userRes.json();
-
-    if (!userFound) {
-        const apiRes = await fetch(`${backendUrl}/signup`, {
-            method: "POST",
-            cache: "no-cache",
-            headers: {
-                "Content-Type": "application/json",
-                Authorization: `Bearer ${token}`,
-            },
-            body: JSON.stringify({
-                id: user.id.toString(),
-                name: user.name,
-                email: null,
-                pic: user.image ?? null,
-                stravaCreds,
-            }),
-        });
-
-        if (!apiRes.ok) {
-            console.error(await apiRes.text());
-            return {
-                success: false,
-                error: "Failed to create user",
-            };
-        } else {
-            const newUser = (await apiRes.json()).user;
-            // revalidatePath(`${backendUrl}/user`);
-            return {
-                success: true,
-                data: newUser,
-            };
-        }
     } else {
+        const newUser = (await apiRes.json()).user;
         return {
             success: true,
-            data: userObject,
+            data: newUser,
         };
     }
 };

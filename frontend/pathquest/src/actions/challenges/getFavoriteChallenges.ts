@@ -18,7 +18,7 @@ const getFavoriteChallenges = async (): Promise<ChallengeProgress[]> => {
     const token = await getGoogleIdToken();
 
     const response = await fetch(
-        `${backendUrl}/challenges/search?userId=${userId}&type=in-progress,not-started&favoritesOnly=true`,
+        `${backendUrl}/challenges/search?type=in-progress,not-started&favoritesOnly=true`,
         {
             method: "GET",
             headers: {

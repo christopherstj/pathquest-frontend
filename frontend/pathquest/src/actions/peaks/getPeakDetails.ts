@@ -21,19 +21,14 @@ const getPeakDetails = async (
     }>
 > => {
     const session = await useAuth();
-    const userId = session?.user.id;
+    const token = session ? await getGoogleIdToken() : null;
 
-    const token = await getGoogleIdToken();
-
-    const apiRes = await fetch(
-        `${backendUrl}/peaks/${peakId}${userId ? `?userId=${userId}` : ""}`,
-        {
-            method: "GET",
-            headers: {
-                Authorization: `Bearer ${token}`,
-            },
-        }
-    );
+    const apiRes = await fetch(`${backendUrl}/peaks/${peakId}`, {
+        method: "GET",
+        headers: {
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+    });
 
     if (!apiRes.ok) {
         console.error(await apiRes.text());

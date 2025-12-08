@@ -25,7 +25,7 @@ const updateAscent = async (
 
     const userId = session.user.id;
 
-    const url = `${backendUrl}/peaks/ascent/${ascent.id}?userId=${userId}`;
+    const url = `${backendUrl}/peaks/ascent/${ascent.id}`;
 
     const res = await fetch(url, {
         method: "PUT",

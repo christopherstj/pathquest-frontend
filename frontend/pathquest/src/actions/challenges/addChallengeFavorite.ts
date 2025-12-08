@@ -22,11 +22,8 @@ const addChallengeFavorite = async (
 
     const token = await getGoogleIdToken();
 
-    const userId = session.user?.id;
-
     const body = {
         challengeId,
-        userId,
     };
 
     const url = `${backendUrl}/challenges/favorite`;

@@ -7,7 +7,7 @@ const backendUrl = getBackendUrl();
 const createUserInterest = async (email: string) => {
     const idToken = await getGoogleIdToken();
 
-    const response = await fetch(`${backendUrl}/user-interest`, {
+    const response = await fetch(`${backendUrl}/auth/user-interest`, {
         method: "POST",
         headers: {
             "Content-Type": "application/json",

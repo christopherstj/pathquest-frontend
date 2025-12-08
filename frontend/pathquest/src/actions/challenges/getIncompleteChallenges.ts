@@ -14,8 +14,6 @@ const getIncompleteChallenges = async (): Promise<ChallengeProgress[]> => {
         return [];
     }
 
-    const userId = session.user.id;
-
     const token = await getGoogleIdToken();
 
     const response = await fetch(`${backendUrl}/challenges/incomplete`, {
@@ -24,9 +22,6 @@ const getIncompleteChallenges = async (): Promise<ChallengeProgress[]> => {
             "Content-Type": "application/json",
             Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({
-            userId,
-        }),
     });
 
     if (!response.ok) {

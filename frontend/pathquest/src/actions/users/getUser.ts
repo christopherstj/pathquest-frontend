@@ -26,19 +26,16 @@ const getUser = async (
         };
     }
 
-    const token = await getGoogleIdToken();
+    const token = session ? await getGoogleIdToken() : null;
 
-    const apiRes = await fetch(
-        `${backendUrl}/user/${requestedUserId}?requestingUserId=${id}`,
-        {
-            method: "GET",
-            cache: "no-cache",
-            headers: {
-                "Content-Type": "application/json",
-                Authorization: `Bearer ${token}`,
-            },
-        }
-    );
+    const apiRes = await fetch(`${backendUrl}/users/${requestedUserId}`, {
+        method: "GET",
+        cache: "no-cache",
+        headers: {
+            "Content-Type": "application/json",
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+    });
 
     if (!apiRes.ok) {
         console.error(await apiRes.text());

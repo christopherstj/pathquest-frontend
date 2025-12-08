@@ -12,19 +12,14 @@ const getIsFavorited = async (peakId: string): Promise<boolean> => {
         return false;
     }
 
-    const userId = session.user.id;
-
     const idToken = await getGoogleIdToken();
 
-    const response = await fetch(
-        `${backendUrl}/peaks/favorite?peakId=${peakId}&userId=${userId}`,
-        {
-            method: "GET",
-            headers: {
-                Authorization: `Bearer ${idToken}`,
-            },
-        }
-    );
+    const response = await fetch(`${backendUrl}/peaks/favorite?peakId=${peakId}`, {
+        method: "GET",
+        headers: {
+            Authorization: `Bearer ${idToken}`,
+        },
+    });
 
     if (!response.ok) {
         console.error(await response.text());

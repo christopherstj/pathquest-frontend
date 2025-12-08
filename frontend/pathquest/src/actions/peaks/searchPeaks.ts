@@ -17,10 +17,7 @@ const searchPeaks = async (
     showSummittedPeaks?: string
 ): Promise<Peak[]> => {
     const session = await useAuth();
-
-    const userId = session?.user.id ?? "";
-
-    const token = await getGoogleIdToken();
+    const token = session ? await getGoogleIdToken() : null;
 
     const url = new URL(`${backendUrl}/peaks/search`);
 
@@ -31,14 +28,13 @@ const searchPeaks = async (
     if (search) url.searchParams.append("search", search);
     if (page) url.searchParams.append("page", page);
     if (perPage) url.searchParams.append("perPage", perPage);
-    if (userId) url.searchParams.append("userId", userId);
     if (showSummittedPeaks)
         url.searchParams.append("showSummittedPeaks", showSummittedPeaks);
 
     const apiRes = await fetch(url.toString(), {
         method: "GET",
         headers: {
-            Authorization: `Bearer ${token}`,
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
     });
 

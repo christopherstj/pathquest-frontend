@@ -21,8 +21,6 @@ const getAllChallenges = async (
         return [];
     }
 
-    const userId = session.user.id;
-
     const token = await getGoogleIdToken();
 
     const searchString =
@@ -31,8 +29,8 @@ const getAllChallenges = async (
             : "";
 
     const url = bounds
-        ? `${backendUrl}/challenges/search?userId=${userId}&type=${type}&northWestLat=${bounds.northwest[0]}&northWestLng=${bounds.northwest[1]}&southEastLat=${bounds.southeast[0]}&southEastLng=${bounds.southeast[1]}${searchString}`
-        : `${backendUrl}/challenges/search?userId=${userId}&type=${type}${searchString}`;
+        ? `${backendUrl}/challenges/search?type=${type}&northWestLat=${bounds.northwest[0]}&northWestLng=${bounds.northwest[1]}&southEastLat=${bounds.southeast[0]}&southEastLng=${bounds.southeast[1]}${searchString}`
+        : `${backendUrl}/challenges/search?type=${type}${searchString}`;
 
     const apiRes = await fetch(url, {
         method: "GET",

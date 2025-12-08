@@ -11,21 +11,16 @@ const getUnclimbedPeaks = async (): Promise<Peak[]> => {
         return [];
     }
 
-    const userId = session.user.id ?? "";
-
     const token = await getGoogleIdToken();
 
     const backendUrl = getBackendUrl();
 
-    const apiRes = await fetch(
-        `${backendUrl}/peaks/summits/unclimbed/nearest?userId=${userId}`,
-        {
-            method: "GET",
-            headers: {
-                Authorization: `Bearer ${token}`,
-            },
-        }
-    );
+    const apiRes = await fetch(`${backendUrl}/peaks/summits/unclimbed/nearest`, {
+        method: "GET",
+        headers: {
+            Authorization: `Bearer ${token}`,
+        },
+    });
 
     if (!apiRes.ok) {
         console.error(await apiRes.text());

@@ -12,7 +12,7 @@ const deleteUser = async () => {
 
     const idToken = await getGoogleIdToken();
 
-    const response = await fetch(`${backendUrl}/user/${id}`, {
+    const response = await fetch(`${backendUrl}/users/${id}`, {
         method: "DELETE",
         headers: {
             Authorization: `Bearer ${idToken}`,

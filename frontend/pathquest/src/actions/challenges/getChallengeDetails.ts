@@ -26,7 +26,7 @@ const getChallengeDetails = async (
 
     const token = await getGoogleIdToken();
 
-    const peaksUrl = `${backendUrl}/challenges/${challengeId}/details?userId=${session.user.id}`;
+    const peaksUrl = `${backendUrl}/challenges/${challengeId}/details`;
 
     const peaksRes = await fetch(peaksUrl, {
         method: "GET",

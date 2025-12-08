@@ -21,8 +21,6 @@ const reprocessActivity = async (
         };
     }
 
-    const userId = session.user.id;
-
     const token = await getGoogleIdToken();
 
     const res = await fetch(`${backendUrl}/activities/reprocess`, {
@@ -33,7 +31,6 @@ const reprocessActivity = async (
         },
         body: JSON.stringify({
             activityId,
-            userId,
         }),
     });
 

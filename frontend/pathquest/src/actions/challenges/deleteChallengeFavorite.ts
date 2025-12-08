@@ -17,9 +17,7 @@ const deleteChallengeFavorite = async (challengeId: string) => {
 
     const token = await getGoogleIdToken();
 
-    const userId = session.user?.id;
-
-    const url = `${backendUrl}/challenges/favorite/${userId}/${challengeId}`;
+    const url = `${backendUrl}/challenges/favorite/${challengeId}`;
 
     const res = await fetch(url, {
         method: "DELETE",

@@ -19,7 +19,7 @@ const getActivitiesProcessing = async (): Promise<
 
     const idToken = await getGoogleIdToken();
 
-    const res = await fetch(`${backendUrl}/user/${id}/activities-processing`, {
+    const res = await fetch(`${backendUrl}/users/${id}/activities-processing`, {
         method: "GET",
         headers: {
             Authorization: `Bearer ${idToken}`,

@@ -13,8 +13,6 @@ const toggleFavoritePeak = async (
         return false;
     }
 
-    const userId = session.user.id;
-
     const backendUrl = getBackendUrl();
 
     const token = await getGoogleIdToken();
@@ -26,7 +24,6 @@ const toggleFavoritePeak = async (
             Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
-            userId,
             newValue,
             peakId,
         }),

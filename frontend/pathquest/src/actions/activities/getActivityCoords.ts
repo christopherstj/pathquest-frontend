@@ -16,11 +16,9 @@ const getActivityCoords = async (
         return null;
     }
 
-    const userId = session.user.id;
-
     const token = await getGoogleIdToken();
 
-    const coordsUrl = `${backendUrl}/activities/${userId}/${activityId}/coords`;
+    const coordsUrl = `${backendUrl}/activities/${activityId}/coords`;
 
     const coordsRes = await fetch(coordsUrl, {
         method: "GET",

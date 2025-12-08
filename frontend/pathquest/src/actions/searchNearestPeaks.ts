@@ -20,11 +20,9 @@ const searchNearestPeaks = async (
 
     const token = await getGoogleIdToken();
 
-    const userId = session.user?.id;
-
     const url = search
-        ? `${backendUrl}/peaks/search/nearest?userId=${userId}&lat=${lat}&lng=${lng}&page=${page}&search=${search}`
-        : `${backendUrl}/peaks/search/nearest?userId=${userId}&lat=${lat}&lng=${lng}&page=${page}`;
+        ? `${backendUrl}/peaks/search/nearest?lat=${lat}&lng=${lng}&page=${page}&search=${search}`
+        : `${backendUrl}/peaks/search/nearest?lat=${lat}&lng=${lng}&page=${page}`;
 
     const response = await fetch(url, {
         cache: "no-cache",

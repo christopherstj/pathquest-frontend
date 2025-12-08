@@ -23,8 +23,6 @@ const getActivityStarts = async (
         return [];
     }
 
-    const userId = session.user.id;
-
     const token = await getGoogleIdToken();
 
     const searchString =
@@ -37,7 +35,7 @@ const getActivityStarts = async (
             ? `&northWestLat=${bounds.northwest[0]}&northWestLng=${bounds.northwest[1]}&southEastLat=${bounds.southeast[0]}&southEastLng=${bounds.southeast[1]}`
             : "";
 
-    const url = `${backendUrl}/activities/search?userId=${userId}${boundsString}${searchString}`;
+    const url = `${backendUrl}/activities/search${boundsString}${searchString}`;
 
     const apiRes = await fetch(url, {
         method: "GET",

@@ -15,7 +15,7 @@ const getFavoritePeaks = async (): Promise<Peak[]> => {
 
     const token = await getGoogleIdToken();
 
-    const response = await fetch(`${backendUrl}/peaks/summits/favorite`, {
+    const response = await fetch(`${backendUrl}/peaks/summits/favorites`, {
         method: "POST",
         headers: {
             "Content-Type": "application/json",
