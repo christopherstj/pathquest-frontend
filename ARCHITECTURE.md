@@ -13,7 +13,7 @@ PathQuest Frontend is a Next.js 14 application built with React, TypeScript, and
 - **Maps**: Mapbox GL JS
 - **Charts**: Visx
 - **Payment**: Stripe
-- **Fonts**: Raleway, Merriweather Sans
+- **Fonts**: Fraunces (display), IBM Plex Mono (body/data)
 
 ## Project Structure
 
@@ -21,18 +21,16 @@ PathQuest Frontend is a Next.js 14 application built with React, TypeScript, and
 Next.js 14 App Router structure with route groups and parallel routes.
 
 #### Root Layout (`layout.tsx`)
-- Provides theme provider (dark mode by default)
+- Provides theme provider (dark mode by default, retro topo palette)
 - NextAuth session provider
-- Sidebar provider (currently sidebar is commented out)
+- Persistent MapProvider with Mapbox background (map stays mounted while overlays change)
 - Analytics integration (Vercel Analytics)
-- Global fonts configuration
+- Global fonts configuration (Fraunces + IBM Plex Mono)
 
 #### Pages
 
 ##### `/` (Home Page)
-- Landing page with PathQuest logo
-- "Powered by Strava" branding
-- "Explore" button linking to `/m/peaks`
+- Landing page with hero map preview, primary CTAs (Explore map, Connect Strava), Strava branding, and featured sections (challenges, nearby peaks, how-it-works). Optimized for mobile with a short hero and quick links into `/m`.
 
 ##### `/login`
 - Login page with Strava OAuth
@@ -53,7 +51,7 @@ Next.js 14 App Router structure with route groups and parallel routes.
 - Primary peaks browsing interface
 - Uses parallel route pattern (`@content`)
 - Grid layout with sidebar (commented out) and main content area
-- Renders `PeakSearch` component
+- Renders `PeakSearch` component with bounds toggle, live map-synced results, zoom-aware empty handling, and loading states
 
 ##### `/m/peaks/[id]` (Peak Detail Page)
 - Individual peak detail page
@@ -92,6 +90,7 @@ Server actions for data fetching and mutations. Organized by domain. Backend cal
 - `getAllChallenges.ts` - Fetches all challenges with filters
 - `getChallengeDetails.ts` - Gets detailed challenge information
 - `getChallenges.ts` - Gets paginated challenges list
+- `searchChallenges.ts` - Searches challenges with optional bounds, search, favorites-only, and type filters
 - `getFavoriteChallenges.ts` - Gets user's favorite challenges
 - `getIncompleteChallenges.ts` - Gets incomplete challenges for user
 - `updateChallengeFavorite.ts` - Updates challenge favorite privacy
@@ -177,6 +176,7 @@ Utility functions for common operations.
 - `checkEmail.ts` - Email validation
 - `convertActivitiesToGeoJSON.ts` - Converts activities to GeoJSON format
 - `convertPeaksToGeoJSON.ts` - Converts peaks to GeoJSON format
+- `convertChallengesToGeoJSON.ts` - Converts challenges (with center coords) to GeoJSON
 - `dayjs.ts` - Day.js configuration/helpers
 - `getBackendUrl.ts` - Gets API backend URL from environment
 - `getBoundsFromURL.ts` - Extracts map bounds from URL params
@@ -198,6 +198,11 @@ Utility functions for common operations.
 - `useWindowResize.tsx` - Window resize hook
 
 ### Libraries (`src/lib/`)
+
+#### Client Fetchers (`lib/client/`)
+- `api.ts` - Client-safe fetch helper for local Next route proxies.
+- `searchPeaksClient.ts` - Client search for peaks (supports bounds, pagination, showSummitted flag) via `/api/search/peaks`.
+- `searchChallengesClient.ts` - Client search for challenges (supports bounds, favorites, type filters) via `/api/search/challenges`.
 
 #### Map (`lib/map/`)
 Mapbox integration helpers:
@@ -267,6 +272,11 @@ Next.js middleware for route protection:
 
 ## Data Flow
 
+### Omnibar Search Flow
+1. User types into the Omnibar (global navigation).
+2. Client fetchers call REST API for peaks/challenges (scoped by map bounds when available) and Mapbox geocoding for places.
+3. Results show with type badges; selecting an item flies the map and updates URL params (`peakId`/`challengeId`) to open the detail overlay.
+
 ### Peak Search Flow
 1. User navigates to `/m/peaks`
 2. `PeakSearch` component mounts
@@ -297,38 +307,38 @@ Next.js middleware for route protection:
 - **React Context**: Theme, auth session, map state, user state
 - **URL State**: Map bounds, zoom, selected peak (for shareability)
 
-### Server State
-- Data fetched via server actions
-- Next.js handles caching and revalidation
-- No client-side data fetching library (React Query, SWR, etc.)
+### Server/Client Data
+- Server actions for SSR/routes; REST endpoints accessed via client fetchers where interactivity is needed (e.g., Omnibar).
+- React Query used for client-side search caching (Omnibar).
+- Next.js handles caching and revalidation for server-side data.
 
 ## Styling
 
 ### TailwindCSS
-- Custom color scheme via CSS variables
-- Dark mode by default
-- Responsive design with mobile-first approach
-- Custom utilities for spacing, typography
+- Retro topographic palette (parchment background, forest/umber inks) defined in CSS variables.
+- Paper grain/contour background overlays baked into `globals.css`.
+- Responsive design with mobile-first approach.
+- Custom utilities for spacing, typography, and glass/grain accents.
 
 ### Component Styling
 - Shadcn/ui components with TailwindCSS
 - Radix UI primitives for accessibility
-- Custom styling via Tailwind classes
+- Custom styling via Tailwind classes with retro borders/notches on overlays
 
 ## Map Integration
 
 ### Mapbox GL JS
 - Interactive map for peak visualization
-- Custom markers for peaks
+- Custom markers/clusters styled to retro palette (forest fill, parchment stroke)
 - Popups with peak information
 - Activity route visualization
 - 3D terrain support
-- Satellite imagery toggle
+- Topo-friendly base style (`outdoors-v12`)
 
 ### Map State
-- Stored in Zustand store (map instance)
+- Stored in Zustand store (map instance) and kept mounted via root layout background
 - URL synchronization for shareability
-- Bounds tracking for data fetching
+- Bounds tracking for data fetching and Omnibar search scoping
 
 ## Unused/Development Code
 

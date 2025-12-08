@@ -15,7 +15,7 @@ const SatelliteButton = ({ value, onClick, disabled }: Props) => {
             disabled={disabled}
             pressed={value}
             onPressedChange={onClick}
-            className="bg-primary-dim z-10 p-2 rounded-lg shadow-lg data-[state=on]:bg-primary data-[state=on]:text-primary-foreground"
+            className="bg-card border border-border hover:bg-muted z-10 p-2 rounded-lg shadow-lg data-[state=on]:bg-primary data-[state=on]:text-primary-foreground data-[state=on]:border-primary"
         >
             <Satellite className="w-5 h-5" />
         </Toggle>

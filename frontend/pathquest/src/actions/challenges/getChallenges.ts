@@ -1,6 +1,7 @@
 "use server";
 
 import getGoogleIdToken from "@/auth/getGoogleIdToken";
+import { useAuth } from "@/auth/useAuth";
 import getBackendUrl from "@/helpers/getBackendUrl";
 import Challenge from "@/typeDefs/Challenge";
 
@@ -11,7 +12,8 @@ const getChallenges = async (
 ): Promise<Challenge[]> => {
     const backendUrl = getBackendUrl();
 
-    const token = await getGoogleIdToken();
+    const session = await useAuth();
+    const token = session ? await getGoogleIdToken() : null;
 
     const url = search
         ? `${backendUrl}/challenges?page=${page}&perPage=${perPage}&search=${search}`
@@ -20,7 +22,7 @@ const getChallenges = async (
     const response = await fetch(url, {
         cache: "no-cache",
         headers: {
-            Authorization: `Bearer ${token}`,
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
     });
 

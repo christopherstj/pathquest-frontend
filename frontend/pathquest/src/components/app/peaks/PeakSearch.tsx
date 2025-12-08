@@ -7,6 +7,9 @@ import PeaksList from "./PeaksList";
 import dynamic from "next/dynamic";
 import mapboxgl from "mapbox-gl";
 import getNewData from "@/helpers/getNewData";
+import BoundsToggle from "./BoundsToggle";
+import { Badge } from "@/components/ui/badge";
+import { cn } from "@/lib/utils";
 
 const SearchBox = dynamic(
     // @ts-expect-error - Dynamic import of SearchBox has type issues with ForwardRef
@@ -28,18 +31,43 @@ const PeakSearch = () => {
     );
     const [peaks, setPeaks] = React.useState<Peak[]>([]);
     const [mapboxSearch, setMapboxSearch] = React.useState("");
+    const [isLoading, setIsLoading] = React.useState(false);
+    const [status, setStatus] = React.useState<
+        "idle" | "loading" | "zoomedOut" | "empty" | "ready"
+    >("idle");
 
-    const searchCallback = useCallback(
-        () => getNewData(search, limitResultsToBbox, setPeaks, map),
-        [map, search, limitResultsToBbox, setPeaks]
-    );
+    const handleFetch = useCallback(async () => {
+        if (!map) return;
+        setIsLoading(true);
+        setStatus("loading");
+
+        const result = await getNewData(
+            search,
+            limitResultsToBbox,
+            setPeaks,
+            map
+        );
+
+        if (result.status === "zoomedOut") {
+            setStatus("zoomedOut");
+            setIsLoading(false);
+            return;
+        }
+
+        if (result.status === "ok" && result.count === 0) {
+            setStatus("empty");
+        } else if (result.status === "ok") {
+            setStatus("ready");
+        }
+        setIsLoading(false);
+    }, [map, limitResultsToBbox, search]);
 
     const onSearchChange = (value: string) => {
         if (timeout) clearTimeout(timeout);
         setSearch(value);
 
         const newTimeout = setTimeout(() => {
-            searchCallback();
+            handleFetch();
         }, 500);
 
         setTimeoutState(newTimeout);
@@ -48,20 +76,20 @@ const PeakSearch = () => {
     React.useEffect(() => {
         if (map) {
             if (firstLoad) {
-                searchCallback();
+                handleFetch();
                 setFirstLoad(false);
             }
-            map?.on("moveend", searchCallback);
+            map?.on("moveend", handleFetch);
         }
         return () => {
             if (map) {
-                map?.off("moveend", searchCallback);
+                map?.off("moveend", handleFetch);
             }
         };
-    }, [map, searchCallback]);
+    }, [map, handleFetch, firstLoad]);
 
     React.useEffect(() => {
-        if (!firstLoad) searchCallback();
+        if (!firstLoad) handleFetch();
     }, [limitResultsToBbox]);
 
     return (
@@ -79,12 +107,42 @@ const PeakSearch = () => {
                 )}
             </div>
             <div className="w-full flex flex-col gap-2 pointer-events-auto">
-                <PeaksSearchInput value={search} onChange={onSearchChange} />
-                {/* <BoundsToggle
-                    value={limitResultsToBbox}
-                    onChange={setLimitResultsToBbox}
-                /> */}
-                <PeaksList peaks={peaks} />
+                <div className="flex flex-col gap-2 rounded-lg bg-primary/80 p-2 shadow-lg backdrop-blur">
+                    <PeaksSearchInput value={search} onChange={onSearchChange} />
+                    <div className="flex flex-wrap gap-2 items-center">
+                        <BoundsToggle
+                            value={limitResultsToBbox}
+                            onChange={setLimitResultsToBbox}
+                        />
+                        <Badge variant="outline" className="text-xs">
+                            Live results update as you move the map
+                        </Badge>
+                    </div>
+                    {status === "zoomedOut" && (
+                        <p className="text-xs text-primary-foreground-dim">
+                            Zoom in closer to load peaks in this area.
+                        </p>
+                    )}
+                </div>
+                {isLoading && (
+                    <div className="rounded-lg bg-primary-dim p-3 text-primary-foreground text-sm shadow-md">
+                        Loading peaks…
+                    </div>
+                )}
+                {!isLoading && status === "empty" && (
+                    <div className="rounded-lg bg-primary-dim p-3 text-primary-foreground text-sm shadow-md">
+                        No peaks found here. Try widening the map bounds or
+                        clearing filters.
+                    </div>
+                )}
+                <div
+                    className={cn(
+                        "w-full flex-1 min-h-0",
+                        status === "zoomedOut" ? "opacity-60" : "opacity-100"
+                    )}
+                >
+                    <PeaksList peaks={peaks} />
+                </div>
             </div>
         </>
     );

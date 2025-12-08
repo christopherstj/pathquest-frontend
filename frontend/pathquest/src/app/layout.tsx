@@ -1,35 +1,39 @@
 import ThemeProvider from "@/providers/ThemeProvider";
 import { Analytics } from "@vercel/analytics/react";
 import { Metadata } from "next";
-import { Merriweather_Sans, Raleway } from "next/font/google";
+import { Fraunces, IBM_Plex_Mono } from "next/font/google";
 import React from "react";
-import { SessionProvider } from "next-auth/react";
-import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import NextAuthProvider from "@/providers/NextAuthProvider";
-import { AppSidebar } from "@/components/app/layout/AppSidebar";
+import QueryProvider from "@/providers/QueryProvider";
+import MapProvider from "@/providers/MapProvider";
 import "./globals.css";
 
-const raleway = Raleway({
-    variable: "--font-raleway",
+const fraunces = Fraunces({
+    variable: "--font-display",
     subsets: ["latin"],
     display: "swap",
+    weight: ["400", "500", "600", "700"],
 });
 
-const merriweatherSans = Merriweather_Sans({
-    variable: "--font-merriweather-sans",
+const plexMono = IBM_Plex_Mono({
+    variable: "--font-mono",
     subsets: ["latin"],
     display: "swap",
+    weight: ["400", "500", "600", "700"],
 });
 
 export const metadata: Metadata = {
-    title: "PathQuest | Home",
-    description:
-        "PathQuest is a modern adventure catalog and challenge tracker.",
+    title: "PathQuest",
+    description: "Digital topography for peak baggers and challenge seekers.",
 };
 
 type Props = {
     children: React.ReactNode;
 };
+
+import MapBackground from "@/components/map/MapBackground";
+import GlobalNavigation from "@/components/app/layout/GlobalNavigation";
+import OverlayManager from "@/components/overlays/OverlayManager";
 
 const layout = ({ children }: Props) => {
     return (
@@ -40,24 +44,30 @@ const layout = ({ children }: Props) => {
                     content="width=device-width, initial-scale=1.0"
                 />
                 <link rel="icon" href="/favicon.ico" />
-                <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
             </head>
             <body
-                className={`${raleway.variable} ${merriweatherSans.variable}`}
+                className={`${fraunces.variable} ${plexMono.variable} antialiased bg-background text-foreground overflow-hidden`}
             >
                 <NextAuthProvider>
-                    <ThemeProvider
-                        attribute="class"
-                        defaultTheme="dark"
-                        enableSystem={false}
-                    >
-                        <SidebarProvider>
-                            <main className="w-full min-h-screen">
-                                {/* <AppSidebar /> */}
-                                {children}
-                            </main>
-                        </SidebarProvider>
-                    </ThemeProvider>
+                    <QueryProvider>
+                        <ThemeProvider
+                            attribute="class"
+                            defaultTheme="dark"
+                            enableSystem={false}
+                        >
+                            <MapProvider>
+                                <main className="relative w-full h-screen overflow-hidden">
+                                    <MapBackground />
+                                    <GlobalNavigation />
+                                    <OverlayManager />
+                                    <div className="relative z-10 w-full h-full pointer-events-none">
+                                        {/* Children (Overlays) must have pointer-events-auto */}
+                                        {children}
+                                    </div>
+                                </main>
+                            </MapProvider>
+                        </ThemeProvider>
+                    </QueryProvider>
                 </NextAuthProvider>
                 <Analytics />
             </body>
