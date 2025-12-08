@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useRef, useCallback, useState } from "react";
+import React, { useEffect, useRef, useCallback } from "react";
 import mapboxgl from "mapbox-gl";
 import "mapbox-gl/dist/mapbox-gl.css";
 import { useMapStore } from "@/providers/MapProvider";
@@ -8,6 +8,7 @@ import getNewData from "@/helpers/getNewData";
 import { useRouter } from "next/navigation";
 import { searchChallengesClient } from "@/lib/client/searchChallengesClient";
 import SatelliteButton from "@/components/app/map/SatelliteButton";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 const MapBackground = () => {
     const mapContainer = useRef<HTMLDivElement>(null);
@@ -15,8 +16,11 @@ const MapBackground = () => {
     const setVisiblePeaks = useMapStore((state) => state.setVisiblePeaks);
     const setVisibleChallenges = useMapStore((state) => state.setVisibleChallenges);
     const map = useMapStore((state) => state.map);
+    const isSatellite = useMapStore((state) => state.isSatellite);
+    const setIsSatellite = useMapStore((state) => state.setIsSatellite);
     const router = useRouter();
-    const [isSatellite, setIsSatellite] = useState(false);
+    const isMobile = useIsMobile(1024);
+    const isInitialStyleSet = useRef(false);
 
     const fetchVisibleChallenges = useCallback(async (mapInstance: mapboxgl.Map) => {
         const bounds = mapInstance.getBounds();
@@ -39,15 +43,23 @@ const MapBackground = () => {
         }
     }, [setVisibleChallenges]);
 
+    useEffect(() => {
+        // Skip the initial render - only apply style changes after user interaction
+        if (!map) return;
+        if (!isInitialStyleSet.current) {
+            isInitialStyleSet.current = true;
+            return;
+        }
+        
+        map.setStyle(
+            isSatellite
+                ? "mapbox://styles/mapbox/satellite-streets-v12"
+                : "mapbox://styles/mapbox/outdoors-v12"
+        );
+    }, [isSatellite, map]);
+
     const handleSatelliteToggle = (enabled: boolean) => {
         setIsSatellite(enabled);
-        if (map) {
-             map.setStyle(
-                enabled
-                    ? "mapbox://styles/mapbox/satellite-streets-v12"
-                    : "mapbox://styles/mapbox/outdoors-v12"
-            );
-        }
     };
 
     const fetchPeaks = useCallback(async () => {
@@ -254,12 +266,14 @@ const MapBackground = () => {
                 ref={mapContainer} 
                 className="w-full h-full"
             />
-            <div className="absolute bottom-6 right-6 z-50 pointer-events-auto">
-                <SatelliteButton 
-                    value={isSatellite}
-                    onClick={handleSatelliteToggle}
-                />
-            </div>
+            {!isMobile && (
+                <div className="absolute bottom-6 right-6 z-50 pointer-events-auto">
+                    <SatelliteButton 
+                        value={isSatellite}
+                        onClick={handleSatelliteToggle}
+                    />
+                </div>
+            )}
         </div>
     );
 };

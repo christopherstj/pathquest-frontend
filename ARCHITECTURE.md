@@ -132,8 +132,14 @@ Server actions for data fetching and mutations. Organized by domain. Backend cal
 
 ##### Layout (`components/app/layout/`)
 - `AppSidebar.tsx` - Main sidebar navigation (currently commented out in layout)
+- `GlobalNavigation.tsx` - Top navigation bar with search and user menu
 - `SidebarLink.tsx` - Sidebar link component
 - `UserButton.tsx` - User menu button
+
+##### Overlays (`components/overlays/`)
+- `DiscoveryDrawer.tsx` - Main side drawer for discovering peaks and challenges. Adapts to a bottom sheet on mobile devices.
+- `OverlayManager.tsx` - Manages the state of active overlays
+
 
 ##### Login (`components/app/login/`)
 - `EmailForm.tsx` - Email collection form
@@ -324,6 +330,14 @@ Next.js middleware for route protection:
 - Shadcn/ui components with TailwindCSS
 - Radix UI primitives for accessibility
 - Custom styling via Tailwind classes with retro borders/notches on overlays
+
+### Responsive Layout
+- **Mobile First**: Application is designed to be fully functional on mobile devices.
+- **Adaptive Components**: 
+  - `DiscoveryDrawer`: Transforms from a floating side panel on desktop to a bottom sheet on mobile (< 768px).
+  - `GlobalNavigation`: Adapts padding and visibility of elements (logo hidden on mobile) to preserve space.
+- **Hooks**: Uses `useIsMobile` hook (based on `window.matchMedia`) for programmatic layout adaptations.
+
 
 ## Map Integration
 

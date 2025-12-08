@@ -8,12 +8,17 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { useMapStore } from "@/providers/MapProvider";
 import { useRouter } from "next/navigation";
+import { useIsMobile } from "@/hooks/use-mobile";
+import SatelliteButton from "../app/map/SatelliteButton";
 
 const DiscoveryDrawer = () => {
     const visiblePeaks = useMapStore((state) => state.visiblePeaks);
     const visibleChallenges = useMapStore((state) => state.visibleChallenges);
     const map = useMapStore((state) => state.map);
+    const isSatellite = useMapStore((state) => state.isSatellite);
+    const setIsSatellite = useMapStore((state) => state.setIsSatellite);
     const router = useRouter();
+    const isMobile = useIsMobile(1024);
 
     const handlePeakClick = (id: string, coords?: [number, number]) => {
         router.push(`?peakId=${id}`);
@@ -31,18 +36,43 @@ const DiscoveryDrawer = () => {
         router.push(`?challengeId=${id}`);
     };
 
+    const handleSatelliteToggle = (enabled: boolean) => {
+        setIsSatellite(enabled);
+    };
+
     return (
         <motion.div
-            initial={{ x: -100, opacity: 0 }}
-            animate={{ x: 0, opacity: 1 }}
-            className="fixed top-20 left-3 md:left-5 bottom-6 w-full max-w-[320px] pointer-events-auto flex flex-col gap-3 z-40"
+            initial={isMobile ? { y: "100%", x: 0, opacity: 0 } : { x: -100, y: 0, opacity: 0 }}
+            animate={isMobile ? { y: 0, x: 0, opacity: 1 } : { x: 0, y: 0, opacity: 1 }}
+            transition={{ type: "spring", damping: 25, stiffness: 200 }}
+            className={cn(
+                "fixed pointer-events-auto flex flex-col gap-3 z-40",
+                // Mobile Styles
+                "bottom-0 left-0 right-0 w-full max-h-[45vh]",
+                // Desktop Styles
+                "lg:top-20 lg:left-5 lg:bottom-6 lg:right-auto lg:w-full lg:max-w-[320px] lg:max-h-none lg:h-auto"
+            )}
         >
             {/* Main Card */}
-            <div className="flex-1 rounded-2xl bg-background/85 backdrop-blur-xl border border-border shadow-xl overflow-hidden flex flex-col">
-                <div className="p-5 border-b border-border/60 bg-gradient-to-b from-accent/10 to-transparent">
+            <div className={cn(
+                "flex-1 bg-background/85 backdrop-blur-xl border border-border shadow-xl overflow-hidden flex flex-col",
+                "rounded-t-2xl border-b-0 lg:rounded-2xl lg:border-b"
+            )}>
+                {/* Mobile Handle */}
+                <div className="lg:hidden w-full flex items-center justify-center pt-3 pb-1 shrink-0">
+                    <div className="w-12 h-1.5 rounded-full bg-muted-foreground/20" />
+                </div>
+
+                <div className="p-5 border-b border-border/60 bg-gradient-to-b from-accent/10 to-transparent flex items-center justify-between">
                     <h1 className="text-2xl font-bold font-display bg-clip-text text-transparent bg-gradient-to-r from-primary via-secondary to-accent">
                         PathQuest
                     </h1>
+                    {isMobile && (
+                        <SatelliteButton 
+                            value={isSatellite}
+                            onClick={handleSatelliteToggle}
+                        />
+                    )}
                 </div>
 
                 <div className="flex-1 overflow-y-auto p-5 space-y-6 custom-scrollbar">
@@ -122,4 +152,3 @@ const DiscoveryDrawer = () => {
 };
 
 export default DiscoveryDrawer;
-
