@@ -5,10 +5,19 @@ import mapboxgl from "mapbox-gl";
 import "mapbox-gl/dist/mapbox-gl.css";
 import { useMapStore } from "@/providers/MapProvider";
 import getNewData from "@/helpers/getNewData";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { searchChallengesClient } from "@/lib/client/searchChallengesClient";
 import SatelliteButton from "@/components/app/map/SatelliteButton";
 import { useIsMobile } from "@/hooks/use-mobile";
+import getMapStateFromURL from "@/helpers/getMapStateFromURL";
+import updateMapURL from "@/helpers/updateMapURL";
+import { pushWithMapState } from "@/helpers/navigateWithMapState";
+
+// Default map center (Boulder, CO)
+const DEFAULT_CENTER: [number, number] = [-105.2705, 40.015];
+const DEFAULT_ZOOM = 11;
+const DEFAULT_PITCH = 45;
+const DEFAULT_BEARING = 0;
 
 const MapBackground = () => {
     const mapContainer = useRef<HTMLDivElement>(null);
@@ -20,8 +29,10 @@ const MapBackground = () => {
     const isSatellite = useMapStore((state) => state.isSatellite);
     const setIsSatellite = useMapStore((state) => state.setIsSatellite);
     const router = useRouter();
+    const searchParams = useSearchParams();
     const isMobile = useIsMobile(1024);
     const isInitialStyleSet = useRef(false);
+    const isUserInteraction = useRef(true);
     
     // Use refs for callbacks to avoid them being dependencies
     const routerRef = useRef(router);
@@ -75,6 +86,7 @@ const MapBackground = () => {
 
     const handleSatelliteToggle = (enabled: boolean) => {
         setIsSatellite(enabled);
+        updateMapURL({ isSatellite: enabled }, router, true);
     };
 
     const fetchPeaks = useCallback(async () => {
@@ -93,17 +105,32 @@ const MapBackground = () => {
         if (mapInitialized.current || !mapContainer.current) return;
         mapInitialized.current = true;
 
+        // Read initial map state from URL
+        const mapState = getMapStateFromURL(searchParams);
+        const initialCenter = mapState.center ?? DEFAULT_CENTER;
+        const initialZoom = mapState.zoom ?? DEFAULT_ZOOM;
+        const initialPitch = mapState.pitch || DEFAULT_PITCH;
+        const initialBearing = mapState.bearing || DEFAULT_BEARING;
+        const initialSatellite = mapState.isSatellite;
+
+        // Set satellite state from URL
+        if (initialSatellite) {
+            setIsSatellite(true);
+        }
+
         mapboxgl.accessToken = process.env.NEXT_PUBLIC_MAPBOX_TOKEN ?? "";
         // Ensure container is empty before Mapbox initializes
         mapContainer.current.replaceChildren();
 
         const newMap = new mapboxgl.Map({
             container: mapContainer.current,
-            style: "mapbox://styles/mapbox/outdoors-v12", // topo-friendly base
-            center: [-105.2705, 40.015], // Boulder, CO default
-            zoom: 11,
-            pitch: 45, // 3D feel
-            bearing: 0,
+            style: initialSatellite 
+                ? "mapbox://styles/mapbox/satellite-streets-v12"
+                : "mapbox://styles/mapbox/outdoors-v12",
+            center: initialCenter,
+            zoom: initialZoom,
+            pitch: initialPitch,
+            bearing: initialBearing,
             antialias: true, // For 3D terrain
             projection: { name: 'globe' } as any
         });
@@ -249,10 +276,11 @@ const MapBackground = () => {
                 const id = feature.properties?.id;
                 if (id) {
                      // Navigate to peak detail page (URL-driven overlay via UrlOverlayManager)
-                     routerRef.current.push(`/peaks/${id}`);
+                     pushWithMapState(routerRef.current, `/peaks/${id}`);
                 }
                 
-                // Fly to
+                // Fly to (mark as programmatic so URL updates after completion, not during)
+                isUserInteraction.current = false;
                 const coords = (feature.geometry as any).coordinates;
                 newMap.flyTo({
                     center: coords,
@@ -272,6 +300,8 @@ const MapBackground = () => {
             source.getClusterExpansionZoom(clusterId, (err, zoom) => {
                 if (err || zoom === null || zoom === undefined) return;
                 
+                // Mark as programmatic navigation
+                isUserInteraction.current = false;
                 const coordinates = (features[0].geometry as any).coordinates;
                 newMap.easeTo({
                     center: coordinates,
@@ -294,7 +324,7 @@ const MapBackground = () => {
             if (feature) {
                 const id = feature.properties?.id;
                 if (id) {
-                    routerRef.current.push(`/peaks/${id}`);
+                    pushWithMapState(routerRef.current, `/peaks/${id}`);
                 }
             }
         });
@@ -305,10 +335,25 @@ const MapBackground = () => {
             newMap.getCanvas().style.cursor = "";
         });
 
-        // Move end listener to refetch
+        // Move end listener to refetch and update URL
         newMap.on("moveend", () => {
             getNewData("", true, setVisiblePeaksRef.current, newMap);
             fetchVisibleChallenges(newMap);
+
+            // Update URL with current map state (soft navigation - doesn't clog history)
+            if (isUserInteraction.current) {
+                const center = newMap.getCenter();
+                updateMapURL(
+                    {
+                        center: { lng: center.lng, lat: center.lat },
+                        zoom: newMap.getZoom(),
+                        pitch: newMap.getPitch(),
+                        bearing: newMap.getBearing(),
+                    },
+                    routerRef.current
+                );
+            }
+            isUserInteraction.current = true;
         });
 
         setMapRef.current(newMap);

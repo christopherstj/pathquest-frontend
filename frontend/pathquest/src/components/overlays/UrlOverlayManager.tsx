@@ -5,6 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { AnimatePresence } from "framer-motion";
 import PeakDetailPanel from "./PeakDetailPanel";
 import ChallengeDetailPanel from "./ChallengeDetailPanel";
+import { pushWithMapState } from "@/helpers/navigateWithMapState";
 
 /**
  * URL-driven overlay manager that renders the appropriate detail panel
@@ -38,17 +39,17 @@ const UrlOverlayManagerContent = () => {
     // Close handler - navigate to home or use router.back() intelligently
     const handleClose = useCallback(() => {
         // If we have browser history and came from within the app, go back
-        // Otherwise, navigate to home
+        // Otherwise, navigate to home (preserving map state)
         if (window.history.length > 1 && previousPathRef.current !== pathname) {
             router.back();
         } else {
-            router.push("/");
+            pushWithMapState(router, "/");
         }
     }, [router, pathname]);
 
     // Navigate to home (useful for explicit "go home" scenarios)
     const handleNavigateHome = useCallback(() => {
-        router.push("/");
+        pushWithMapState(router, "/");
     }, [router]);
 
     return (

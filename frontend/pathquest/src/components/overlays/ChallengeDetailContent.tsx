@@ -66,6 +66,18 @@ const ChallengeDetailContent = ({ challenge, peaks, activityCoords }: Props) => 
         return () => {
             setPeaksSearchDisabled(false);
             setDisablePeaksSearch(false);
+            
+            // Reset map padding and trigger peaks refresh when panel closes
+            if (map) {
+                // Reset any padding that was applied by fitBounds
+                // This ensures getBounds() returns the full visible area
+                map.setPadding({ top: 0, bottom: 0, left: 0, right: 0 });
+                
+                // Small delay to ensure the disabled flag and padding are updated before the fetch runs
+                setTimeout(() => {
+                    map.fire("moveend");
+                }, 50);
+            }
         };
     }, [setDisablePeaksSearch, map]);
 

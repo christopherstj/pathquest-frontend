@@ -5,12 +5,14 @@ import "mapbox-gl/dist/mapbox-gl.css";
 import { useMapStore } from "@/providers/MapProvider";
 import addMapConfiguration from "@/lib/map/addMapConfiguration";
 import { useRouter, useSearchParams } from "next/navigation";
-import getBoundsFromURL from "@/helpers/getBoundsFromURL";
 import getMapStateFromURL from "@/helpers/getMapStateFromURL";
 import updateMapURL from "@/helpers/updateMapURL";
 import SatelliteButton from "./SatelliteButton";
 import ThreeDButton from "./ThreeDButton";
-import { useSession } from "next-auth/react";
+
+// Default map center (Santa Barbara, CA area)
+const DEFAULT_CENTER: [number, number] = [-119.698189, 34.42083];
+const DEFAULT_ZOOM = 8;
 
 const Map = () => {
     const setMap = useMapStore((state) => state.setMap);
@@ -31,7 +33,7 @@ const Map = () => {
         setIsSatellite(enabled);
         isSatelliteRef.current = enabled;
 
-        updateMapURL({ isSatellite: enabled }, router);
+        updateMapURL({ isSatellite: enabled }, router, true);
 
         if (mapRef.current) {
             // Save current source data before style change
@@ -66,7 +68,7 @@ const Map = () => {
 
         const pitch = enabled ? 60 : 0;
         const bearing = enabled ? 20 : 0;
-        updateMapURL({ is3D: enabled, pitch, bearing }, router);
+        updateMapURL({ is3D: enabled, pitch, bearing }, router, true);
 
         if (mapRef.current) {
             if (enabled) {

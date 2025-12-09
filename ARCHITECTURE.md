@@ -238,10 +238,11 @@ Utility functions for common operations.
 - `convertChallengesToGeoJSON.ts` - Converts challenges (with center coords) to GeoJSON
 - `dayjs.ts` - Day.js configuration/helpers
 - `getBackendUrl.ts` - Gets API backend URL from environment
-- `getBoundsFromURL.ts` - Extracts map bounds from URL params
+- `getBoundsFromURL.ts` - Extracts map bounds from URL params (legacy, migrating to center/zoom)
 - `getDistanceString.ts` - Formats distance strings
 - `getElevationString.ts` - Formats elevation strings
-- `getMapStateFromURL.ts` - Extracts map state from URL
+- `getMapStateFromURL.ts` - Extracts map state from URL (center lat/lng, zoom, pitch, bearing, is3D, isSatellite)
+- `navigateWithMapState.ts` - Helpers for navigating while preserving map state URL params (`pushWithMapState`, `replaceWithMapState`, `buildUrlWithMapState`)
 - `getNewData.ts` - Data fetching helper
 - `getRoutes.tsx` - Route configuration helper
 - `getStripe.ts` - Stripe client initialization
@@ -251,7 +252,7 @@ Utility functions for common operations.
 - `numSecsToHhmmss.ts` - Time formatting
 - `oklchToHex.ts` - Color conversion
 - `updateMapStateInURL.ts` - Updates URL with map state
-- `updateMapURL.ts` - Updates map-related URL params
+- `updateMapURL.ts` - Updates map-related URL params using router.replace (soft navigation) with debouncing
 - `updateURLWithBounds.ts` - Updates URL with map bounds
 - `useIsMobile.ts` - Mobile detection hook
 - `useWindowResize.tsx` - Window resize hook
@@ -369,7 +370,7 @@ Next.js middleware for route protection:
 ### Client State
 - **Zustand Stores**: Map instance, user data
 - **React Context**: Theme, auth session, map state, user state
-- **URL State**: Map bounds, zoom, selected peak (for shareability)
+- **URL State**: Map center (`lat`, `lng`), zoom (`z`), pitch, bearing, satellite mode, 3D mode, selected peak/challenge (for shareability)
 
 ### Server/Client Data
 - Server actions for SSR/routes; REST endpoints accessed via client fetchers where interactivity is needed (e.g., Omnibar).
@@ -413,8 +414,10 @@ Next.js middleware for route protection:
 
 ### Map State
 - Stored in Zustand store (map instance) and kept mounted via root layout background
-- URL synchronization for shareability
-- Bounds tracking for data fetching and Omnibar search scoping
+- URL synchronization for shareability using soft navigation (router.replace) to avoid cluttering browser history
+- URL params: `lat`, `lng`, `z` (zoom), `pitch`, `bearing`, `satellite`, `3d`
+- Debounced URL updates (300ms) during map movement to prevent excessive updates
+- Programmatic map movements (flyTo, easeTo) skip intermediate URL updates
 
 ## Unused/Development Code
 

@@ -8,6 +8,7 @@ import { useMapStore } from "@/providers/MapProvider";
 import { useRouter } from "next/navigation";
 import { useIsMobile } from "@/hooks/use-mobile";
 import SatelliteButton from "../app/map/SatelliteButton";
+import { pushWithMapState } from "@/helpers/navigateWithMapState";
 
 type DrawerHeight = "collapsed" | "halfway" | "expanded";
 
@@ -54,7 +55,7 @@ const DiscoveryDrawer = () => {
     }, [drawerHeight, heights, isMobile, controls]);
 
     const handlePeakClick = (id: string, coords?: [number, number]) => {
-        router.push(`/peaks/${id}`);
+        pushWithMapState(router, `/peaks/${id}`);
         if (map && coords) {
             map.flyTo({
                 center: coords,
@@ -66,7 +67,7 @@ const DiscoveryDrawer = () => {
     };
 
     const handleChallengeClick = (id: string) => {
-        router.push(`/challenges/${id}`);
+        pushWithMapState(router, `/challenges/${id}`);
     };
 
     const handleSatelliteToggle = (enabled: boolean) => {

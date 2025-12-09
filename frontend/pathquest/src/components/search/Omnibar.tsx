@@ -11,6 +11,7 @@ import { useRouter } from "next/navigation";
 import { searchPeaksClient } from "@/lib/client/searchPeaksClient";
 import { searchChallengesClient } from "@/lib/client/searchChallengesClient";
 import { expandSearchQuery, extractStateFromQuery } from "@/helpers/stateAbbreviations";
+import { pushWithMapState } from "@/helpers/navigateWithMapState";
 
 interface SearchResult {
     id: string;
@@ -269,10 +270,11 @@ const Omnibar = () => {
         }
         
         // Use true routes for peaks and challenges (enables SEO + intercepting routes)
+        // pushWithMapState preserves map coordinates in the URL
         if (result.type === 'peak' && result.data?.id) {
-            router.push(`/peaks/${result.data.id}`);
+            pushWithMapState(router, `/peaks/${result.data.id}`);
         } else if (result.type === 'challenge' && result.data?.id) {
-            router.push(`/challenges/${result.data.id}`);
+            pushWithMapState(router, `/challenges/${result.data.id}`);
         }
     };
 
