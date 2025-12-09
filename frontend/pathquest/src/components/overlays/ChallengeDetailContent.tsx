@@ -1,9 +1,10 @@
 "use client";
 
-import React, { useEffect, useMemo } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
-import { X, Trophy, Map as MapIcon, PlayCircle, Mountain, ChevronRight } from "lucide-react";
+import { X, Trophy, Map as MapIcon, Heart, Mountain, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useQueryClient } from "@tanstack/react-query";
 import Challenge from "@/typeDefs/Challenge";
 import Peak from "@/typeDefs/Peak";
 import Activity from "@/typeDefs/Activity";
@@ -14,6 +15,9 @@ import mapboxgl from "mapbox-gl";
 import { setPeaksSearchDisabled } from "@/helpers/peaksSearchState";
 import convertPeaksToGeoJSON from "@/helpers/convertPeaksToGeoJSON";
 import metersToFt from "@/helpers/metersToFt";
+import addChallengeFavorite from "@/actions/challenges/addChallengeFavorite";
+import deleteChallengeFavorite from "@/actions/challenges/deleteChallengeFavorite";
+import useRequireAuth from "@/hooks/useRequireAuth";
 
 interface Props {
     challenge: Challenge;
@@ -28,6 +32,14 @@ const ChallengeDetailContent = ({ challenge, peaks, activityCoords }: Props) => 
     const map = useMapStore((state) => state.map);
     const setDisablePeaksSearch = useMapStore((state) => state.setDisablePeaksSearch);
     const router = useRouter();
+    const requireAuth = useRequireAuth();
+    const queryClient = useQueryClient();
+    const [isFavorited, setIsFavorited] = useState(challenge.is_favorited ?? false);
+
+    // Sync local state with prop changes
+    useEffect(() => {
+        setIsFavorited(challenge.is_favorited ?? false);
+    }, [challenge.is_favorited]);
 
     // Calculate bounds of all peaks to fit them on the map
     const bounds = useMemo(() => {
@@ -153,6 +165,34 @@ const ChallengeDetailContent = ({ challenge, peaks, activityCoords }: Props) => 
         }
     };
 
+    const handleToggleFavorite = () => {
+        requireAuth(async () => {
+            // Optimistically update UI
+            setIsFavorited(!isFavorited);
+            
+            if (isFavorited) {
+                const result = await deleteChallengeFavorite(challenge.id);
+                if (!result.success) {
+                    // Revert on error
+                    setIsFavorited(true);
+                }
+            } else {
+                const result = await addChallengeFavorite(challenge.id);
+                if (!result.success) {
+                    // Revert on error
+                    setIsFavorited(false);
+                }
+            }
+            // Invalidate queries to refresh data elsewhere
+            queryClient.invalidateQueries({
+                queryKey: ["challengeDetails", Number(challenge.id)],
+            });
+            queryClient.invalidateQueries({
+                queryKey: ["favoriteChallenges"],
+            });
+        });
+    };
+
     // Count summitted peaks
     const summittedPeaks = peaks?.filter((p) => p.summits && p.summits > 0).length || 0;
     const totalPeaks = peaks?.length || challenge.num_peaks || 0;
@@ -236,9 +276,23 @@ const ChallengeDetailContent = ({ challenge, peaks, activityCoords }: Props) => 
 
                     {/* Actions */}
                     <div className="flex flex-col gap-3">
-                        <Button className="w-full bg-secondary text-secondary-foreground hover:bg-secondary/90 gap-2">
-                            <PlayCircle className="w-4 h-4" />
-                            Start Challenge
+                        <Button
+                            onClick={handleToggleFavorite}
+                            className={`w-full gap-2 ${
+                                isFavorited
+                                    ? "bg-secondary/20 text-secondary hover:bg-secondary/30 border border-secondary/30"
+                                    : "bg-secondary text-secondary-foreground hover:bg-secondary/90"
+                            }`}
+                            variant={isFavorited ? "outline" : "default"}
+                        >
+                            <Heart
+                                className={`w-4 h-4 ${
+                                    isFavorited ? "fill-current" : ""
+                                }`}
+                            />
+                            {isFavorited
+                                ? "Challenge Accepted"
+                                : "Accept Challenge"}
                         </Button>
                         <Button
                             variant="outline"

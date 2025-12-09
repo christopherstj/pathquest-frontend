@@ -7,9 +7,7 @@ import StravaProvider from "next-auth/providers/strava";
 const frontendUrl = process.env.NEXTAUTH_URL ?? "";
 
 export const authOptions: AuthOptions = {
-    pages: {
-        signIn: "/login",
-    },
+    // Auth is handled via modal, no dedicated login page
     session: {
         strategy: "jwt",
     },

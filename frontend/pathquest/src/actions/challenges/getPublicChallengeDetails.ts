@@ -1,7 +1,7 @@
 "use server";
-import getGoogleIdToken from "@/auth/getGoogleIdToken";
+
 import getBackendUrl from "@/helpers/getBackendUrl";
-import { useAuth } from "@/auth/useAuth";
+import getAuthHeaders from "@/helpers/getAuthHeaders";
 import Activity from "@/typeDefs/Activity";
 import Challenge from "@/typeDefs/Challenge";
 import Peak from "@/typeDefs/Peak";
@@ -21,14 +21,13 @@ const getPublicChallengeDetails = async (
         }[];
     }>
 > => {
-    const session = await useAuth();
-    const token = session ? await getGoogleIdToken() : null;
+    const { headers } = await getAuthHeaders();
 
     const apiRes = await fetch(`${backendUrl}/challenges/${challengeId}/details`, {
         method: "GET",
         headers: {
             "Content-Type": "application/json",
-            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+            ...headers,
         },
     });
 
@@ -49,4 +48,3 @@ const getPublicChallengeDetails = async (
 };
 
 export default getPublicChallengeDetails;
-

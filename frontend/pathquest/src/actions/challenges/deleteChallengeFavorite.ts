@@ -1,12 +1,12 @@
 "use server";
-import { useAuth } from "@/auth/useAuth";
-import getGoogleIdToken from "@/auth/getGoogleIdToken";
+
 import getBackendUrl from "@/helpers/getBackendUrl";
+import getAuthHeaders from "@/helpers/getAuthHeaders";
 
 const backendUrl = getBackendUrl();
 
 const deleteChallengeFavorite = async (challengeId: string) => {
-    const session = await useAuth();
+    const { headers, session } = await getAuthHeaders();
 
     if (!session) {
         return {
@@ -15,15 +15,11 @@ const deleteChallengeFavorite = async (challengeId: string) => {
         };
     }
 
-    const token = await getGoogleIdToken();
-
     const url = `${backendUrl}/challenges/favorite/${challengeId}`;
 
     const res = await fetch(url, {
         method: "DELETE",
-        headers: {
-            Authorization: `Bearer ${token}`,
-        },
+        headers,
     });
 
     if (!res.ok) {

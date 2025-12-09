@@ -58,34 +58,10 @@ src/app/
 #### Pages
 
 ##### `/` (Home Page)
-- Landing page with hero map preview, primary CTAs (Explore map, Connect Strava), Strava branding, and featured sections (challenges, nearby peaks, how-it-works). Optimized for mobile with a short hero and quick links into `/m`.
-
-##### `/login`
-- Login page with Strava OAuth
-- Uses `LoginCard` component
-- Supports redirect URL parameter
-
-##### `/signup`
-- Signup page with Strava OAuth
-- Uses `SignupCard` component
-- Supports redirect URL parameter
-
-##### `/signup/email-form`
-- Email collection form for users without email
-- Required step before accessing main app
-- Middleware redirects users here if they lack email
-
-##### `/m/peaks` (Main App - Peaks Search)
-- Primary peaks browsing interface
-- Uses parallel route pattern (`@content`)
-- Grid layout with sidebar (commented out) and main content area
-- Renders `PeakSearch` component with bounds toggle, live map-synced results, zoom-aware empty handling, and loading states
-
-##### `/m/peaks/[id]` (Peak Detail Page - Legacy)
-- Individual peak detail page (legacy route, may be deprecated)
-- Shows peak information, activities, challenges, public summits
-- Uses `PeakDetailMapInteraction` and `PeakTitle` components
-- Fetches data via `getPublicPeakDetails` server action
+- Landing page with full map experience
+- Unauthenticated users can browse peaks and challenges freely
+- Login/signup handled via modal overlay (AuthModal)
+- Authentication triggered when user attempts personal actions (favorites, progress tracking)
 
 ##### `/peaks/[id]` (Peak Detail Page - Static/SEO)
 - Static ISR page for SEO indexing
@@ -101,9 +77,10 @@ src/app/
 - Uses `ChallengeDetailContent` component for overlay display
 - Supports intercepting routes for in-app navigation
 
-##### `/m/layout.tsx`
-- Layout for main app section (`/m/*`)
-- Currently minimal (may be used for sidebar in future)
+##### Legacy Routes (Removed)
+- `/login`, `/signup`, `/signup/email-form`, `/m/*` routes have been removed
+- Auth is now handled via the `AuthModal` component (modal overlay)
+- Middleware redirects legacy routes to home page
 
 #### API Routes (`api/`)
 
@@ -198,18 +175,21 @@ Server actions for data fetching and mutations. Organized by domain. Backend cal
 - `DiscoveryDrawer.tsx` - Desktop left panel for discovering peaks and challenges. Supports "summit history" drill-down mode via `summitHistoryPeakId` in mapStore—when set, shows SummitHistoryPanel instead of discovery content.
 - `DetailBottomSheet.tsx` - Mobile-only bottom sheet with Details/Discover tabs. Reuses DiscoveryDrawer's drag mechanics (collapsed/halfway/expanded snap points). Switches to Details tab when peak/challenge is selected.
 - `SummitHistoryPanel.tsx` - Full summit history list for a peak. Shows all public summits with user names, dates, and weather conditions at summit time. Used inside DiscoveryDrawer (desktop) or DetailBottomSheet (mobile).
-- `PeakDetailPanel.tsx` - Desktop right panel for peak details. Includes CurrentConditions weather widget, "View All Summits" CTA that triggers summit history drill-down in left panel.
+- `PeakDetailPanel.tsx` - Desktop right panel for peak details. Includes CurrentConditions weather widget, summit status for authenticated users, auth-gated favorite and log summit buttons.
 - `PeakDetailContent.tsx` - Peak detail content with SSR data (used by static pages)
-- `ChallengeDetailPanel.tsx` - Desktop right panel for challenge details. Hides regular peaks/clusters and shows only challenge peaks on the map.
+- `ChallengeDetailPanel.tsx` - Desktop right panel for challenge details. Shows challenge progress for authenticated users, auth-gated favorite button, peaks list with completion status.
 - `ChallengeDetailContent.tsx` - Challenge detail content with SSR data (used by static pages)
+- `DashboardPanel.tsx` - User dashboard panel (authenticated only). Shows recent summits, favorite challenges with progress bars, and activity sync status.
 - `OverlayManager.tsx` - Legacy overlay manager (deprecated, replaced by UrlOverlayManager)
 
+##### Auth (`components/auth/`)
+- `AuthModal.tsx` - Modal-based authentication flow. Two modes: login (Strava OAuth) and email collection (post-OAuth). Opens via `useRequireAuth` hook when user attempts auth-gated action.
 
-##### Login (`components/app/login/`)
-- `EmailForm.tsx` - Email collection form
-- `LoginCard.tsx` - Login card with Strava OAuth
-- `SignupCard.tsx` - Signup card with Strava OAuth
-- `StravaLoginButton.tsx` - Strava OAuth button component
+##### Login (`components/app/login/`) - LEGACY
+- `EmailForm.tsx` - Legacy email collection form (replaced by AuthModal)
+- `LoginCard.tsx` - Legacy login card (replaced by AuthModal)
+- `SignupCard.tsx` - Legacy signup card (replaced by AuthModal)
+- `StravaLoginButton.tsx` - Strava OAuth button component (still used by AuthModal)
 
 ##### Map (`components/app/map/`)
 - `Map.tsx` - Main Mapbox map component
@@ -298,6 +278,8 @@ React context providers:
 - `NextAuthProvider.tsx` - NextAuth session provider wrapper
 - `ThemeProvider.tsx` - Theme (dark/light) provider
 - `UserProvider.tsx` - User state context provider
+- `AuthModalProvider.tsx` - Auth modal state provider (login/email modal)
+- `DashboardProvider.tsx` - Dashboard panel state provider
 
 ### Store (`src/store/`)
 Zustand state management stores:
@@ -308,6 +290,8 @@ Zustand state management stores:
   - `disablePeaksSearch` - Prevents peaks loading when viewing challenge details
   - `summitHistoryPeakId` - When set, DiscoveryDrawer shows SummitHistoryPanel instead of discovery content (desktop drill-down)
 - `userStore.tsx` - User data store (vanilla Zustand)
+- `authModalStore.ts` - Auth modal state (isOpen, mode, redirectAction)
+- `dashboardStore.ts` - Dashboard panel state (isOpen, toggle)
 
 ### Auth (`src/auth/`)
 Authentication configuration:
@@ -333,21 +317,28 @@ TypeScript type definitions:
 - `UserChallengeFavorite.ts` - User challenge favorite
 
 ### Middleware (`src/middleware.ts`)
-Next.js middleware for route protection:
-- Redirects logged-in users away from login/signup pages
-- Redirects users without email to email form
-- Redirects users with email away from email form
-- Protects routes requiring authentication
+Next.js middleware for legacy route redirects:
+- Redirects `/login`, `/signup`, `/m/*` routes to home page
+- Auth is handled entirely via modal system (no dedicated auth pages)
+
+### Hooks (`src/hooks/`)
+- `useRequireAuth.ts` - Hook for auth-gated actions. Opens auth modal if not logged in, otherwise executes action.
+- `useIsAuthenticated.ts` (exported from useRequireAuth) - Returns auth state and user info
 
 ## Authentication Flow
 
-1. User clicks "Login with Strava"
-2. Redirected to Strava OAuth
-3. Strava redirects back with authorization code
-4. NextAuth exchanges code for tokens
-5. `signIn` callback creates/updates user in database
-6. JWT token created with user info
-7. User redirected to app (or email form if no email)
+1. User attempts an action requiring auth (favorite, progress tracking, etc.)
+2. `useRequireAuth` hook checks session state
+3. If not authenticated, opens `AuthModal` in login mode
+4. User clicks "Connect with Strava" button
+5. Redirected to Strava OAuth
+6. Strava redirects back with authorization code
+7. NextAuth exchanges code for tokens
+8. `signIn` callback creates user in database + triggers historical data processing
+9. If user has no email, modal switches to email collection mode
+10. User enters email, JWT is updated
+11. Modal closes and queued action executes
+12. Map refreshes to show user's summit data with color-coded markers
 
 ## Data Flow
 

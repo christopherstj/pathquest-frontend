@@ -1,7 +1,7 @@
 "use server";
-import { useAuth } from "@/auth/useAuth";
-import getGoogleIdToken from "@/auth/getGoogleIdToken";
+
 import getBackendUrl from "@/helpers/getBackendUrl";
+import getAuthHeaders from "@/helpers/getAuthHeaders";
 
 const backendUrl = getBackendUrl();
 
@@ -11,7 +11,7 @@ const addChallengeFavorite = async (
     success: boolean;
     error?: string;
 }> => {
-    const session = await useAuth();
+    const { headers, session } = await getAuthHeaders();
 
     if (!session) {
         return {
@@ -19,8 +19,6 @@ const addChallengeFavorite = async (
             error: "Unauthorized",
         };
     }
-
-    const token = await getGoogleIdToken();
 
     const body = {
         challengeId,
@@ -32,7 +30,7 @@ const addChallengeFavorite = async (
         method: "POST",
         headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
+            ...headers,
         },
         body: JSON.stringify(body),
     });

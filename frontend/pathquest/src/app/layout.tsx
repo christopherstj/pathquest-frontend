@@ -6,6 +6,8 @@ import React from "react";
 import NextAuthProvider from "@/providers/NextAuthProvider";
 import QueryProvider from "@/providers/QueryProvider";
 import MapProvider from "@/providers/MapProvider";
+import AuthModalProvider from "@/providers/AuthModalProvider";
+import DashboardProvider from "@/providers/DashboardProvider";
 import "./globals.css";
 
 const fraunces = Fraunces({
@@ -34,6 +36,8 @@ type Props = {
 import MapBackground from "@/components/map/MapBackground";
 import GlobalNavigation from "@/components/app/layout/GlobalNavigation";
 import UrlOverlayManager from "@/components/overlays/UrlOverlayManager";
+import AuthModal from "@/components/auth/AuthModal";
+import DashboardPanel from "@/components/overlays/DashboardPanel";
 
 const layout = ({ children }: Props) => {
     return (
@@ -56,16 +60,24 @@ const layout = ({ children }: Props) => {
                             enableSystem={false}
                         >
                             <MapProvider>
-                                <main className="relative w-full h-screen overflow-hidden">
-                                    <MapBackground />
-                                    <GlobalNavigation />
-                                    {/* URL-driven overlay manager - renders discovery drawer (desktop) or bottom sheet (mobile) and detail panels */}
-                                    <UrlOverlayManager />
-                                    {/* SEO content from static pages (hidden from view, visible to crawlers) */}
-                                    <div className="relative z-10 w-full h-full pointer-events-none">
-                                        {children}
-                                    </div>
-                                </main>
+                                <AuthModalProvider>
+                                    <DashboardProvider>
+                                        <main className="relative w-full h-screen overflow-hidden">
+                                            <MapBackground />
+                                            <GlobalNavigation />
+                                            {/* URL-driven overlay manager - renders discovery drawer (desktop) or bottom sheet (mobile) and detail panels */}
+                                            <UrlOverlayManager />
+                                            {/* SEO content from static pages (hidden from view, visible to crawlers) */}
+                                            <div className="relative z-10 w-full h-full pointer-events-none">
+                                                {children}
+                                            </div>
+                                            {/* Auth modal - triggered by useRequireAuth hook */}
+                                            <AuthModal />
+                                            {/* Dashboard panel - for logged in users */}
+                                            <DashboardPanel />
+                                        </main>
+                                    </DashboardProvider>
+                                </AuthModalProvider>
                             </MapProvider>
                         </ThemeProvider>
                     </QueryProvider>

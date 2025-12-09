@@ -2,16 +2,28 @@
 
 import React, { useEffect, useMemo } from "react";
 import { motion } from "framer-motion";
-import { X, Trophy, Map as MapIcon, PlayCircle, Mountain, ChevronRight } from "lucide-react";
+import {
+    X,
+    Trophy,
+    Map as MapIcon,
+    Heart,
+    Mountain,
+    ChevronRight,
+    LogIn,
+    CheckCircle,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import getPublicChallengeDetails from "@/actions/challenges/getPublicChallengeDetails";
+import addChallengeFavorite from "@/actions/challenges/addChallengeFavorite";
+import deleteChallengeFavorite from "@/actions/challenges/deleteChallengeFavorite";
 import { useMapStore } from "@/providers/MapProvider";
 import mapboxgl from "mapbox-gl";
 import Link from "next/link";
 import convertPeaksToGeoJSON from "@/helpers/convertPeaksToGeoJSON";
 import { setPeaksSearchDisabled } from "@/helpers/peaksSearchState";
 import metersToFt from "@/helpers/metersToFt";
+import useRequireAuth, { useIsAuthenticated } from "@/hooks/useRequireAuth";
 
 interface Props {
     challengeId: number;
@@ -19,19 +31,25 @@ interface Props {
 }
 
 const ChallengeDetailPanel = ({ challengeId, onClose }: Props) => {
-    const map = useMapStore(state => state.map);
-    const setDisablePeaksSearch = useMapStore(state => state.setDisablePeaksSearch);
+    const map = useMapStore((state) => state.map);
+    const setDisablePeaksSearch = useMapStore(
+        (state) => state.setDisablePeaksSearch
+    );
+    const { isAuthenticated } = useIsAuthenticated();
+    const requireAuth = useRequireAuth();
+    const queryClient = useQueryClient();
 
     const { data, isLoading } = useQuery({
         queryKey: ["challengeDetails", challengeId],
         queryFn: async () => {
             const res = await getPublicChallengeDetails(String(challengeId));
             return res;
-        }
+        },
     });
 
     const challenge = data?.success ? data.data?.challenge : null;
     const peaks = data?.success ? data.data?.peaks : null;
+    const isFavorited = challenge?.is_favorited ?? false;
 
     // Calculate bounds of all peaks to fit them on the map
     const bounds = useMemo(() => {
@@ -153,6 +171,23 @@ const ChallengeDetailPanel = ({ challengeId, onClose }: Props) => {
         }
     };
 
+    const handleToggleFavorite = () => {
+        requireAuth(async () => {
+            if (isFavorited) {
+                await deleteChallengeFavorite(String(challengeId));
+            } else {
+                await addChallengeFavorite(String(challengeId));
+            }
+            // Refetch challenge details and favorites
+            queryClient.invalidateQueries({
+                queryKey: ["challengeDetails", challengeId],
+            });
+            queryClient.invalidateQueries({
+                queryKey: ["favoriteChallenges"],
+            });
+        });
+    };
+
     if (isLoading) {
         return (
             <motion.div 
@@ -215,42 +250,90 @@ const ChallengeDetailPanel = ({ challengeId, onClose }: Props) => {
                             <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">
                                 Total Peaks
                             </p>
-                            <p className="text-xl font-mono text-foreground">{totalPeaks}</p>
+                            <p className="text-xl font-mono text-foreground">
+                                {totalPeaks}
+                            </p>
                         </div>
                         <div className="p-4 rounded-xl bg-card border border-border/70 shadow-sm">
                             <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">
-                                Summitted
+                                {isAuthenticated ? "Your Progress" : "Summitted"}
                             </p>
                             <p className="text-xl font-mono text-foreground">
-                                {summittedPeaks}
-                                <span className="text-sm text-muted-foreground ml-1">
-                                    ({progressPercent}%)
-                                </span>
+                                {isAuthenticated ? (
+                                    <>
+                                        {summittedPeaks}
+                                        <span className="text-sm text-muted-foreground ml-1">
+                                            / {totalPeaks}
+                                        </span>
+                                    </>
+                                ) : (
+                                    <span className="text-sm text-muted-foreground">
+                                        Log in to track
+                                    </span>
+                                )}
                             </p>
                         </div>
                     </div>
 
-                    {/* Progress Bar */}
-                    <div className="space-y-2">
-                        <div className="flex justify-between text-xs text-muted-foreground">
-                            <span>Progress</span>
-                            <span>
-                                {summittedPeaks} / {totalPeaks}
-                            </span>
+                    {/* Progress Bar - Only show for authenticated users */}
+                    {isAuthenticated ? (
+                        <div className="space-y-2">
+                            <div className="flex justify-between text-xs text-muted-foreground">
+                                <span>Progress</span>
+                                <span>
+                                    {summittedPeaks} / {totalPeaks} (
+                                    {progressPercent}%)
+                                </span>
+                            </div>
+                            <div className="h-3 bg-muted rounded-full overflow-hidden">
+                                <div
+                                    className="h-full bg-gradient-to-r from-secondary to-primary rounded-full transition-all duration-500"
+                                    style={{ width: `${progressPercent}%` }}
+                                />
+                            </div>
+                            {progressPercent === 100 && (
+                                <div className="flex items-center gap-2 text-sm text-green-500">
+                                    <CheckCircle className="w-4 h-4" />
+                                    <span>Challenge completed!</span>
+                                </div>
+                            )}
                         </div>
-                        <div className="h-2 bg-muted rounded-full overflow-hidden">
-                            <div
-                                className="h-full bg-secondary rounded-full transition-all duration-500"
-                                style={{ width: `${progressPercent}%` }}
-                            />
-                        </div>
-                    </div>
+                    ) : (
+                        <button
+                            onClick={() => requireAuth(() => {})}
+                            className="p-4 rounded-xl bg-primary/5 border border-primary/20 flex items-center gap-3 w-full text-left hover:bg-primary/10 transition-colors"
+                        >
+                            <LogIn className="w-5 h-5 text-primary" />
+                            <div>
+                                <p className="text-sm font-medium text-foreground">
+                                    Track your progress
+                                </p>
+                                <p className="text-xs text-muted-foreground">
+                                    Log in to see which peaks you&apos;ve summitted
+                                </p>
+                            </div>
+                        </button>
+                    )}
 
                     {/* Actions */}
                     <div className="flex flex-col gap-3">
-                        <Button className="w-full bg-secondary text-secondary-foreground hover:bg-secondary/90 gap-2">
-                            <PlayCircle className="w-4 h-4" />
-                            Start Challenge
+                        <Button
+                            onClick={handleToggleFavorite}
+                            className={`w-full gap-2 ${
+                                isFavorited
+                                    ? "bg-secondary/20 text-secondary hover:bg-secondary/30 border border-secondary/30"
+                                    : "bg-secondary text-secondary-foreground hover:bg-secondary/90"
+                            }`}
+                            variant={isFavorited ? "outline" : "default"}
+                        >
+                            <Heart
+                                className={`w-4 h-4 ${
+                                    isFavorited ? "fill-current" : ""
+                                }`}
+                            />
+                            {isFavorited
+                                ? "Challenge Accepted"
+                                : "Accept Challenge"}
                         </Button>
                         <Button
                             variant="outline"

@@ -2,13 +2,15 @@
 
 import React, { useState, useEffect, useCallback } from "react";
 import { motion, useAnimation, PanInfo } from "framer-motion";
-import { ArrowRight, Trophy, TrendingUp, Mountain, X, MapPin, CheckCircle, Navigation, ChevronRight, PlayCircle, Map as MapIcon } from "lucide-react";
+import { ArrowRight, Trophy, TrendingUp, Mountain, X, MapPin, CheckCircle, Navigation, ChevronRight, Heart, Map as MapIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useMapStore } from "@/providers/MapProvider";
 import { useRouter, usePathname } from "next/navigation";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import getPeakDetails from "@/actions/peaks/getPeakDetails";
 import getPublicChallengeDetails from "@/actions/challenges/getPublicChallengeDetails";
+import addChallengeFavorite from "@/actions/challenges/addChallengeFavorite";
+import deleteChallengeFavorite from "@/actions/challenges/deleteChallengeFavorite";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { pushWithMapState } from "@/helpers/navigateWithMapState";
@@ -17,6 +19,7 @@ import mapboxgl from "mapbox-gl";
 import convertPeaksToGeoJSON from "@/helpers/convertPeaksToGeoJSON";
 import { setPeaksSearchDisabled } from "@/helpers/peaksSearchState";
 import metersToFt from "@/helpers/metersToFt";
+import useRequireAuth from "@/hooks/useRequireAuth";
 
 type DrawerHeight = "collapsed" | "halfway" | "expanded";
 type TabMode = "details" | "discover";
@@ -42,6 +45,8 @@ const DetailBottomSheet = ({ peakId, challengeId, onClose }: Props) => {
     const setDisablePeaksSearch = useMapStore((state) => state.setDisablePeaksSearch);
     const router = useRouter();
     const controls = useAnimation();
+    const requireAuth = useRequireAuth();
+    const queryClient = useQueryClient();
     
     const hasDetail = Boolean(peakId || challengeId);
     const [activeTab, setActiveTab] = useState<TabMode>(hasDetail ? "details" : "discover");
@@ -302,6 +307,27 @@ const DetailBottomSheet = ({ peakId, challengeId, onClose }: Props) => {
         }
     };
 
+    const isFavorited = challenge?.is_favorited ?? false;
+
+    const handleToggleFavorite = () => {
+        if (!challengeId) return;
+        
+        requireAuth(async () => {
+            if (isFavorited) {
+                await deleteChallengeFavorite(String(challengeId));
+            } else {
+                await addChallengeFavorite(String(challengeId));
+            }
+            // Invalidate queries to refresh data
+            queryClient.invalidateQueries({
+                queryKey: ["challengeDetails", challengeId],
+            });
+            queryClient.invalidateQueries({
+                queryKey: ["favoriteChallenges"],
+            });
+        });
+    };
+
     const isLoading = (peakId && peakLoading) || (challengeId && challengeLoading);
 
     // Render peak details content
@@ -476,9 +502,17 @@ const DetailBottomSheet = ({ peakId, challengeId, onClose }: Props) => {
 
                 {/* Actions */}
                 <div className="flex gap-2">
-                    <Button className="flex-1 bg-secondary text-secondary-foreground hover:bg-secondary/90 gap-2 h-9 text-sm">
-                        <PlayCircle className="w-3.5 h-3.5" />
-                        Start Challenge
+                    <Button
+                        onClick={handleToggleFavorite}
+                        className={`flex-1 gap-2 h-9 text-sm ${
+                            isFavorited
+                                ? "bg-secondary/20 text-secondary hover:bg-secondary/30 border border-secondary/30"
+                                : "bg-secondary text-secondary-foreground hover:bg-secondary/90"
+                        }`}
+                        variant={isFavorited ? "outline" : "default"}
+                    >
+                        <Heart className={`w-3.5 h-3.5 ${isFavorited ? "fill-current" : ""}`} />
+                        {isFavorited ? "Accepted" : "Accept"}
                     </Button>
                     <Button variant="outline" onClick={handleShowChallengeOnMap} className="flex-1 gap-2 h-9 text-sm border-secondary/20 hover:bg-secondary/10">
                         <MapIcon className="w-3.5 h-3.5" />

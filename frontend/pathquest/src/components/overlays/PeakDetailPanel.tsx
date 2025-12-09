@@ -2,16 +2,28 @@
 
 import React, { useEffect } from "react";
 import { motion } from "framer-motion";
-import { X, Mountain, MapPin, CheckCircle, Navigation, ChevronRight, Users } from "lucide-react";
+import {
+    X,
+    Mountain,
+    MapPin,
+    CheckCircle,
+    Navigation,
+    ChevronRight,
+    Users,
+    Heart,
+    LogIn,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import getPeakDetails from "@/actions/peaks/getPeakDetails";
+import toggleFavoritePeak from "@/actions/peaks/toggleFavoritePeak";
 import { useMapStore } from "@/providers/MapProvider";
 import Link from "next/link";
 import convertPeaksToGeoJSON from "@/helpers/convertPeaksToGeoJSON";
 import mapboxgl from "mapbox-gl";
 import CurrentConditions from "../app/peaks/CurrentConditions";
 import metersToFt from "@/helpers/metersToFt";
+import useRequireAuth, { useIsAuthenticated } from "@/hooks/useRequireAuth";
 
 interface Props {
     peakId: string;
@@ -19,20 +31,27 @@ interface Props {
 }
 
 const PeakDetailPanel = ({ peakId, onClose }: Props) => {
-    const map = useMapStore(state => state.map);
-    const setSummitHistoryPeakId = useMapStore(state => state.setSummitHistoryPeakId);
+    const map = useMapStore((state) => state.map);
+    const setSummitHistoryPeakId = useMapStore(
+        (state) => state.setSummitHistoryPeakId
+    );
+    const { isAuthenticated } = useIsAuthenticated();
+    const requireAuth = useRequireAuth();
+    const queryClient = useQueryClient();
 
     const { data, isLoading } = useQuery({
         queryKey: ["peakDetails", peakId],
         queryFn: async () => {
             const res = await getPeakDetails(peakId);
             return res;
-        }
+        },
     });
 
     const peak = data?.success ? data.data?.peak : null;
     const challenges = data?.success ? data.data?.challenges : null;
     const publicSummits = data?.success ? data.data?.publicSummits : null;
+    const isFavorited = peak?.is_favorited ?? false;
+    const userSummits = peak?.summits ?? 0;
 
     // Fly to peak location when data loads
     useEffect(() => {
@@ -90,9 +109,27 @@ const PeakDetailPanel = ({ peakId, onClose }: Props) => {
                 zoom: 14,
                 pitch: 60,
                 bearing: 30,
-                essential: true
+                essential: true,
             });
         }
+    };
+
+    const handleToggleFavorite = () => {
+        requireAuth(async () => {
+            await toggleFavoritePeak(peakId);
+            // Refetch peak details
+            queryClient.invalidateQueries({
+                queryKey: ["peakDetails", peakId],
+            });
+        });
+    };
+
+    const handleLogSummit = () => {
+        requireAuth(() => {
+            // TODO: Open manual summit logging modal
+            // For now, just show that auth is required
+            console.log("Log summit for peak:", peakId);
+        });
     };
 
     if (isLoading) {
@@ -154,33 +191,116 @@ const PeakDetailPanel = ({ peakId, onClose }: Props) => {
                     {/* Stats Grid */}
                     <div className="grid grid-cols-2 gap-3">
                         <div className="p-4 rounded-xl bg-card border border-border/70 shadow-sm">
-                            <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Elevation</p>
-                            <p className="text-xl font-mono text-foreground">{peak.elevation ? Math.round(metersToFt(peak.elevation)).toLocaleString() : 0} ft</p>
+                            <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">
+                                Elevation
+                            </p>
+                            <p className="text-xl font-mono text-foreground">
+                                {peak.elevation
+                                    ? Math.round(
+                                          metersToFt(peak.elevation)
+                                      ).toLocaleString()
+                                    : 0}{" "}
+                                ft
+                            </p>
                         </div>
                         <div className="p-4 rounded-xl bg-card border border-border/70 shadow-sm">
-                            <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Summits</p>
-                            <p className="text-xl font-mono text-foreground">{peak.public_summits || publicSummits?.length || 0}</p>
+                            <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">
+                                {isAuthenticated ? "Your Summits" : "Total Summits"}
+                            </p>
+                            <p className="text-xl font-mono text-foreground">
+                                {isAuthenticated ? (
+                                    userSummits > 0 ? (
+                                        <span className="text-green-500">
+                                            {userSummits}
+                                        </span>
+                                    ) : (
+                                        "0"
+                                    )
+                                ) : (
+                                    peak.public_summits ||
+                                    publicSummits?.length ||
+                                    0
+                                )}
+                            </p>
                         </div>
                     </div>
 
+                    {/* User summit status */}
+                    {isAuthenticated && userSummits > 0 && (
+                        <div className="p-3 rounded-xl bg-green-500/10 border border-green-500/30 flex items-center gap-3">
+                            <CheckCircle className="w-5 h-5 text-green-500" />
+                            <div>
+                                <p className="text-sm font-medium text-foreground">
+                                    You&apos;ve summited this peak!
+                                </p>
+                                <p className="text-xs text-muted-foreground">
+                                    {userSummits} time{userSummits > 1 ? "s" : ""}
+                                </p>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Login prompt for unauthenticated users */}
+                    {!isAuthenticated && (
+                        <button
+                            onClick={() => requireAuth(() => {})}
+                            className="p-4 rounded-xl bg-primary/5 border border-primary/20 flex items-center gap-3 w-full text-left hover:bg-primary/10 transition-colors"
+                        >
+                            <LogIn className="w-5 h-5 text-primary" />
+                            <div>
+                                <p className="text-sm font-medium text-foreground">
+                                    Track your summits
+                                </p>
+                                <p className="text-xs text-muted-foreground">
+                                    Log in to see if you&apos;ve climbed this peak
+                                </p>
+                            </div>
+                        </button>
+                    )}
+
                     {/* Current Conditions */}
                     {peak.location_coords && (
-                        <CurrentConditions 
-                            lat={peak.location_coords[1]} 
-                            lng={peak.location_coords[0]} 
+                        <CurrentConditions
+                            lat={peak.location_coords[1]}
+                            lng={peak.location_coords[0]}
                         />
                     )}
 
                     {/* Actions */}
                     <div className="flex flex-col gap-3">
-                        <Button className="w-full bg-primary text-primary-foreground hover:bg-primary/90 gap-2">
+                        <Button
+                            onClick={handleLogSummit}
+                            className="w-full bg-primary text-primary-foreground hover:bg-primary/90 gap-2"
+                        >
                             <CheckCircle className="w-4 h-4" />
                             Log Summit
                         </Button>
-                        <Button variant="outline" onClick={handleFlyToPeak} className="w-full gap-2 border-primary/20 hover:bg-primary/10 hover:text-primary">
-                            <Navigation className="w-4 h-4" />
-                            Fly to Peak
-                        </Button>
+                        <div className="flex gap-2">
+                            <Button
+                                variant="outline"
+                                onClick={handleToggleFavorite}
+                                className={`flex-1 gap-2 ${
+                                    isFavorited
+                                        ? "border-red-500/30 text-red-500 hover:bg-red-500/10"
+                                        : "border-primary/20 hover:bg-primary/10 hover:text-primary"
+                                }`}
+                            >
+                                <Heart
+                                    className={`w-4 h-4 ${
+                                        isFavorited ? "fill-current" : ""
+                                    }`}
+                                />
+                                {isFavorited ? "Saved" : "Save"}
+                            </Button>
+                            <Button
+                                variant="outline"
+                                onClick={handleFlyToPeak}
+                                className="flex-1 gap-2 border-primary/20 hover:bg-primary/10 hover:text-primary"
+                            >
+                                <Navigation className="w-4 h-4" />
+                                Fly to
+                            </Button>
+                        </div>
                     </div>
 
                     {/* Challenges Section */}
