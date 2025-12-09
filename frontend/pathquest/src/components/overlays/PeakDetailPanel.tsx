@@ -2,7 +2,7 @@
 
 import React, { useEffect } from "react";
 import { motion } from "framer-motion";
-import { X, Mountain, MapPin, CheckCircle, Navigation, ChevronRight } from "lucide-react";
+import { X, Mountain, MapPin, CheckCircle, Navigation, ChevronRight, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useQuery } from "@tanstack/react-query";
 import getPeakDetails from "@/actions/peaks/getPeakDetails";
@@ -10,6 +10,8 @@ import { useMapStore } from "@/providers/MapProvider";
 import Link from "next/link";
 import convertPeaksToGeoJSON from "@/helpers/convertPeaksToGeoJSON";
 import mapboxgl from "mapbox-gl";
+import CurrentConditions from "../app/peaks/CurrentConditions";
+import metersToFt from "@/helpers/metersToFt";
 
 interface Props {
     peakId: string;
@@ -18,6 +20,7 @@ interface Props {
 
 const PeakDetailPanel = ({ peakId, onClose }: Props) => {
     const map = useMapStore(state => state.map);
+    const setSummitHistoryPeakId = useMapStore(state => state.setSummitHistoryPeakId);
 
     const { data, isLoading } = useQuery({
         queryKey: ["peakDetails", peakId],
@@ -152,13 +155,21 @@ const PeakDetailPanel = ({ peakId, onClose }: Props) => {
                     <div className="grid grid-cols-2 gap-3">
                         <div className="p-4 rounded-xl bg-card border border-border/70 shadow-sm">
                             <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Elevation</p>
-                            <p className="text-xl font-mono text-foreground">{peak.elevation?.toLocaleString()} ft</p>
+                            <p className="text-xl font-mono text-foreground">{peak.elevation ? Math.round(metersToFt(peak.elevation)).toLocaleString() : 0} ft</p>
                         </div>
                         <div className="p-4 rounded-xl bg-card border border-border/70 shadow-sm">
                             <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Summits</p>
                             <p className="text-xl font-mono text-foreground">{peak.public_summits || publicSummits?.length || 0}</p>
                         </div>
                     </div>
+
+                    {/* Current Conditions */}
+                    {peak.location_coords && (
+                        <CurrentConditions 
+                            lat={peak.location_coords[1]} 
+                            lng={peak.location_coords[0]} 
+                        />
+                    )}
 
                     {/* Actions */}
                     <div className="flex flex-col gap-3">
@@ -198,17 +209,28 @@ const PeakDetailPanel = ({ peakId, onClose }: Props) => {
                     {/* Recent Summits */}
                     {publicSummits && publicSummits.length > 0 && (
                         <div className="space-y-3">
-                            <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
-                                Recent Summits
-                            </h3>
+                            <div className="flex items-center justify-between">
+                                <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
+                                    Recent Summits
+                                </h3>
+                                <button
+                                    onClick={() => setSummitHistoryPeakId(peakId)}
+                                    className="flex items-center gap-1 text-xs text-primary hover:text-primary/80 transition-colors"
+                                    aria-label="View all summits"
+                                    tabIndex={0}
+                                >
+                                    <Users className="w-3.5 h-3.5" />
+                                    View all {publicSummits.length}
+                                </button>
+                            </div>
                             <div className="space-y-2">
-                                {publicSummits.slice(0, 5).map((summit, idx) => (
+                                {publicSummits.slice(0, 3).map((summit, idx) => (
                                     <div
                                         key={idx}
                                         className="flex items-center justify-between p-3 rounded-lg bg-card border border-border/70"
                                     >
                                         <span className="text-sm text-foreground">
-                                            {summit.user_name || "Anonymous"}
+                                            {(summit as any).user_name || "Anonymous"}
                                         </span>
                                         <span className="text-xs text-muted-foreground">
                                             {summit.timestamp

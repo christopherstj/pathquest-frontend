@@ -11,6 +11,7 @@ import mapboxgl from "mapbox-gl";
 import Link from "next/link";
 import convertPeaksToGeoJSON from "@/helpers/convertPeaksToGeoJSON";
 import { setPeaksSearchDisabled } from "@/helpers/peaksSearchState";
+import metersToFt from "@/helpers/metersToFt";
 
 interface Props {
     challengeId: number;
@@ -268,7 +269,7 @@ const ChallengeDetailPanel = ({ challengeId, onClose }: Props) => {
                                 Peaks in Challenge
                             </h3>
                             <div className="space-y-2 max-h-[300px] overflow-y-auto custom-scrollbar">
-                                {peaks.map((peak) => (
+                                {[...peaks].sort((a, b) => (b.elevation || 0) - (a.elevation || 0)).map((peak) => (
                                     <Link
                                         key={peak.id}
                                         href={`/peaks/${peak.id}`}
@@ -287,7 +288,7 @@ const ChallengeDetailPanel = ({ challengeId, onClose }: Props) => {
                                                     {peak.name}
                                                 </span>
                                                 <span className="text-xs text-muted-foreground">
-                                                    {peak.elevation?.toLocaleString()} ft
+                                                    {peak.elevation ? Math.round(metersToFt(peak.elevation)).toLocaleString() : 0} ft
                                                 </span>
                                             </div>
                                         </div>

@@ -105,10 +105,19 @@ src/app/
 - Layout for main app section (`/m/*`)
 - Currently minimal (may be used for sidebar in future)
 
-#### API Routes (`api/auth/[...nextauth]/route.ts`)
+#### API Routes (`api/`)
+
+##### Auth (`api/auth/[...nextauth]/route.ts`)
 - NextAuth API route handler
 - Configures Strava OAuth provider
 - Handles authentication callbacks
+
+##### Weather (`api/weather/route.ts`)
+- Proxies weather requests to Open-Meteo API (free, no key required, global coverage)
+- Query params: `lat`, `lng` (required)
+- Returns: temperature (°F), feels like, weather code/description/icon, wind speed/direction/gusts (mph), humidity (%), cloud cover, elevation
+- Implements in-memory caching (10 min TTL) to reduce API calls
+- Used by `CurrentConditions` component for live peak weather
 
 ### Actions (`src/actions/`)
 Server actions for data fetching and mutations. Organized by domain. Backend calls now target the `/api` prefix via `getBackendUrl()`; private endpoints include a bearer from `getGoogleIdToken`, while public reads omit the header.
@@ -185,12 +194,15 @@ Server actions for data fetching and mutations. Organized by domain. Backend cal
 - `Logo.tsx` - SVG logo component with topographic contour-line mountain design. Uses currentColor for theming, supports size prop.
 
 ##### Overlays (`components/overlays/`)
-- `DiscoveryDrawer.tsx` - Main side drawer for discovering peaks and challenges. Adapts to a bottom sheet on mobile devices.
-- `OverlayManager.tsx` - Manages the state of active overlays (legacy query param approach)
-- `PeakDetailPanel.tsx` - Client component for peak detail overlay (used by intercepting routes). Shows selected peak with a larger icon (0.4 scale vs 0.2) using the `selectedPeaks` map source.
+- `UrlOverlayManager.tsx` - Central overlay orchestrator. On desktop, renders DiscoveryDrawer (left panel) plus PeakDetailPanel/ChallengeDetailPanel (right panel). On mobile (< 1024px), renders DetailBottomSheet with tabbed interface.
+- `DiscoveryDrawer.tsx` - Desktop left panel for discovering peaks and challenges. Supports "summit history" drill-down mode via `summitHistoryPeakId` in mapStore—when set, shows SummitHistoryPanel instead of discovery content.
+- `DetailBottomSheet.tsx` - Mobile-only bottom sheet with Details/Discover tabs. Reuses DiscoveryDrawer's drag mechanics (collapsed/halfway/expanded snap points). Switches to Details tab when peak/challenge is selected.
+- `SummitHistoryPanel.tsx` - Full summit history list for a peak. Shows all public summits with user names, dates, and weather conditions at summit time. Used inside DiscoveryDrawer (desktop) or DetailBottomSheet (mobile).
+- `PeakDetailPanel.tsx` - Desktop right panel for peak details. Includes CurrentConditions weather widget, "View All Summits" CTA that triggers summit history drill-down in left panel.
 - `PeakDetailContent.tsx` - Peak detail content with SSR data (used by static pages)
-- `ChallengeDetailPanel.tsx` - Client component for challenge detail overlay (used by intercepting routes). Hides regular peaks/clusters and shows only challenge peaks on the map using the `selectedPeaks` source, allowing users to see all challenge peaks mapped out.
+- `ChallengeDetailPanel.tsx` - Desktop right panel for challenge details. Hides regular peaks/clusters and shows only challenge peaks on the map.
 - `ChallengeDetailContent.tsx` - Challenge detail content with SSR data (used by static pages)
+- `OverlayManager.tsx` - Legacy overlay manager (deprecated, replaced by UrlOverlayManager)
 
 
 ##### Login (`components/app/login/`)
@@ -208,6 +220,7 @@ Server actions for data fetching and mutations. Organized by domain. Backend cal
 - `BoundsToggle.tsx` - Toggle for showing/hiding bounds
 - `CenterButton.tsx` - Button to center map on peak
 - `ChallengeDetails.tsx` - Challenge information display
+- `CurrentConditions.tsx` - Live weather display for peak detail panels. Fetches from `/api/weather` route (Open-Meteo). Shows temperature, feels like, conditions, wind, humidity.
 - `PeakDetailMapInteraction.tsx` - Map interactions for peak detail page
 - `PeakPopup.tsx` - Popup displayed when clicking peak on map
 - `PeakRow.tsx` - Row component for peak list
@@ -288,7 +301,12 @@ React context providers:
 
 ### Store (`src/store/`)
 Zustand state management stores:
-- `mapStore.tsx` - Map instance store (vanilla Zustand). Includes `disablePeaksSearch` flag to prevent peaks loading when viewing challenge details.
+- `mapStore.tsx` - Map instance store (vanilla Zustand). State includes:
+  - `map` - Mapbox GL map instance
+  - `visiblePeaks`, `visibleChallenges` - Currently visible items on map
+  - `isSatellite` - Satellite mode toggle
+  - `disablePeaksSearch` - Prevents peaks loading when viewing challenge details
+  - `summitHistoryPeakId` - When set, DiscoveryDrawer shows SummitHistoryPanel instead of discovery content (desktop drill-down)
 - `userStore.tsx` - User data store (vanilla Zustand)
 
 ### Auth (`src/auth/`)
@@ -393,13 +411,20 @@ Next.js middleware for route protection:
 ### Responsive Layout
 - **Mobile First**: Application is designed to be fully functional on mobile devices.
 - **Adaptive Components**: 
-  - `DiscoveryDrawer`: Transforms from a floating side panel on desktop to a draggable bottom sheet on mobile (< 1024px). The mobile version features 3 snap heights:
-    - **Collapsed** (~60px): Just the drag handle visible, allowing full map exploration
-    - **Halfway** (~45vh): Default state showing first items while map remains partially visible
-    - **Expanded** (~100vh - 80px): Full screen content up to the search bar
-    - Supports swipe gestures with velocity detection and tap-to-cycle on the handle
+  - **Desktop (≥ 1024px)**: 
+    - `DiscoveryDrawer` on left side for discovering peaks/challenges
+    - `PeakDetailPanel`/`ChallengeDetailPanel` on right side for details
+    - Summit history drill-down replaces discovery content in left panel
+  - **Mobile (< 1024px)**: 
+    - `DetailBottomSheet` with tabbed interface (Details | Discover)
+    - Draggable bottom sheet with 3 snap heights:
+      - **Collapsed** (~60px): Just the drag handle visible
+      - **Halfway** (~45vh): Default state, map partially visible
+      - **Expanded** (~100vh - 80px): Full screen content
+    - Supports swipe gestures with velocity detection
+    - Tab switches between peak/challenge details and discovery list
   - `GlobalNavigation`: Adapts padding and visibility of elements (logo hidden on mobile) to preserve space.
-- **Hooks**: Uses `useIsMobile` hook (based on `window.matchMedia`) for programmatic layout adaptations.
+- **Hooks**: Uses `useIsMobile` hook (based on `window.matchMedia`, default breakpoint 768px, 1024px for layout changes) for programmatic layout adaptations.
 
 
 ## Map Integration

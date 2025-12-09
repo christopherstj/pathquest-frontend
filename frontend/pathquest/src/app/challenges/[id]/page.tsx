@@ -2,6 +2,7 @@ import getAllChallengeIds from "@/actions/challenges/getAllChallengeIds";
 import getPublicChallengeDetails from "@/actions/challenges/getPublicChallengeDetails";
 import { Metadata } from "next";
 import { notFound } from "next/navigation";
+import metersToFt from "@/helpers/metersToFt";
 
 // Generate static params for all challenges
 export const generateStaticParams = async () => {
@@ -137,11 +138,11 @@ const ChallengePage = async ({ params }: Props) => {
                     <section aria-label="Peaks in this challenge">
                         <h2>Peaks in this Challenge ({peaks.length})</h2>
                         <ul>
-                            {peaks.map((peak) => (
+                            {[...peaks].sort((a, b) => (b.elevation || 0) - (a.elevation || 0)).map((peak) => (
                                 <li key={peak.id}>
                                     <a href={`/peaks/${peak.id}`}>
                                         {peak.name}
-                                        {peak.elevation && ` - ${peak.elevation.toLocaleString()} ft`}
+                                        {peak.elevation && ` - ${Math.round(metersToFt(peak.elevation)).toLocaleString()} ft`}
                                     </a>
                                 </li>
                             ))}

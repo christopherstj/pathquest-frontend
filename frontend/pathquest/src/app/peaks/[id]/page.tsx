@@ -2,6 +2,7 @@ import getTopPeaks from "@/actions/peaks/getTopPeaks";
 import getPeakDetails from "@/actions/peaks/getPeakDetails";
 import { Metadata } from "next";
 import { notFound } from "next/navigation";
+import metersToFt from "@/helpers/metersToFt";
 
 // Generate static params for top 1000 peaks by summit count
 export const generateStaticParams = async () => {
@@ -34,7 +35,7 @@ export const generateMetadata = async ({ params }: Props): Promise<Metadata> => 
 
     const { peak } = result.data;
     const location = [peak.county, peak.state, peak.country].filter(Boolean).join(", ");
-    const elevation = peak.elevation ? `${peak.elevation.toLocaleString()} ft` : "";
+    const elevation = peak.elevation ? `${Math.round(metersToFt(peak.elevation)).toLocaleString()} ft` : "";
     const summitCount = peak.public_summits || 0;
 
     const title = `${peak.name}${elevation ? ` (${elevation})` : ""} | PathQuest`;
@@ -81,12 +82,15 @@ const PeakPage = async ({ params }: Props) => {
     const { peak, publicSummits, challenges } = result.data;
     const location = [peak.county, peak.state, peak.country].filter(Boolean).join(", ");
 
+    // Convert elevation to feet for display
+    const elevationFt = peak.elevation ? Math.round(metersToFt(peak.elevation)) : 0;
+    
     // JSON-LD structured data for SEO
     const structuredData = {
         "@context": "https://schema.org",
         "@type": "Place",
         name: peak.name,
-        description: `Mountain peak${location ? ` located in ${location}` : ""}${peak.elevation ? `. Elevation: ${peak.elevation.toLocaleString()} ft` : ""}.`,
+        description: `Mountain peak${location ? ` located in ${location}` : ""}${peak.elevation ? `. Elevation: ${elevationFt.toLocaleString()} ft` : ""}.`,
         geo: peak.location_coords ? {
             "@type": "GeoCoordinates",
             latitude: peak.location_coords[1],
@@ -95,7 +99,7 @@ const PeakPage = async ({ params }: Props) => {
         ...(peak.elevation && {
             elevation: {
                 "@type": "QuantitativeValue",
-                value: peak.elevation,
+                value: elevationFt,
                 unitCode: "FOT",
             },
         }),
@@ -122,7 +126,7 @@ const PeakPage = async ({ params }: Props) => {
             <article className="sr-only" aria-label={`Details about ${peak.name}`}>
                 <h1>{peak.name}</h1>
                 {location && <p>Location: {location}</p>}
-                {peak.elevation && <p>Elevation: {peak.elevation.toLocaleString()} feet</p>}
+                {peak.elevation && <p>Elevation: {elevationFt.toLocaleString()} feet</p>}
                 {peak.public_summits !== undefined && (
                     <p>{peak.public_summits} recorded summits</p>
                 )}

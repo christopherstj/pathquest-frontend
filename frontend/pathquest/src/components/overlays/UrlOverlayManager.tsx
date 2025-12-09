@@ -5,7 +5,10 @@ import { usePathname, useRouter } from "next/navigation";
 import { AnimatePresence } from "framer-motion";
 import PeakDetailPanel from "./PeakDetailPanel";
 import ChallengeDetailPanel from "./ChallengeDetailPanel";
+import DetailBottomSheet from "./DetailBottomSheet";
+import DiscoveryDrawer from "./DiscoveryDrawer";
 import { pushWithMapState } from "@/helpers/navigateWithMapState";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 /**
  * URL-driven overlay manager that renders the appropriate detail panel
@@ -16,6 +19,9 @@ import { pushWithMapState } from "@/helpers/navigateWithMapState";
  * - SEO-friendly static pages with generateStaticParams
  * - Smooth client-side navigation between all routes
  * 
+ * Mobile: Uses DetailBottomSheet with tabs for Details/Discover
+ * Desktop: Uses separate panels (PeakDetailPanel, ChallengeDetailPanel, DiscoveryDrawer)
+ * 
  * The overlays are rendered via this component (in root layout),
  * not via parallel routes or page content, ensuring the map never reloads.
  */
@@ -23,6 +29,7 @@ const UrlOverlayManagerContent = () => {
     const pathname = usePathname();
     const router = useRouter();
     const previousPathRef = useRef<string | null>(null);
+    const isMobile = useIsMobile(1024);
 
     // Parse pathname to determine what overlay to show
     const peakMatch = pathname.match(/^\/peaks\/([^\/]+)$/);
@@ -47,28 +54,38 @@ const UrlOverlayManagerContent = () => {
         }
     }, [router, pathname]);
 
-    // Navigate to home (useful for explicit "go home" scenarios)
-    const handleNavigateHome = useCallback(() => {
-        pushWithMapState(router, "/");
-    }, [router]);
+    // Mobile: Use DetailBottomSheet with tabs
+    if (isMobile) {
+        return (
+            <DetailBottomSheet
+                peakId={peakId}
+                challengeId={challengeId ? parseInt(challengeId, 10) : null}
+                onClose={handleClose}
+            />
+        );
+    }
 
+    // Desktop: Use separate panels for details and discovery
     return (
-        <AnimatePresence mode="wait">
-            {peakId && (
-                <PeakDetailPanel 
-                    key={`peak-${peakId}`} 
-                    peakId={peakId} 
-                    onClose={handleClose} 
-                />
-            )}
-            {challengeId && (
-                <ChallengeDetailPanel 
-                    key={`challenge-${challengeId}`} 
-                    challengeId={parseInt(challengeId, 10)} 
-                    onClose={handleClose} 
-                />
-            )}
-        </AnimatePresence>
+        <>
+            <DiscoveryDrawer />
+            <AnimatePresence mode="wait">
+                {peakId && (
+                    <PeakDetailPanel 
+                        key={`peak-${peakId}`} 
+                        peakId={peakId} 
+                        onClose={handleClose} 
+                    />
+                )}
+                {challengeId && (
+                    <ChallengeDetailPanel 
+                        key={`challenge-${challengeId}`} 
+                        challengeId={parseInt(challengeId, 10)} 
+                        onClose={handleClose} 
+                    />
+                )}
+            </AnimatePresence>
+        </>
     );
 };
 

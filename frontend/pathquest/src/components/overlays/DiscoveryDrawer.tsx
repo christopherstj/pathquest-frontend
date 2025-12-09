@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { motion, useAnimation, PanInfo } from "framer-motion";
+import { motion, useAnimation, PanInfo, AnimatePresence } from "framer-motion";
 import { ArrowRight, Trophy, TrendingUp, Mountain } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useMapStore } from "@/providers/MapProvider";
@@ -9,6 +9,8 @@ import { useRouter } from "next/navigation";
 import { useIsMobile } from "@/hooks/use-mobile";
 import SatelliteButton from "../app/map/SatelliteButton";
 import { pushWithMapState } from "@/helpers/navigateWithMapState";
+import SummitHistoryPanel from "./SummitHistoryPanel";
+import metersToFt from "@/helpers/metersToFt";
 
 type DrawerHeight = "collapsed" | "halfway" | "expanded";
 
@@ -25,6 +27,8 @@ const DiscoveryDrawer = () => {
     const map = useMapStore((state) => state.map);
     const isSatellite = useMapStore((state) => state.isSatellite);
     const setIsSatellite = useMapStore((state) => state.setIsSatellite);
+    const summitHistoryPeakId = useMapStore((state) => state.summitHistoryPeakId);
+    const setSummitHistoryPeakId = useMapStore((state) => state.setSummitHistoryPeakId);
     const router = useRouter();
     const isMobile = useIsMobile(1024);
     const controls = useAnimation();
@@ -131,6 +135,10 @@ const DiscoveryDrawer = () => {
         }
     };
 
+    const handleBackFromSummitHistory = () => {
+        setSummitHistoryPeakId(null);
+    };
+
     // Desktop version - no drag functionality
     if (!isMobile) {
         return (
@@ -142,77 +150,95 @@ const DiscoveryDrawer = () => {
             >
                 <div className="flex-1 bg-background/85 backdrop-blur-xl border border-border shadow-xl overflow-hidden flex flex-col rounded-2xl">
                     <div className="flex-1 overflow-y-auto p-5 space-y-6 custom-scrollbar">
-                        {/* Featured Challenges */}
-                        {visibleChallenges.length > 0 && (
-                            <section>
-                                <div className="flex items-center gap-2 mb-4">
-                                    <Trophy className="w-4 h-4 text-secondary" />
-                                    <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">Visible Challenges</h2>
-                                </div>
-                                <div className="space-y-2.5">
-                                    {visibleChallenges.map((challenge) => (
-                                        <div 
-                                            key={challenge.id} 
-                                            onClick={() => handleChallengeClick(challenge.id)}
-                                            onKeyDown={(e) => e.key === "Enter" && handleChallengeClick(challenge.id)}
-                                            tabIndex={0}
-                                            role="button"
-                                            aria-label={`View challenge: ${challenge.name}`}
-                                            className="group relative overflow-hidden rounded-xl bg-card border border-border/70 p-4 hover:border-primary/50 transition-colors cursor-pointer"
-                                        >
-                                            <div className="flex justify-between items-start">
-                                                <div>
-                                                    <h3 className="font-medium group-hover:text-primary transition-colors">{challenge.name}</h3>
-                                                    <p className="text-xs text-muted-foreground mt-1">{challenge.num_peaks} Peaks</p>
-                                                </div>
-                                                <ArrowRight className="w-4 h-4 text-muted-foreground opacity-0 group-hover:opacity-100 -translate-x-2 group-hover:translate-x-0 transition-all" />
+                        <AnimatePresence mode="wait">
+                            {summitHistoryPeakId ? (
+                                <SummitHistoryPanel
+                                    key="summit-history"
+                                    peakId={summitHistoryPeakId}
+                                    onBack={handleBackFromSummitHistory}
+                                />
+                            ) : (
+                                <motion.div
+                                    key="discovery"
+                                    initial={{ opacity: 0, x: -20 }}
+                                    animate={{ opacity: 1, x: 0 }}
+                                    exit={{ opacity: 0, x: -20 }}
+                                    className="space-y-6"
+                                >
+                                    {/* Featured Challenges */}
+                                    {visibleChallenges.length > 0 && (
+                                        <section>
+                                            <div className="flex items-center gap-2 mb-4">
+                                                <Trophy className="w-4 h-4 text-secondary" />
+                                                <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">Visible Challenges</h2>
                                             </div>
-                                            <div className={cn("absolute bottom-0 left-0 h-0.5 w-full opacity-50 bg-primary")} />
-                                        </div>
-                                    ))}
-                                </div>
-                            </section>
-                        )}
-
-                        {/* Trending Peaks */}
-                        {visiblePeaks.length > 0 && (
-                            <section className="pb-2">
-                                <div className="flex items-center gap-2 mb-4">
-                                    <TrendingUp className="w-4 h-4 text-primary" />
-                                    <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">Visible Peaks</h2>
-                                </div>
-                                <div className="space-y-2.5">
-                                    {visiblePeaks.map((peak) => (
-                                        <div 
-                                            key={peak.id} 
-                                            onClick={() => handlePeakClick(peak.id, peak.location_coords)}
-                                            onKeyDown={(e) => e.key === "Enter" && handlePeakClick(peak.id, peak.location_coords)}
-                                            tabIndex={0}
-                                            role="button"
-                                            aria-label={`View peak: ${peak.name}`}
-                                            className="flex items-center justify-between p-3 rounded-lg hover:bg-muted/60 transition-colors cursor-pointer group"
-                                        >
-                                            <div className="flex items-center gap-3">
-                                                <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary">
-                                                    <Mountain className="w-4 h-4" />
-                                                </div>
-                                                <div>
-                                                    <p className="font-medium text-sm group-hover:text-primary-foreground transition-colors">{peak.name}</p>
-                                                    <p className="text-xs font-mono text-muted-foreground">{peak.elevation ? `${peak.elevation} ft` : ''}</p>
-                                                </div>
+                                            <div className="space-y-2.5">
+                                                {visibleChallenges.map((challenge) => (
+                                                    <div 
+                                                        key={challenge.id} 
+                                                        onClick={() => handleChallengeClick(challenge.id)}
+                                                        onKeyDown={(e) => e.key === "Enter" && handleChallengeClick(challenge.id)}
+                                                        tabIndex={0}
+                                                        role="button"
+                                                        aria-label={`View challenge: ${challenge.name}`}
+                                                        className="group relative overflow-hidden rounded-xl bg-card border border-border/70 p-4 hover:border-primary/50 transition-colors cursor-pointer"
+                                                    >
+                                                        <div className="flex justify-between items-start">
+                                                            <div>
+                                                                <h3 className="font-medium group-hover:text-primary transition-colors">{challenge.name}</h3>
+                                                                <p className="text-xs text-muted-foreground mt-1">{challenge.num_peaks} Peaks</p>
+                                                            </div>
+                                                            <ArrowRight className="w-4 h-4 text-muted-foreground opacity-0 group-hover:opacity-100 -translate-x-2 group-hover:translate-x-0 transition-all" />
+                                                        </div>
+                                                        <div className={cn("absolute bottom-0 left-0 h-0.5 w-full opacity-50 bg-primary")} />
+                                                    </div>
+                                                ))}
                                             </div>
-                                        </div>
-                                    ))}
-                                </div>
-                            </section>
-                        )}
+                                        </section>
+                                    )}
 
-                        {visibleChallenges.length === 0 && visiblePeaks.length === 0 && (
-                            <div className="text-center py-10 text-muted-foreground">
-                                <p>No peaks or challenges visible in this area.</p>
-                                <p className="text-sm mt-2">Try moving the map or zooming out.</p>
-                            </div>
-                        )}
+                                    {/* Trending Peaks */}
+                                    {visiblePeaks.length > 0 && (
+                                        <section className="pb-2">
+                                            <div className="flex items-center gap-2 mb-4">
+                                                <TrendingUp className="w-4 h-4 text-primary" />
+                                                <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">Visible Peaks</h2>
+                                            </div>
+                                            <div className="space-y-2.5">
+                                                {visiblePeaks.map((peak) => (
+                                                    <div 
+                                                        key={peak.id} 
+                                                        onClick={() => handlePeakClick(peak.id, peak.location_coords)}
+                                                        onKeyDown={(e) => e.key === "Enter" && handlePeakClick(peak.id, peak.location_coords)}
+                                                        tabIndex={0}
+                                                        role="button"
+                                                        aria-label={`View peak: ${peak.name}`}
+                                                        className="flex items-center justify-between p-3 rounded-lg hover:bg-muted/60 transition-colors cursor-pointer group"
+                                                    >
+                                                        <div className="flex items-center gap-3">
+                                                            <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary">
+                                                                <Mountain className="w-4 h-4" />
+                                                            </div>
+                                                            <div>
+                                                                <p className="font-medium text-sm group-hover:text-primary-foreground transition-colors">{peak.name}</p>
+                                                                <p className="text-xs font-mono text-muted-foreground">{peak.elevation ? `${Math.round(metersToFt(peak.elevation)).toLocaleString()} ft` : ''}</p>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </section>
+                                    )}
+
+                                    {visibleChallenges.length === 0 && visiblePeaks.length === 0 && (
+                                        <div className="text-center py-10 text-muted-foreground">
+                                            <p>No peaks or challenges visible in this area.</p>
+                                            <p className="text-sm mt-2">Try moving the map or zooming out.</p>
+                                        </div>
+                                    )}
+                                </motion.div>
+                            )}
+                        </AnimatePresence>
                     </div>
                 </div>
             </motion.div>
@@ -318,7 +344,7 @@ const DiscoveryDrawer = () => {
                                             </div>
                                             <div>
                                                 <p className="font-medium text-sm group-hover:text-primary-foreground transition-colors">{peak.name}</p>
-                                                <p className="text-xs font-mono text-muted-foreground">{peak.elevation ? `${peak.elevation} ft` : ''}</p>
+                                                <p className="text-xs font-mono text-muted-foreground">{peak.elevation ? `${Math.round(metersToFt(peak.elevation)).toLocaleString()} ft` : ''}</p>
                                             </div>
                                         </div>
                                     </div>
