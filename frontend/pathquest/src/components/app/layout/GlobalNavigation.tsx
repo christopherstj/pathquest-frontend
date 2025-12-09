@@ -60,12 +60,12 @@ const GlobalNavigation = () => {
             <div className="pointer-events-auto flex items-center gap-2">
                 {isAuthenticated ? (
                     <>
-                        {/* Dashboard Button */}
+                        {/* Dashboard Button - hidden on mobile since dashboard is in bottom sheet tabs */}
                         <Tooltip>
                             <TooltipTrigger asChild>
                                 <button
                                     onClick={handleDashboardClick}
-                                    className={`flex items-center justify-center w-10 h-10 rounded-full bg-card/80 backdrop-blur border transition-all shadow-lg ${
+                                    className={`hidden lg:flex items-center justify-center w-10 h-10 rounded-full bg-card/80 backdrop-blur border transition-all shadow-lg ${
                                         isDashboardOpen
                                             ? "border-primary bg-primary/10"
                                             : "border-border hover:bg-card hover:border-primary/50"

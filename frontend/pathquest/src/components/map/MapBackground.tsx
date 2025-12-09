@@ -13,11 +13,26 @@ import getMapStateFromURL from "@/helpers/getMapStateFromURL";
 import updateMapURL from "@/helpers/updateMapURL";
 import { pushWithMapState } from "@/helpers/navigateWithMapState";
 
+// Debounce utility function
+const debounce = <T extends (...args: any[]) => any>(
+    fn: T,
+    delay: number
+): ((...args: Parameters<T>) => void) => {
+    let timeoutId: ReturnType<typeof setTimeout> | null = null;
+    return (...args: Parameters<T>) => {
+        if (timeoutId) clearTimeout(timeoutId);
+        timeoutId = setTimeout(() => fn(...args), delay);
+    };
+};
+
 // Default map center (Boulder, CO)
 const DEFAULT_CENTER: [number, number] = [-105.2705, 40.015];
 const DEFAULT_ZOOM = 11;
 const DEFAULT_PITCH = 45;
 const DEFAULT_BEARING = 0;
+
+// Minimum zoom level for searching peaks/challenges
+const MIN_SEARCH_ZOOM = 8;
 
 const MapBackground = () => {
     const mapContainer = useRef<HTMLDivElement>(null);
@@ -25,6 +40,7 @@ const MapBackground = () => {
     const setMap = useMapStore((state) => state.setMap);
     const setVisiblePeaks = useMapStore((state) => state.setVisiblePeaks);
     const setVisibleChallenges = useMapStore((state) => state.setVisibleChallenges);
+    const setIsZoomedOutTooFar = useMapStore((state) => state.setIsZoomedOutTooFar);
     const map = useMapStore((state) => state.map);
     const isSatellite = useMapStore((state) => state.isSatellite);
     const setIsSatellite = useMapStore((state) => state.setIsSatellite);
@@ -39,6 +55,7 @@ const MapBackground = () => {
     const setMapRef = useRef(setMap);
     const setVisiblePeaksRef = useRef(setVisiblePeaks);
     const setVisibleChallengesRef = useRef(setVisibleChallenges);
+    const setIsZoomedOutTooFarRef = useRef(setIsZoomedOutTooFar);
     
     // Keep refs up to date
     useEffect(() => {
@@ -46,9 +63,17 @@ const MapBackground = () => {
         setMapRef.current = setMap;
         setVisiblePeaksRef.current = setVisiblePeaks;
         setVisibleChallengesRef.current = setVisibleChallenges;
+        setIsZoomedOutTooFarRef.current = setIsZoomedOutTooFar;
     });
 
     const fetchVisibleChallenges = useCallback(async (mapInstance: mapboxgl.Map) => {
+        // Don't search when zoomed out too far (prevents massive result sets)
+        const zoom = mapInstance.getZoom();
+        if (zoom < MIN_SEARCH_ZOOM) {
+            setVisibleChallengesRef.current([]);
+            return;
+        }
+
         const bounds = mapInstance.getBounds();
         if (!bounds) return;
 
@@ -335,12 +360,18 @@ const MapBackground = () => {
             newMap.getCanvas().style.cursor = "";
         });
 
-        // Move end listener to refetch and update URL
-        newMap.on("moveend", () => {
+        // Debounced data fetching to prevent excessive API calls during map movement
+        const debouncedFetchData = debounce(() => {
+            const zoom = newMap.getZoom();
+            const isZoomedOut = zoom < MIN_SEARCH_ZOOM;
+            setIsZoomedOutTooFarRef.current(isZoomedOut);
+            
             getNewData("", true, setVisiblePeaksRef.current, newMap);
             fetchVisibleChallenges(newMap);
+        }, 300);
 
-            // Update URL with current map state (soft navigation - doesn't clog history)
+        // Debounced URL update (separate from data fetching for better UX)
+        const debouncedUpdateURL = debounce(() => {
             if (isUserInteraction.current) {
                 const center = newMap.getCenter();
                 updateMapURL(
@@ -354,6 +385,12 @@ const MapBackground = () => {
                 );
             }
             isUserInteraction.current = true;
+        }, 500);
+
+        // Move end listener to refetch and update URL (debounced)
+        newMap.on("moveend", () => {
+            debouncedFetchData();
+            debouncedUpdateURL();
         });
 
         setMapRef.current(newMap);

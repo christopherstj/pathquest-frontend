@@ -115,8 +115,23 @@ Both use:
 | `UrlOverlayManager` | Reads pathname, renders appropriate detail panel |
 | `PeakDetailPanel` | Fetches and displays peak details, includes fly-to functionality |
 | `ChallengeDetailPanel` | Fetches and displays challenge details with peak list |
-| `DiscoveryDrawer` | Shows visible peaks/challenges in current map viewport |
+| `DiscoveryDrawer` | Shows visible peaks/challenges in current map viewport. On mobile, includes tabbed navigation with Dashboard tab. |
+| `DashboardPanel` | Desktop-only slide-out panel for user dashboard (right side) |
+| `DashboardContent` | Reusable dashboard content showing recent summits, challenge progress, and sync status |
 | `Omnibar` | Global search for peaks, challenges, and places |
+
+### Mobile Dashboard Integration
+
+On mobile devices, the user dashboard is integrated into the bottom sheet drawer (`DiscoveryDrawer`) as a tab:
+
+- **Discover Tab**: Shows visible peaks and challenges in the current map viewport
+- **Dashboard Tab**: Shows user's recent summits, challenge progress, and sync status
+
+**Default Tab Behavior:**
+- If user is **authenticated**: Defaults to Dashboard tab on load
+- If user is **not authenticated**: Defaults to Discover tab
+
+The desktop version keeps the dashboard as a separate slide-out panel on the right side, triggered by the dashboard button in the global navigation.
 
 ### SEO Strategy
 

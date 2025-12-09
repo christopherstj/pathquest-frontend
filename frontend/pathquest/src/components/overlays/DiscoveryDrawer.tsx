@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { motion, useAnimation, PanInfo, AnimatePresence } from "framer-motion";
-import { ArrowRight, Trophy, TrendingUp, Mountain } from "lucide-react";
+import { ArrowRight, Trophy, TrendingUp, Mountain, Compass, LayoutDashboard, ZoomIn } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useMapStore } from "@/providers/MapProvider";
 import { useRouter } from "next/navigation";
@@ -10,9 +10,12 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import SatelliteButton from "../app/map/SatelliteButton";
 import { pushWithMapState } from "@/helpers/navigateWithMapState";
 import SummitHistoryPanel from "./SummitHistoryPanel";
+import DashboardContent from "./DashboardContent";
 import metersToFt from "@/helpers/metersToFt";
+import { useIsAuthenticated } from "@/hooks/useRequireAuth";
 
 type DrawerHeight = "collapsed" | "halfway" | "expanded";
+type MobileTab = "discover" | "dashboard";
 
 // Height values in pixels for mobile drawer snap points
 const DRAWER_HEIGHTS = {
@@ -29,12 +32,26 @@ const DiscoveryDrawer = () => {
     const setIsSatellite = useMapStore((state) => state.setIsSatellite);
     const summitHistoryPeakId = useMapStore((state) => state.summitHistoryPeakId);
     const setSummitHistoryPeakId = useMapStore((state) => state.setSummitHistoryPeakId);
+    const isZoomedOutTooFar = useMapStore((state) => state.isZoomedOutTooFar);
     const router = useRouter();
     const isMobile = useIsMobile(1024);
     const controls = useAnimation();
+    const { isAuthenticated, isLoading: authLoading } = useIsAuthenticated();
     
     const [drawerHeight, setDrawerHeight] = useState<DrawerHeight>("halfway");
     const [heights, setHeights] = useState(DRAWER_HEIGHTS);
+    const [activeTab, setActiveTab] = useState<MobileTab>("discover");
+    const [hasInitializedTab, setHasInitializedTab] = useState(false);
+
+    // Set default tab to dashboard if user is authenticated (only once on mount)
+    useEffect(() => {
+        if (!authLoading && !hasInitializedTab) {
+            if (isAuthenticated) {
+                setActiveTab("dashboard");
+            }
+            setHasInitializedTab(true);
+        }
+    }, [isAuthenticated, authLoading, hasInitializedTab]);
 
     // Update heights on window resize
     useEffect(() => {
@@ -139,7 +156,15 @@ const DiscoveryDrawer = () => {
         setSummitHistoryPeakId(null);
     };
 
-    // Desktop version - no drag functionality
+    const handleTabChange = (tab: MobileTab) => {
+        setActiveTab(tab);
+        // Expand drawer when switching tabs if collapsed
+        if (drawerHeight === "collapsed") {
+            setDrawerHeight("halfway");
+        }
+    };
+
+    // Desktop version - no drag functionality, no tabs
     if (!isMobile) {
         return (
             <motion.div
@@ -232,8 +257,18 @@ const DiscoveryDrawer = () => {
 
                                     {visibleChallenges.length === 0 && visiblePeaks.length === 0 && (
                                         <div className="text-center py-10 text-muted-foreground">
-                                            <p>No peaks or challenges visible in this area.</p>
-                                            <p className="text-sm mt-2">Try moving the map or zooming out.</p>
+                                            {isZoomedOutTooFar ? (
+                                                <>
+                                                    <ZoomIn className="w-10 h-10 mx-auto mb-3 text-muted-foreground/50" />
+                                                    <p className="font-medium">Zoom in to explore</p>
+                                                    <p className="text-sm mt-2">Zoom in on the map to see peaks and challenges in that area.</p>
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <p>No peaks or challenges visible in this area.</p>
+                                                    <p className="text-sm mt-2">Try moving the map or zooming out.</p>
+                                                </>
+                                            )}
                                         </div>
                                     )}
                                 </motion.div>
@@ -245,7 +280,7 @@ const DiscoveryDrawer = () => {
         );
     }
 
-    // Mobile version with draggable bottom sheet
+    // Mobile version with draggable bottom sheet and tabs
     return (
         <motion.div
             initial={{ height: heights.halfway }}
@@ -274,91 +309,163 @@ const DiscoveryDrawer = () => {
                     )} />
                 </div>
 
-                <div className="px-5 py-3 border-b border-border/60 flex items-center justify-between shrink-0">
-                    <span className="text-xs font-semibold uppercase tracking-[0.2em] text-secondary/80">
-                        PathQuest
-                    </span>
-                    <SatelliteButton 
-                        value={isSatellite}
-                        onClick={handleSatelliteToggle}
-                    />
+                {/* Header with Tabs */}
+                <div className="px-4 py-2 border-b border-border/60 shrink-0">
+                    <div className="flex items-center justify-between">
+                        {/* Tab Navigation */}
+                        <div className="flex gap-1 bg-muted/50 p-1 rounded-lg">
+                            <button
+                                onClick={() => handleTabChange("discover")}
+                                onKeyDown={(e) => e.key === "Enter" && handleTabChange("discover")}
+                                tabIndex={0}
+                                aria-label="Discover tab"
+                                aria-selected={activeTab === "discover"}
+                                role="tab"
+                                className={cn(
+                                    "flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all",
+                                    activeTab === "discover"
+                                        ? "bg-background text-foreground shadow-sm"
+                                        : "text-muted-foreground hover:text-foreground"
+                                )}
+                            >
+                                <Compass className="w-3.5 h-3.5" />
+                                Discover
+                            </button>
+                            <button
+                                onClick={() => handleTabChange("dashboard")}
+                                onKeyDown={(e) => e.key === "Enter" && handleTabChange("dashboard")}
+                                tabIndex={0}
+                                aria-label="Dashboard tab"
+                                aria-selected={activeTab === "dashboard"}
+                                role="tab"
+                                className={cn(
+                                    "flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all",
+                                    activeTab === "dashboard"
+                                        ? "bg-background text-foreground shadow-sm"
+                                        : "text-muted-foreground hover:text-foreground"
+                                )}
+                            >
+                                <LayoutDashboard className="w-3.5 h-3.5" />
+                                Dashboard
+                            </button>
+                        </div>
+                        
+                        <SatelliteButton 
+                            value={isSatellite}
+                            onClick={handleSatelliteToggle}
+                        />
+                    </div>
                 </div>
 
+                {/* Tab Content */}
                 <div className={cn(
-                    "flex-1 overflow-y-auto p-5 space-y-6 custom-scrollbar",
+                    "flex-1 overflow-y-auto p-5 custom-scrollbar",
                     drawerHeight === "collapsed" && "overflow-hidden"
                 )}>
-                    {/* Featured Challenges */}
-                    {visibleChallenges.length > 0 && (
-                        <section>
-                            <div className="flex items-center gap-2 mb-4">
-                                <Trophy className="w-4 h-4 text-secondary" />
-                                <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">Visible Challenges</h2>
-                            </div>
-                            <div className="space-y-2.5">
-                                {visibleChallenges.map((challenge) => (
-                                    <div 
-                                        key={challenge.id} 
-                                        onClick={() => handleChallengeClick(challenge.id)}
-                                        onKeyDown={(e) => e.key === "Enter" && handleChallengeClick(challenge.id)}
-                                        tabIndex={0}
-                                        role="button"
-                                        aria-label={`View challenge: ${challenge.name}`}
-                                        className="group relative overflow-hidden rounded-xl bg-card border border-border/70 p-4 hover:border-primary/50 transition-colors cursor-pointer"
-                                    >
-                                        <div className="flex justify-between items-start">
-                                            <div>
-                                                <h3 className="font-medium group-hover:text-primary transition-colors">{challenge.name}</h3>
-                                                <p className="text-xs text-muted-foreground mt-1">{challenge.num_peaks} Peaks</p>
-                                            </div>
-                                            <ArrowRight className="w-4 h-4 text-muted-foreground opacity-0 group-hover:opacity-100 -translate-x-2 group-hover:translate-x-0 transition-all" />
+                    <AnimatePresence mode="wait">
+                        {activeTab === "discover" ? (
+                            <motion.div
+                                key="discover"
+                                initial={{ opacity: 0, x: -10 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                exit={{ opacity: 0, x: -10 }}
+                                transition={{ duration: 0.15 }}
+                                className="space-y-6"
+                            >
+                                {/* Featured Challenges */}
+                                {visibleChallenges.length > 0 && (
+                                    <section>
+                                        <div className="flex items-center gap-2 mb-4">
+                                            <Trophy className="w-4 h-4 text-secondary" />
+                                            <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">Visible Challenges</h2>
                                         </div>
-                                        <div className={cn("absolute bottom-0 left-0 h-0.5 w-full opacity-50 bg-primary")} />
-                                    </div>
-                                ))}
-                            </div>
-                        </section>
-                    )}
-
-                    {/* Trending Peaks */}
-                    {visiblePeaks.length > 0 && (
-                        <section className="pb-2">
-                            <div className="flex items-center gap-2 mb-4">
-                                <TrendingUp className="w-4 h-4 text-primary" />
-                                <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">Visible Peaks</h2>
-                            </div>
-                            <div className="space-y-2.5">
-                                {visiblePeaks.map((peak) => (
-                                    <div 
-                                        key={peak.id} 
-                                        onClick={() => handlePeakClick(peak.id, peak.location_coords)}
-                                        onKeyDown={(e) => e.key === "Enter" && handlePeakClick(peak.id, peak.location_coords)}
-                                        tabIndex={0}
-                                        role="button"
-                                        aria-label={`View peak: ${peak.name}`}
-                                        className="flex items-center justify-between p-3 rounded-lg hover:bg-muted/60 transition-colors cursor-pointer group"
-                                    >
-                                        <div className="flex items-center gap-3">
-                                            <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary">
-                                                <Mountain className="w-4 h-4" />
-                                            </div>
-                                            <div>
-                                                <p className="font-medium text-sm group-hover:text-primary-foreground transition-colors">{peak.name}</p>
-                                                <p className="text-xs font-mono text-muted-foreground">{peak.elevation ? `${Math.round(metersToFt(peak.elevation)).toLocaleString()} ft` : ''}</p>
-                                            </div>
+                                        <div className="space-y-2.5">
+                                            {visibleChallenges.map((challenge) => (
+                                                <div 
+                                                    key={challenge.id} 
+                                                    onClick={() => handleChallengeClick(challenge.id)}
+                                                    onKeyDown={(e) => e.key === "Enter" && handleChallengeClick(challenge.id)}
+                                                    tabIndex={0}
+                                                    role="button"
+                                                    aria-label={`View challenge: ${challenge.name}`}
+                                                    className="group relative overflow-hidden rounded-xl bg-card border border-border/70 p-4 hover:border-primary/50 transition-colors cursor-pointer"
+                                                >
+                                                    <div className="flex justify-between items-start">
+                                                        <div>
+                                                            <h3 className="font-medium group-hover:text-primary transition-colors">{challenge.name}</h3>
+                                                            <p className="text-xs text-muted-foreground mt-1">{challenge.num_peaks} Peaks</p>
+                                                        </div>
+                                                        <ArrowRight className="w-4 h-4 text-muted-foreground opacity-0 group-hover:opacity-100 -translate-x-2 group-hover:translate-x-0 transition-all" />
+                                                    </div>
+                                                    <div className={cn("absolute bottom-0 left-0 h-0.5 w-full opacity-50 bg-primary")} />
+                                                </div>
+                                            ))}
                                         </div>
-                                    </div>
-                                ))}
-                            </div>
-                        </section>
-                    )}
+                                    </section>
+                                )}
 
-                    {visibleChallenges.length === 0 && visiblePeaks.length === 0 && (
-                        <div className="text-center py-10 text-muted-foreground">
-                            <p>No peaks or challenges visible in this area.</p>
-                            <p className="text-sm mt-2">Try moving the map or zooming out.</p>
-                        </div>
-                    )}
+                                {/* Trending Peaks */}
+                                {visiblePeaks.length > 0 && (
+                                    <section className="pb-2">
+                                        <div className="flex items-center gap-2 mb-4">
+                                            <TrendingUp className="w-4 h-4 text-primary" />
+                                            <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">Visible Peaks</h2>
+                                        </div>
+                                        <div className="space-y-2.5">
+                                            {visiblePeaks.map((peak) => (
+                                                <div 
+                                                    key={peak.id} 
+                                                    onClick={() => handlePeakClick(peak.id, peak.location_coords)}
+                                                    onKeyDown={(e) => e.key === "Enter" && handlePeakClick(peak.id, peak.location_coords)}
+                                                    tabIndex={0}
+                                                    role="button"
+                                                    aria-label={`View peak: ${peak.name}`}
+                                                    className="flex items-center justify-between p-3 rounded-lg hover:bg-muted/60 transition-colors cursor-pointer group"
+                                                >
+                                                    <div className="flex items-center gap-3">
+                                                        <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary">
+                                                            <Mountain className="w-4 h-4" />
+                                                        </div>
+                                                        <div>
+                                                            <p className="font-medium text-sm group-hover:text-primary-foreground transition-colors">{peak.name}</p>
+                                                            <p className="text-xs font-mono text-muted-foreground">{peak.elevation ? `${Math.round(metersToFt(peak.elevation)).toLocaleString()} ft` : ''}</p>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </section>
+                                )}
+
+                                {visibleChallenges.length === 0 && visiblePeaks.length === 0 && (
+                                    <div className="text-center py-10 text-muted-foreground">
+                                        {isZoomedOutTooFar ? (
+                                            <>
+                                                <ZoomIn className="w-10 h-10 mx-auto mb-3 text-muted-foreground/50" />
+                                                <p className="font-medium">Zoom in to explore</p>
+                                                <p className="text-sm mt-2">Zoom in on the map to see peaks and challenges in that area.</p>
+                                            </>
+                                        ) : (
+                                            <>
+                                                <p>No peaks or challenges visible in this area.</p>
+                                                <p className="text-sm mt-2">Try moving the map or zooming out.</p>
+                                            </>
+                                        )}
+                                    </div>
+                                )}
+                            </motion.div>
+                        ) : (
+                            <motion.div
+                                key="dashboard"
+                                initial={{ opacity: 0, x: 10 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                exit={{ opacity: 0, x: 10 }}
+                                transition={{ duration: 0.15 }}
+                            >
+                                <DashboardContent isActive={activeTab === "dashboard"} />
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
                 </div>
             </div>
         </motion.div>

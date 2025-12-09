@@ -10,6 +10,7 @@ export type MapState = {
     isSatellite: boolean;
     disablePeaksSearch: boolean;
     summitHistoryPeakId: string | null;
+    isZoomedOutTooFar: boolean;
 };
 
 export type MapActions = {
@@ -19,6 +20,7 @@ export type MapActions = {
     setIsSatellite: (isSatellite: boolean) => void;
     setDisablePeaksSearch: (disable: boolean) => void;
     setSummitHistoryPeakId: (peakId: string | null) => void;
+    setIsZoomedOutTooFar: (isZoomedOut: boolean) => void;
 };
 
 export type MapStore = MapState & MapActions;
@@ -31,6 +33,7 @@ export const createMapStore = (
         isSatellite: false,
         disablePeaksSearch: false,
         summitHistoryPeakId: null,
+        isZoomedOutTooFar: false,
     }
 ) => {
     return createStore<MapStore>((set) => ({
@@ -41,5 +44,6 @@ export const createMapStore = (
         setIsSatellite: (isSatellite) => set({ isSatellite }),
         setDisablePeaksSearch: (disablePeaksSearch) => set({ disablePeaksSearch }),
         setSummitHistoryPeakId: (summitHistoryPeakId) => set({ summitHistoryPeakId }),
+        setIsZoomedOutTooFar: (isZoomedOutTooFar) => set({ isZoomedOutTooFar }),
     }));
 };

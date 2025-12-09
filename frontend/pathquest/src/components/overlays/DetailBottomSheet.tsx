@@ -1,8 +1,8 @@
 "use client";
 
 import React, { useState, useEffect, useCallback } from "react";
-import { motion, useAnimation, PanInfo } from "framer-motion";
-import { ArrowRight, Trophy, TrendingUp, Mountain, X, MapPin, CheckCircle, Navigation, ChevronRight, Heart, Map as MapIcon } from "lucide-react";
+import { motion, useAnimation, PanInfo, AnimatePresence } from "framer-motion";
+import { ArrowRight, Trophy, TrendingUp, Mountain, X, MapPin, CheckCircle, Navigation, ChevronRight, Heart, Map as MapIcon, LayoutDashboard, Compass, ZoomIn, RefreshCw } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useMapStore } from "@/providers/MapProvider";
 import { useRouter, usePathname } from "next/navigation";
@@ -15,14 +15,16 @@ import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { pushWithMapState } from "@/helpers/navigateWithMapState";
 import SatelliteButton from "../app/map/SatelliteButton";
+import DashboardContent from "./DashboardContent";
 import mapboxgl from "mapbox-gl";
 import convertPeaksToGeoJSON from "@/helpers/convertPeaksToGeoJSON";
 import { setPeaksSearchDisabled } from "@/helpers/peaksSearchState";
 import metersToFt from "@/helpers/metersToFt";
-import useRequireAuth from "@/hooks/useRequireAuth";
+import useRequireAuth, { useIsAuthenticated } from "@/hooks/useRequireAuth";
+import getActivitiesProcessing from "@/actions/users/getActivitiesProcessing";
 
 type DrawerHeight = "collapsed" | "halfway" | "expanded";
-type TabMode = "details" | "discover";
+type TabMode = "details" | "discover" | "dashboard";
 
 const DRAWER_HEIGHTS = {
     collapsed: 60,
@@ -43,15 +45,32 @@ const DetailBottomSheet = ({ peakId, challengeId, onClose }: Props) => {
     const isSatellite = useMapStore((state) => state.isSatellite);
     const setIsSatellite = useMapStore((state) => state.setIsSatellite);
     const setDisablePeaksSearch = useMapStore((state) => state.setDisablePeaksSearch);
+    const isZoomedOutTooFar = useMapStore((state) => state.isZoomedOutTooFar);
     const router = useRouter();
     const controls = useAnimation();
     const requireAuth = useRequireAuth();
     const queryClient = useQueryClient();
+    const { isAuthenticated, isLoading: authLoading } = useIsAuthenticated();
     
     const hasDetail = Boolean(peakId || challengeId);
-    const [activeTab, setActiveTab] = useState<TabMode>(hasDetail ? "details" : "discover");
+    const [activeTab, setActiveTab] = useState<TabMode>("discover");
     const [drawerHeight, setDrawerHeight] = useState<DrawerHeight>("halfway");
     const [heights, setHeights] = useState(DRAWER_HEIGHTS);
+    const [hasInitializedTab, setHasInitializedTab] = useState(false);
+
+    // Set default tab based on auth state and whether there's a detail open
+    useEffect(() => {
+        if (!authLoading && !hasInitializedTab) {
+            if (hasDetail) {
+                setActiveTab("details");
+            } else if (isAuthenticated) {
+                setActiveTab("dashboard");
+            } else {
+                setActiveTab("discover");
+            }
+            setHasInitializedTab(true);
+        }
+    }, [isAuthenticated, authLoading, hasInitializedTab, hasDetail]);
 
     // Fetch peak details
     const { data: peakData, isLoading: peakLoading } = useQuery({
@@ -74,6 +93,16 @@ const DetailBottomSheet = ({ peakId, challengeId, onClose }: Props) => {
         },
         enabled: Boolean(challengeId),
     });
+
+    // Fetch sync status (only when authenticated and on dashboard tab)
+    const { data: processingResult } = useQuery({
+        queryKey: ["activitiesProcessing"],
+        queryFn: getActivitiesProcessing,
+        enabled: isAuthenticated && activeTab === "dashboard",
+        refetchInterval: activeTab === "dashboard" ? 10000 : false,
+    });
+
+    const syncCount = processingResult?.success ? processingResult.data : 0;
 
     const peak = peakData?.success ? peakData.data?.peak : null;
     const peakChallenges = peakData?.success ? peakData.data?.challenges : null;
@@ -99,13 +128,13 @@ const DetailBottomSheet = ({ peakId, challengeId, onClose }: Props) => {
 
     // Switch to details tab when a detail is selected
     useEffect(() => {
-        if (hasDetail) {
+        if (hasDetail && hasInitializedTab) {
             setActiveTab("details");
             if (drawerHeight === "collapsed") {
                 setDrawerHeight("halfway");
             }
         }
-    }, [hasDetail, peakId, challengeId]);
+    }, [hasDetail, peakId, challengeId, hasInitializedTab]);
 
     // Animate to new height when drawerHeight state changes
     useEffect(() => {
@@ -326,6 +355,14 @@ const DetailBottomSheet = ({ peakId, challengeId, onClose }: Props) => {
                 queryKey: ["favoriteChallenges"],
             });
         });
+    };
+
+    const handleTabChange = (tab: TabMode) => {
+        setActiveTab(tab);
+        // Expand drawer when switching tabs if collapsed
+        if (drawerHeight === "collapsed") {
+            setDrawerHeight("halfway");
+        }
     };
 
     const isLoading = (peakId && peakLoading) || (challengeId && challengeLoading);
@@ -613,7 +650,7 @@ const DetailBottomSheet = ({ peakId, challengeId, onClose }: Props) => {
                                     </div>
                                     <div>
                                         <p className="font-medium text-sm group-hover:text-primary-foreground transition-colors">{pk.name}</p>
-                                        <p className="text-xs font-mono text-muted-foreground">{pk.elevation ? `${pk.elevation} ft` : ''}</p>
+                                        <p className="text-xs font-mono text-muted-foreground">{pk.elevation ? `${Math.round(metersToFt(pk.elevation)).toLocaleString()} ft` : ''}</p>
                                     </div>
                                 </div>
                             </div>
@@ -624,8 +661,18 @@ const DetailBottomSheet = ({ peakId, challengeId, onClose }: Props) => {
 
             {visibleChallenges.length === 0 && visiblePeaks.length === 0 && (
                 <div className="text-center py-8 text-muted-foreground">
-                    <p className="text-sm">No peaks or challenges visible in this area.</p>
-                    <p className="text-xs mt-1">Try moving the map or zooming out.</p>
+                    {isZoomedOutTooFar ? (
+                        <>
+                            <ZoomIn className="w-8 h-8 mx-auto mb-2 text-muted-foreground/50" />
+                            <p className="text-sm font-medium">Zoom in to explore</p>
+                            <p className="text-xs mt-1">Zoom in on the map to see peaks and challenges in that area.</p>
+                        </>
+                    ) : (
+                        <>
+                            <p className="text-sm">No peaks or challenges visible in this area.</p>
+                            <p className="text-xs mt-1">Try moving the map or zooming out.</p>
+                        </>
+                    )}
                 </div>
             )}
         </div>
@@ -661,34 +708,68 @@ const DetailBottomSheet = ({ peakId, challengeId, onClose }: Props) => {
 
                 {/* Tab Bar */}
                 <div className="px-4 py-2 border-b border-border/60 flex items-center justify-between shrink-0">
-                    <div className="flex gap-1 bg-muted/50 p-1 rounded-lg">
-                        <button
-                            onClick={() => setActiveTab("details")}
-                            className={cn(
-                                "px-3 py-1.5 text-xs font-medium rounded-md transition-all",
-                                activeTab === "details" 
-                                    ? "bg-background shadow-sm text-foreground" 
-                                    : "text-muted-foreground hover:text-foreground"
+                    <div className="flex items-center gap-3">
+                        <div className="flex gap-1 bg-muted/50 p-1 rounded-lg">
+                            {hasDetail && (
+                                <button
+                                    onClick={() => handleTabChange("details")}
+                                    onKeyDown={(e) => e.key === "Enter" && handleTabChange("details")}
+                                    tabIndex={0}
+                                    aria-label="View details tab"
+                                    aria-selected={activeTab === "details"}
+                                    role="tab"
+                                    className={cn(
+                                        "flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md transition-all",
+                                        activeTab === "details" 
+                                            ? "bg-background shadow-sm text-foreground" 
+                                            : "text-muted-foreground hover:text-foreground"
+                                    )}
+                                >
+                                    Details
+                                </button>
                             )}
-                            disabled={!hasDetail}
-                            aria-label="View details tab"
-                            tabIndex={0}
-                        >
-                            Details
-                        </button>
-                        <button
-                            onClick={() => setActiveTab("discover")}
-                            className={cn(
-                                "px-3 py-1.5 text-xs font-medium rounded-md transition-all",
-                                activeTab === "discover" 
-                                    ? "bg-background shadow-sm text-foreground" 
-                                    : "text-muted-foreground hover:text-foreground"
-                            )}
-                            aria-label="View discover tab"
-                            tabIndex={0}
-                        >
-                            Discover
-                        </button>
+                            <button
+                                onClick={() => handleTabChange("discover")}
+                                onKeyDown={(e) => e.key === "Enter" && handleTabChange("discover")}
+                                tabIndex={0}
+                                aria-label="Discover tab"
+                                aria-selected={activeTab === "discover"}
+                                role="tab"
+                                className={cn(
+                                    "flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md transition-all",
+                                    activeTab === "discover" 
+                                        ? "bg-background shadow-sm text-foreground" 
+                                        : "text-muted-foreground hover:text-foreground"
+                                )}
+                            >
+                                <Compass className="w-3.5 h-3.5" />
+                                Discover
+                            </button>
+                            <button
+                                onClick={() => handleTabChange("dashboard")}
+                                onKeyDown={(e) => e.key === "Enter" && handleTabChange("dashboard")}
+                                tabIndex={0}
+                                aria-label="Dashboard tab"
+                                aria-selected={activeTab === "dashboard"}
+                                role="tab"
+                                className={cn(
+                                    "flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md transition-all",
+                                    activeTab === "dashboard" 
+                                        ? "bg-background shadow-sm text-foreground" 
+                                        : "text-muted-foreground hover:text-foreground"
+                                )}
+                            >
+                                <LayoutDashboard className="w-3.5 h-3.5" />
+                                Dashboard
+                            </button>
+                        </div>
+                        {/* Sync Status - shown next to tabs */}
+                        {syncCount > 0 && (
+                            <div className="flex items-center gap-1.5 text-xs text-primary">
+                                <RefreshCw className="w-3 h-3 animate-spin" />
+                                <span className="hidden sm:inline">Syncing {syncCount}</span>
+                            </div>
+                        )}
                     </div>
                     <SatelliteButton 
                         value={isSatellite}
@@ -701,19 +782,53 @@ const DetailBottomSheet = ({ peakId, challengeId, onClose }: Props) => {
                     "flex-1 overflow-y-auto p-4 custom-scrollbar",
                     drawerHeight === "collapsed" && "overflow-hidden"
                 )}>
-                    {isLoading ? (
-                        <div className="flex items-center justify-center py-10">
-                            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
-                        </div>
-                    ) : activeTab === "details" ? (
-                        peakId ? renderPeakDetails() : challengeId ? renderChallengeDetails() : (
-                            <div className="text-center py-8 text-muted-foreground">
-                                <p className="text-sm">Select a peak or challenge to view details.</p>
-                            </div>
-                        )
-                    ) : (
-                        renderDiscoveryContent()
-                    )}
+                    <AnimatePresence mode="wait">
+                        {isLoading ? (
+                            <motion.div
+                                key="loading"
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                exit={{ opacity: 0 }}
+                                className="flex items-center justify-center py-10"
+                            >
+                                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
+                            </motion.div>
+                        ) : activeTab === "details" ? (
+                            <motion.div
+                                key="details"
+                                initial={{ opacity: 0, x: -10 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                exit={{ opacity: 0, x: -10 }}
+                                transition={{ duration: 0.15 }}
+                            >
+                                {peakId ? renderPeakDetails() : challengeId ? renderChallengeDetails() : (
+                                    <div className="text-center py-8 text-muted-foreground">
+                                        <p className="text-sm">Select a peak or challenge to view details.</p>
+                                    </div>
+                                )}
+                            </motion.div>
+                        ) : activeTab === "discover" ? (
+                            <motion.div
+                                key="discover"
+                                initial={{ opacity: 0, x: -10 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                exit={{ opacity: 0, x: -10 }}
+                                transition={{ duration: 0.15 }}
+                            >
+                                {renderDiscoveryContent()}
+                            </motion.div>
+                        ) : (
+                            <motion.div
+                                key="dashboard"
+                                initial={{ opacity: 0, x: 10 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                exit={{ opacity: 0, x: 10 }}
+                                transition={{ duration: 0.15 }}
+                            >
+                                <DashboardContent isActive={activeTab === "dashboard"} />
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
                 </div>
             </div>
         </motion.div>
@@ -721,4 +836,3 @@ const DetailBottomSheet = ({ peakId, challengeId, onClose }: Props) => {
 };
 
 export default DetailBottomSheet;
-
