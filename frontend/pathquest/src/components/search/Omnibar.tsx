@@ -11,7 +11,6 @@ import { useRouter } from "next/navigation";
 import { searchPeaksClient } from "@/lib/client/searchPeaksClient";
 import { searchChallengesClient } from "@/lib/client/searchChallengesClient";
 import { expandSearchQuery, extractStateFromQuery } from "@/helpers/stateAbbreviations";
-import { pushWithMapState } from "@/helpers/navigateWithMapState";
 
 interface SearchResult {
     id: string;
@@ -244,37 +243,41 @@ const Omnibar = () => {
         setQuery(result.title);
         setIsOpen(false);
         
-        if (result.coords && map) {
-            const zoom = getZoomForResult(result);
-            
-            // For places with a bounding box, fit to bounds instead of flying to center
-            if (result.type === 'place' && result.data?.bbox) {
-                const [minLng, minLat, maxLng, maxLat] = result.data.bbox;
-                map.fitBounds(
-                    [[minLng, minLat], [maxLng, maxLat]],
-                    { 
-                        padding: 50, 
-                        pitch: zoom > 10 ? 60 : 0,  // Only pitch for closer zooms
-                        duration: 2000 
-                    }
-                );
-            } else {
-                map.flyTo({
-                    center: result.coords,
-                    zoom,
-                    pitch: zoom > 10 ? 60 : 0,  // Only pitch for closer zooms
-                    duration: 2000,
-                    essential: true
-                });
-            }
+        // Route first to ensure navigation happens even if map operations fail
+        if (result.type === 'peak' && result.data?.id) {
+            router.push(`/peaks/${result.data.id}`);
+        } else if (result.type === 'challenge' && result.data?.id) {
+            router.push(`/challenges/${result.data.id}`);
         }
         
-        // Use true routes for peaks and challenges (enables SEO + intercepting routes)
-        // pushWithMapState preserves map coordinates in the URL
-        if (result.type === 'peak' && result.data?.id) {
-            pushWithMapState(router, `/peaks/${result.data.id}`);
-        } else if (result.type === 'challenge' && result.data?.id) {
-            pushWithMapState(router, `/challenges/${result.data.id}`);
+        // Then handle map operations (wrapped in try-catch to prevent errors from blocking)
+        try {
+            if (result.coords && map) {
+                const zoom = getZoomForResult(result);
+                
+                // For places with a bounding box, fit to bounds instead of flying to center
+                if (result.type === 'place' && result.data?.bbox) {
+                    const [minLng, minLat, maxLng, maxLat] = result.data.bbox;
+                    map.fitBounds(
+                        [[minLng, minLat], [maxLng, maxLat]],
+                        { 
+                            padding: 50, 
+                            pitch: zoom > 10 ? 60 : 0,
+                            duration: 2000 
+                        }
+                    );
+                } else {
+                    map.flyTo({
+                        center: result.coords,
+                        zoom,
+                        pitch: zoom > 10 ? 60 : 0,
+                        duration: 2000,
+                        essential: true
+                    });
+                }
+            }
+        } catch (e) {
+            console.error("Map operation failed:", e);
         }
     };
 

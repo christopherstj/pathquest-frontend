@@ -2,6 +2,21 @@ import { createStore } from "zustand/vanilla";
 import { Map } from "mapbox-gl";
 import Peak from "@/typeDefs/Peak";
 import ChallengeProgress from "@/typeDefs/ChallengeProgress";
+import Summit from "@/typeDefs/Summit";
+import Activity from "@/typeDefs/Activity";
+
+export type SelectedPeakUserData = {
+    peakId: string;
+    peakName: string;
+    ascents: Summit[];
+    activities: Activity[];
+} | null;
+
+export type SelectedPeakCommunityData = {
+    peakId: string;
+    peakName: string;
+    publicSummits: Summit[];
+} | null;
 
 export type MapState = {
     map: Map | null;
@@ -11,6 +26,8 @@ export type MapState = {
     disablePeaksSearch: boolean;
     summitHistoryPeakId: string | null;
     isZoomedOutTooFar: boolean;
+    selectedPeakUserData: SelectedPeakUserData;
+    selectedPeakCommunityData: SelectedPeakCommunityData;
 };
 
 export type MapActions = {
@@ -21,6 +38,8 @@ export type MapActions = {
     setDisablePeaksSearch: (disable: boolean) => void;
     setSummitHistoryPeakId: (peakId: string | null) => void;
     setIsZoomedOutTooFar: (isZoomedOut: boolean) => void;
+    setSelectedPeakUserData: (data: SelectedPeakUserData) => void;
+    setSelectedPeakCommunityData: (data: SelectedPeakCommunityData) => void;
 };
 
 export type MapStore = MapState & MapActions;
@@ -34,6 +53,8 @@ export const createMapStore = (
         disablePeaksSearch: false,
         summitHistoryPeakId: null,
         isZoomedOutTooFar: false,
+        selectedPeakUserData: null,
+        selectedPeakCommunityData: null,
     }
 ) => {
     return createStore<MapStore>((set) => ({
@@ -45,5 +66,7 @@ export const createMapStore = (
         setDisablePeaksSearch: (disablePeaksSearch) => set({ disablePeaksSearch }),
         setSummitHistoryPeakId: (summitHistoryPeakId) => set({ summitHistoryPeakId }),
         setIsZoomedOutTooFar: (isZoomedOutTooFar) => set({ isZoomedOutTooFar }),
+        setSelectedPeakUserData: (selectedPeakUserData) => set({ selectedPeakUserData }),
+        setSelectedPeakCommunityData: (selectedPeakCommunityData) => set({ selectedPeakCommunityData }),
     }));
 };

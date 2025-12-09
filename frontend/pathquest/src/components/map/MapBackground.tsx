@@ -11,7 +11,6 @@ import SatelliteButton from "@/components/app/map/SatelliteButton";
 import { useIsMobile } from "@/hooks/use-mobile";
 import getMapStateFromURL from "@/helpers/getMapStateFromURL";
 import updateMapURL from "@/helpers/updateMapURL";
-import { pushWithMapState } from "@/helpers/navigateWithMapState";
 
 // Debounce utility function
 const debounce = <T extends (...args: any[]) => any>(
@@ -301,7 +300,7 @@ const MapBackground = () => {
                 const id = feature.properties?.id;
                 if (id) {
                      // Navigate to peak detail page (URL-driven overlay via UrlOverlayManager)
-                     pushWithMapState(routerRef.current, `/peaks/${id}`);
+                     routerRef.current.push(`/peaks/${id}`);
                 }
                 
                 // Fly to (mark as programmatic so URL updates after completion, not during)
@@ -349,7 +348,7 @@ const MapBackground = () => {
             if (feature) {
                 const id = feature.properties?.id;
                 if (id) {
-                    pushWithMapState(routerRef.current, `/peaks/${id}`);
+                    routerRef.current.push(`/peaks/${id}`);
                 }
             }
         });

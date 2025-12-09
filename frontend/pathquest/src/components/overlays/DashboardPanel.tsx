@@ -1,16 +1,41 @@
 "use client";
 
-import React from "react";
+import React, { useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Mountain } from "lucide-react";
+import { usePathname } from "next/navigation";
 import { useDashboardStore } from "@/providers/DashboardProvider";
 import { useIsAuthenticated } from "@/hooks/useRequireAuth";
+import { useIsMobile } from "@/hooks/use-mobile";
 import DashboardContent from "./DashboardContent";
 
 const DashboardPanel = () => {
     const isOpen = useDashboardStore((state) => state.isOpen);
+    const openDashboard = useDashboardStore((state) => state.openDashboard);
     const closeDashboard = useDashboardStore((state) => state.closeDashboard);
     const { isAuthenticated, isLoading: authLoading, user } = useIsAuthenticated();
+    const isMobile = useIsMobile(1024);
+    const pathname = usePathname();
+    const hasAutoOpened = useRef(false);
+
+    // Check if we're on a detail page (peak or challenge)
+    const isDetailPage = pathname?.startsWith("/peaks/") || pathname?.startsWith("/challenges/");
+    const isLandingPage = pathname === "/" || pathname === "";
+
+    // Auto-open dashboard on desktop when user is authenticated and on landing page (only once)
+    useEffect(() => {
+        if (!authLoading && isAuthenticated && !isMobile && !hasAutoOpened.current && isLandingPage) {
+            hasAutoOpened.current = true;
+            openDashboard();
+        }
+    }, [authLoading, isAuthenticated, isMobile, openDashboard, isLandingPage]);
+
+    // Close dashboard when navigating to a detail page (peak or challenge)
+    useEffect(() => {
+        if (isDetailPage && isOpen) {
+            closeDashboard();
+        }
+    }, [isDetailPage, isOpen, closeDashboard]);
 
     // Don't render if auth is still loading or user is not authenticated
     if (authLoading || !isAuthenticated) {

@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useCallback } from "react";
 import { motion, useAnimation, PanInfo, AnimatePresence } from "framer-motion";
-import { ArrowRight, Trophy, TrendingUp, Mountain, X, MapPin, CheckCircle, Navigation, ChevronRight, Heart, Map as MapIcon, LayoutDashboard, Compass, ZoomIn, RefreshCw } from "lucide-react";
+import { ArrowRight, Trophy, TrendingUp, Mountain, X, MapPin, CheckCircle, Navigation, ChevronRight, Heart, Map as MapIcon, LayoutDashboard, Compass, ZoomIn, RefreshCw, Route, Users } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useMapStore } from "@/providers/MapProvider";
 import { useRouter, usePathname } from "next/navigation";
@@ -13,18 +13,20 @@ import addChallengeFavorite from "@/actions/challenges/addChallengeFavorite";
 import deleteChallengeFavorite from "@/actions/challenges/deleteChallengeFavorite";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import { pushWithMapState } from "@/helpers/navigateWithMapState";
 import SatelliteButton from "../app/map/SatelliteButton";
 import DashboardContent from "./DashboardContent";
+import PeakUserActivity from "./PeakUserActivity";
+import PeakCommunity from "./PeakCommunity";
 import mapboxgl from "mapbox-gl";
 import convertPeaksToGeoJSON from "@/helpers/convertPeaksToGeoJSON";
+import convertActivitiesToGeoJSON from "@/helpers/convertActivitiesToGeoJSON";
 import { setPeaksSearchDisabled } from "@/helpers/peaksSearchState";
 import metersToFt from "@/helpers/metersToFt";
 import useRequireAuth, { useIsAuthenticated } from "@/hooks/useRequireAuth";
 import getActivitiesProcessing from "@/actions/users/getActivitiesProcessing";
 
 type DrawerHeight = "collapsed" | "halfway" | "expanded";
-type TabMode = "details" | "discover" | "dashboard";
+type TabMode = "details" | "discover" | "dashboard" | "myActivity" | "community";
 
 const DRAWER_HEIGHTS = {
     collapsed: 60,
@@ -46,6 +48,8 @@ const DetailBottomSheet = ({ peakId, challengeId, onClose }: Props) => {
     const setIsSatellite = useMapStore((state) => state.setIsSatellite);
     const setDisablePeaksSearch = useMapStore((state) => state.setDisablePeaksSearch);
     const isZoomedOutTooFar = useMapStore((state) => state.isZoomedOutTooFar);
+    const setSelectedPeakUserData = useMapStore((state) => state.setSelectedPeakUserData);
+    const setSelectedPeakCommunityData = useMapStore((state) => state.setSelectedPeakCommunityData);
     const router = useRouter();
     const controls = useAnimation();
     const requireAuth = useRequireAuth();
@@ -53,10 +57,12 @@ const DetailBottomSheet = ({ peakId, challengeId, onClose }: Props) => {
     const { isAuthenticated, isLoading: authLoading } = useIsAuthenticated();
     
     const hasDetail = Boolean(peakId || challengeId);
+    const hasPeakSelected = Boolean(peakId);
     const [activeTab, setActiveTab] = useState<TabMode>("discover");
     const [drawerHeight, setDrawerHeight] = useState<DrawerHeight>("halfway");
     const [heights, setHeights] = useState(DRAWER_HEIGHTS);
     const [hasInitializedTab, setHasInitializedTab] = useState(false);
+    const [highlightedActivityId, setHighlightedActivityId] = useState<string | null>(null);
 
     // Set default tab based on auth state and whether there's a detail open
     useEffect(() => {
@@ -107,9 +113,88 @@ const DetailBottomSheet = ({ peakId, challengeId, onClose }: Props) => {
     const peak = peakData?.success ? peakData.data?.peak : null;
     const peakChallenges = peakData?.success ? peakData.data?.challenges : null;
     const publicSummits = peakData?.success ? peakData.data?.publicSummits : null;
+    const peakActivities = peakData?.success ? peakData.data?.activities : null;
     
     const challenge = challengeData?.success ? challengeData.data?.challenge : null;
     const challengePeaks = challengeData?.success ? challengeData.data?.peaks : null;
+
+    // Share user's ascents and activities with the map store (for My Activity tab - authenticated users only)
+    useEffect(() => {
+        if (peak && isAuthenticated && peakId) {
+            setSelectedPeakUserData({
+                peakId: peakId,
+                peakName: peak.name || "Unknown Peak",
+                ascents: peak.ascents || [],
+                activities: peakActivities || [],
+            });
+        }
+
+        return () => {
+            setSelectedPeakUserData(null);
+            setHighlightedActivityId(null);
+        };
+    }, [peak, peakActivities, isAuthenticated, peakId, setSelectedPeakUserData]);
+
+    // Share community/public summits data with the map store (for Community tab - all users)
+    useEffect(() => {
+        if (peak && peakId) {
+            setSelectedPeakCommunityData({
+                peakId: peakId,
+                peakName: peak.name || "Unknown Peak",
+                publicSummits: publicSummits || [],
+            });
+        }
+
+        return () => {
+            setSelectedPeakCommunityData(null);
+        };
+    }, [peak, publicSummits, peakId, setSelectedPeakCommunityData]);
+
+    // Display activity GPX lines on the map when viewing a peak
+    useEffect(() => {
+        if (!map || !peakActivities || peakActivities.length === 0) return;
+
+        const setActivitiesOnMap = async () => {
+            let activitiesSource = map.getSource("activities") as mapboxgl.GeoJSONSource | undefined;
+            let activityStartsSource = map.getSource("activityStarts") as mapboxgl.GeoJSONSource | undefined;
+
+            let attempts = 0;
+            const maxAttempts = 5;
+
+            while ((!activitiesSource || !activityStartsSource) && attempts < maxAttempts) {
+                attempts++;
+                await new Promise((resolve) => setTimeout(resolve, 300));
+                activitiesSource = map.getSource("activities") as mapboxgl.GeoJSONSource | undefined;
+                activityStartsSource = map.getSource("activityStarts") as mapboxgl.GeoJSONSource | undefined;
+            }
+
+            if (activitiesSource && activityStartsSource) {
+                const [lineStrings, starts] = convertActivitiesToGeoJSON(peakActivities);
+                activitiesSource.setData(lineStrings);
+                activityStartsSource.setData(starts);
+            }
+        };
+
+        setActivitiesOnMap();
+
+        return () => {
+            const activitiesSource = map.getSource("activities") as mapboxgl.GeoJSONSource | undefined;
+            const activityStartsSource = map.getSource("activityStarts") as mapboxgl.GeoJSONSource | undefined;
+
+            if (activitiesSource) {
+                activitiesSource.setData({
+                    type: "FeatureCollection",
+                    features: [],
+                });
+            }
+            if (activityStartsSource) {
+                activityStartsSource.setData({
+                    type: "FeatureCollection",
+                    features: [],
+                });
+            }
+        };
+    }, [map, peakActivities]);
 
     // Update heights on window resize
     useEffect(() => {
@@ -126,15 +211,21 @@ const DetailBottomSheet = ({ peakId, challengeId, onClose }: Props) => {
         return () => window.removeEventListener("resize", updateHeights);
     }, []);
 
-    // Switch to details tab when a detail is selected
+    // Switch to appropriate tab when a detail is selected
     useEffect(() => {
         if (hasDetail && hasInitializedTab) {
-            setActiveTab("details");
+            if (hasPeakSelected) {
+                // For peaks: authenticated users go to myActivity, others go to community
+                setActiveTab(isAuthenticated ? "myActivity" : "community");
+            } else {
+                // For challenges: always go to details
+                setActiveTab("details");
+            }
             if (drawerHeight === "collapsed") {
                 setDrawerHeight("halfway");
             }
         }
-    }, [hasDetail, peakId, challengeId, hasInitializedTab]);
+    }, [hasDetail, peakId, challengeId, hasInitializedTab, hasPeakSelected, isAuthenticated]);
 
     // Animate to new height when drawerHeight state changes
     useEffect(() => {
@@ -257,7 +348,7 @@ const DetailBottomSheet = ({ peakId, challengeId, onClose }: Props) => {
     }, [map, challengePeaks, heights.halfway]);
 
     const handlePeakClick = (id: string, coords?: [number, number]) => {
-        pushWithMapState(router, `/peaks/${id}`);
+        router.push(`/peaks/${id}`);
         if (map && coords) {
             map.flyTo({
                 center: coords,
@@ -269,7 +360,7 @@ const DetailBottomSheet = ({ peakId, challengeId, onClose }: Props) => {
     };
 
     const handleChallengeClick = (id: string) => {
-        pushWithMapState(router, `/challenges/${id}`);
+        router.push(`/challenges/${id}`);
     };
 
     const handleSatelliteToggle = (enabled: boolean) => {
@@ -442,30 +533,6 @@ const DetailBottomSheet = ({ peakId, challengeId, onClose }: Props) => {
                                     <span className="text-sm font-medium text-foreground">{ch.name}</span>
                                     <ChevronRight className="w-4 h-4 text-muted-foreground group-hover:text-foreground transition-colors" />
                                 </Link>
-                            ))}
-                        </div>
-                    </div>
-                )}
-
-                {/* Recent Summits */}
-                {publicSummits && publicSummits.length > 0 && (
-                    <div className="space-y-2">
-                        <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                            Recent Summits
-                        </h3>
-                        <div className="space-y-1.5">
-                            {publicSummits.slice(0, 3).map((summit, idx) => (
-                                <div
-                                    key={idx}
-                                    className="flex items-center justify-between p-2.5 rounded-lg bg-card border border-border/70"
-                                >
-                                    <span className="text-sm text-foreground">
-                                        {(summit as any).user_name || "Anonymous"}
-                                    </span>
-                                    <span className="text-xs text-muted-foreground">
-                                        {summit.timestamp ? new Date(summit.timestamp).toLocaleDateString() : ""}
-                                    </span>
-                                </div>
                             ))}
                         </div>
                     </div>
@@ -728,6 +795,44 @@ const DetailBottomSheet = ({ peakId, challengeId, onClose }: Props) => {
                                     Details
                                 </button>
                             )}
+                            {hasPeakSelected && isAuthenticated && (
+                                <button
+                                    onClick={() => handleTabChange("myActivity")}
+                                    onKeyDown={(e) => e.key === "Enter" && handleTabChange("myActivity")}
+                                    tabIndex={0}
+                                    aria-label="My Activity tab"
+                                    aria-selected={activeTab === "myActivity"}
+                                    role="tab"
+                                    className={cn(
+                                        "flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md transition-all",
+                                        activeTab === "myActivity" 
+                                            ? "bg-background shadow-sm text-foreground" 
+                                            : "text-muted-foreground hover:text-foreground"
+                                    )}
+                                >
+                                    <Route className="w-3.5 h-3.5" />
+                                    My Activity
+                                </button>
+                            )}
+                            {hasPeakSelected && (
+                                <button
+                                    onClick={() => handleTabChange("community")}
+                                    onKeyDown={(e) => e.key === "Enter" && handleTabChange("community")}
+                                    tabIndex={0}
+                                    aria-label="Community tab"
+                                    aria-selected={activeTab === "community"}
+                                    role="tab"
+                                    className={cn(
+                                        "flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md transition-all",
+                                        activeTab === "community" 
+                                            ? "bg-background shadow-sm text-foreground" 
+                                            : "text-muted-foreground hover:text-foreground"
+                                    )}
+                                >
+                                    <Users className="w-3.5 h-3.5" />
+                                    Community
+                                </button>
+                            )}
                             <button
                                 onClick={() => handleTabChange("discover")}
                                 onKeyDown={(e) => e.key === "Enter" && handleTabChange("discover")}
@@ -806,6 +911,29 @@ const DetailBottomSheet = ({ peakId, challengeId, onClose }: Props) => {
                                         <p className="text-sm">Select a peak or challenge to view details.</p>
                                     </div>
                                 )}
+                            </motion.div>
+                        ) : activeTab === "myActivity" ? (
+                            <motion.div
+                                key="myActivity"
+                                initial={{ opacity: 0, x: -10 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                exit={{ opacity: 0, x: -10 }}
+                                transition={{ duration: 0.15 }}
+                            >
+                                <PeakUserActivity
+                                    highlightedActivityId={highlightedActivityId}
+                                    onHighlightActivity={setHighlightedActivityId}
+                                />
+                            </motion.div>
+                        ) : activeTab === "community" ? (
+                            <motion.div
+                                key="community"
+                                initial={{ opacity: 0, x: -10 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                exit={{ opacity: 0, x: -10 }}
+                                transition={{ duration: 0.15 }}
+                            >
+                                <PeakCommunity />
                             </motion.div>
                         ) : activeTab === "discover" ? (
                             <motion.div

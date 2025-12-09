@@ -21,12 +21,16 @@ const getPeakDetails = async (
     }>
 > => {
     const session = await useAuth();
-    const token = session ? await getGoogleIdToken() : null;
+    const token = session ? await getGoogleIdToken().catch(() => null) : null;
 
     const apiRes = await fetch(`${backendUrl}/peaks/${peakId}`, {
         method: "GET",
         headers: {
             ...(token ? { Authorization: `Bearer ${token}` } : {}),
+            // Pass user info via headers for backend auth (especially in dev)
+            ...(session?.user?.id ? { "x-user-id": session.user.id } : {}),
+            ...(session?.user?.email ? { "x-user-email": session.user.email } : {}),
+            ...(session?.user?.name ? { "x-user-name": session.user.name } : {}),
         },
     });
 

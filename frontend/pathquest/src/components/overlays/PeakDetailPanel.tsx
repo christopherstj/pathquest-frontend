@@ -9,7 +9,6 @@ import {
     CheckCircle,
     Navigation,
     ChevronRight,
-    Users,
     Heart,
     LogIn,
 } from "lucide-react";
@@ -20,6 +19,7 @@ import toggleFavoritePeak from "@/actions/peaks/toggleFavoritePeak";
 import { useMapStore } from "@/providers/MapProvider";
 import Link from "next/link";
 import convertPeaksToGeoJSON from "@/helpers/convertPeaksToGeoJSON";
+import convertActivitiesToGeoJSON from "@/helpers/convertActivitiesToGeoJSON";
 import mapboxgl from "mapbox-gl";
 import CurrentConditions from "../app/peaks/CurrentConditions";
 import metersToFt from "@/helpers/metersToFt";
@@ -32,8 +32,11 @@ interface Props {
 
 const PeakDetailPanel = ({ peakId, onClose }: Props) => {
     const map = useMapStore((state) => state.map);
-    const setSummitHistoryPeakId = useMapStore(
-        (state) => state.setSummitHistoryPeakId
+    const setSelectedPeakUserData = useMapStore(
+        (state) => state.setSelectedPeakUserData
+    );
+    const setSelectedPeakCommunityData = useMapStore(
+        (state) => state.setSelectedPeakCommunityData
     );
     const { isAuthenticated } = useIsAuthenticated();
     const requireAuth = useRequireAuth();
@@ -50,8 +53,88 @@ const PeakDetailPanel = ({ peakId, onClose }: Props) => {
     const peak = data?.success ? data.data?.peak : null;
     const challenges = data?.success ? data.data?.challenges : null;
     const publicSummits = data?.success ? data.data?.publicSummits : null;
+    const activities = data?.success ? data.data?.activities : null;
     const isFavorited = peak?.is_favorited ?? false;
     const userSummits = peak?.summits ?? 0;
+
+    // Share user's ascents and activities with the map store for DiscoveryDrawer (only for authenticated users)
+    useEffect(() => {
+        if (peak && isAuthenticated) {
+            setSelectedPeakUserData({
+                peakId: peakId,
+                peakName: peak.name || "Unknown Peak",
+                ascents: peak.ascents || [],
+                activities: activities || [],
+            });
+        }
+
+        return () => {
+            setSelectedPeakUserData(null);
+        };
+    }, [peak, activities, isAuthenticated, peakId, setSelectedPeakUserData]);
+
+    // Share community/public summits data with the map store (for all users)
+    useEffect(() => {
+        if (peak) {
+            setSelectedPeakCommunityData({
+                peakId: peakId,
+                peakName: peak.name || "Unknown Peak",
+                publicSummits: publicSummits || [],
+            });
+        }
+
+        return () => {
+            setSelectedPeakCommunityData(null);
+        };
+    }, [peak, publicSummits, peakId, setSelectedPeakCommunityData]);
+
+    // Display activity GPX lines on the map
+    useEffect(() => {
+        if (!map || !activities || activities.length === 0) return;
+
+        const setActivitiesOnMap = async () => {
+            let activitiesSource = map.getSource("activities") as mapboxgl.GeoJSONSource | undefined;
+            let activityStartsSource = map.getSource("activityStarts") as mapboxgl.GeoJSONSource | undefined;
+
+            // Retry a few times if sources aren't ready yet
+            let attempts = 0;
+            const maxAttempts = 5;
+
+            while ((!activitiesSource || !activityStartsSource) && attempts < maxAttempts) {
+                attempts++;
+                await new Promise((resolve) => setTimeout(resolve, 300));
+                activitiesSource = map.getSource("activities") as mapboxgl.GeoJSONSource | undefined;
+                activityStartsSource = map.getSource("activityStarts") as mapboxgl.GeoJSONSource | undefined;
+            }
+
+            if (activitiesSource && activityStartsSource) {
+                const [lineStrings, starts] = convertActivitiesToGeoJSON(activities);
+                activitiesSource.setData(lineStrings);
+                activityStartsSource.setData(starts);
+            }
+        };
+
+        setActivitiesOnMap();
+
+        // Cleanup: clear activities when unmounting
+        return () => {
+            const activitiesSource = map.getSource("activities") as mapboxgl.GeoJSONSource | undefined;
+            const activityStartsSource = map.getSource("activityStarts") as mapboxgl.GeoJSONSource | undefined;
+
+            if (activitiesSource) {
+                activitiesSource.setData({
+                    type: "FeatureCollection",
+                    features: [],
+                });
+            }
+            if (activityStartsSource) {
+                activityStartsSource.setData({
+                    type: "FeatureCollection",
+                    features: [],
+                });
+            }
+        };
+    }, [map, activities]);
 
     // Fly to peak location when data loads
     useEffect(() => {
@@ -325,48 +408,6 @@ const PeakDetailPanel = ({ peakId, onClose }: Props) => {
                             </div>
                         </div>
                     )}
-
-                    {/* Recent Summits */}
-                    {publicSummits && publicSummits.length > 0 && (
-                        <div className="space-y-3">
-                            <div className="flex items-center justify-between">
-                                <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
-                                    Recent Summits
-                                </h3>
-                                <button
-                                    onClick={() => setSummitHistoryPeakId(peakId)}
-                                    className="flex items-center gap-1 text-xs text-primary hover:text-primary/80 transition-colors"
-                                    aria-label="View all summits"
-                                    tabIndex={0}
-                                >
-                                    <Users className="w-3.5 h-3.5" />
-                                    View all {publicSummits.length}
-                                </button>
-                            </div>
-                            <div className="space-y-2">
-                                {publicSummits.slice(0, 3).map((summit, idx) => (
-                                    <div
-                                        key={idx}
-                                        className="flex items-center justify-between p-3 rounded-lg bg-card border border-border/70"
-                                    >
-                                        <span className="text-sm text-foreground">
-                                            {(summit as any).user_name || "Anonymous"}
-                                        </span>
-                                        <span className="text-xs text-muted-foreground">
-                                            {summit.timestamp
-                                                ? new Date(summit.timestamp).toLocaleDateString()
-                                                : ""}
-                                        </span>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-                    )}
-
-                    {/* Description */}
-                    <div className="text-sm text-muted-foreground leading-relaxed">
-                        Track your ascents and compete with others on the leaderboard.
-                    </div>
                 </div>
             </div>
         </motion.div>

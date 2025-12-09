@@ -7,7 +7,6 @@ import PeakDetailPanel from "./PeakDetailPanel";
 import ChallengeDetailPanel from "./ChallengeDetailPanel";
 import DetailBottomSheet from "./DetailBottomSheet";
 import DiscoveryDrawer from "./DiscoveryDrawer";
-import { pushWithMapState } from "@/helpers/navigateWithMapState";
 import { useIsMobile } from "@/hooks/use-mobile";
 
 /**
@@ -50,7 +49,7 @@ const UrlOverlayManagerContent = () => {
         if (window.history.length > 1 && previousPathRef.current !== pathname) {
             router.back();
         } else {
-            pushWithMapState(router, "/");
+            router.push("/");
         }
     }, [router, pathname]);
 

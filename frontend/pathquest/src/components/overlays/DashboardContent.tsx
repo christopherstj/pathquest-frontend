@@ -7,6 +7,7 @@ import {
     Loader2,
     MapPin,
     ChevronRight,
+    PenLine,
 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
@@ -134,6 +135,13 @@ const RecentSummitsSection = ({
     summits,
     isLoading,
 }: RecentSummitsSectionProps) => {
+    const handleAddTripReport = (e: React.MouseEvent, summitId: string) => {
+        e.preventDefault();
+        e.stopPropagation();
+        // TODO: Open trip report modal
+        console.log("Add trip report for summit:", summitId);
+    };
+
     return (
         <div className="space-y-3">
             <div className="flex items-center gap-2">
@@ -154,40 +162,57 @@ const RecentSummitsSection = ({
                 </div>
             ) : summits && summits.length > 0 ? (
                 <div className="space-y-2">
-                    {summits.slice(0, 5).map((summit) => (
-                        <Link
-                            key={summit.id}
-                            href={`/peaks/${summit.peak_id || summit.id}`}
-                            className="flex items-center justify-between p-3 rounded-lg bg-card border border-border/70 hover:bg-card/80 transition-colors group"
-                        >
-                            <div className="flex-1 min-w-0">
-                                <p className="text-sm font-medium text-foreground truncate">
-                                    {summit.name}
-                                </p>
-                                <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                                    {summit.elevation && (
-                                        <span>
-                                            {Math.round(
-                                                metersToFt(summit.elevation)
-                                            ).toLocaleString()}{" "}
-                                            ft
-                                        </span>
-                                    )}
-                                    {summit.timestamp && (
-                                        <>
-                                            <span>•</span>
+                    {summits.slice(0, 5).map((summit) => {
+                        const hasNotes = summit.notes && summit.notes.trim().length > 0;
+                        
+                        return (
+                            <Link
+                                key={summit.id}
+                                href={`/peaks/${summit.peak_id || summit.id}`}
+                                className="flex items-center justify-between p-3 rounded-lg bg-card border border-border/70 hover:bg-card/80 transition-colors group"
+                            >
+                                <div className="flex-1 min-w-0">
+                                    <p className="text-sm font-medium text-foreground truncate">
+                                        {summit.name}
+                                    </p>
+                                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                                        {summit.elevation && (
                                             <span>
-                                                {dayjs(
-                                                    summit.timestamp
-                                                ).fromNow()}
+                                                {Math.round(
+                                                    metersToFt(summit.elevation)
+                                                ).toLocaleString()}{" "}
+                                                ft
                                             </span>
-                                        </>
-                                    )}
+                                        )}
+                                        {summit.timestamp && (
+                                            <>
+                                                <span>•</span>
+                                                <span>
+                                                    {dayjs(
+                                                        summit.timestamp
+                                                    ).fromNow()}
+                                                </span>
+                                            </>
+                                        )}
+                                    </div>
                                 </div>
-                            </div>
-                            <ChevronRight className="w-4 h-4 text-muted-foreground group-hover:text-foreground transition-colors flex-shrink-0" />
-                        </Link>
-                    ))}
+                                <div className="flex items-center gap-2 flex-shrink-0">
+                                    {!hasNotes && (
+                                        <button
+                                            onClick={(e) => handleAddTripReport(e, summit.id)}
+                                            className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-semibold text-primary-foreground bg-primary hover:bg-primary/90 rounded-md transition-colors cursor-pointer shadow-sm"
+                                            aria-label="Add trip report"
+                                            tabIndex={0}
+                                        >
+                                            <PenLine className="w-3.5 h-3.5" />
+                                            Add Report
+                                        </button>
+                                    )}
+                                    <ChevronRight className="w-4 h-4 text-muted-foreground group-hover:text-foreground transition-colors" />
+                                </div>
+                            </Link>
+                        );
+                    })}
                 </div>
             ) : (
                 <div className="p-6 rounded-lg bg-card/50 border border-border/50 text-center">

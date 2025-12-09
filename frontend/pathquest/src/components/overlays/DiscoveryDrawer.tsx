@@ -2,20 +2,21 @@
 
 import React, { useState, useEffect } from "react";
 import { motion, useAnimation, PanInfo, AnimatePresence } from "framer-motion";
-import { ArrowRight, Trophy, TrendingUp, Mountain, Compass, LayoutDashboard, ZoomIn } from "lucide-react";
+import { ArrowRight, Trophy, TrendingUp, Mountain, Compass, LayoutDashboard, ZoomIn, Route, Users } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useMapStore } from "@/providers/MapProvider";
 import { useRouter } from "next/navigation";
 import { useIsMobile } from "@/hooks/use-mobile";
 import SatelliteButton from "../app/map/SatelliteButton";
-import { pushWithMapState } from "@/helpers/navigateWithMapState";
-import SummitHistoryPanel from "./SummitHistoryPanel";
 import DashboardContent from "./DashboardContent";
+import PeakUserActivity from "./PeakUserActivity";
+import PeakCommunity from "./PeakCommunity";
 import metersToFt from "@/helpers/metersToFt";
 import { useIsAuthenticated } from "@/hooks/useRequireAuth";
 
 type DrawerHeight = "collapsed" | "halfway" | "expanded";
 type MobileTab = "discover" | "dashboard";
+type DesktopTab = "discover" | "myActivity" | "community";
 
 // Height values in pixels for mobile drawer snap points
 const DRAWER_HEIGHTS = {
@@ -30,9 +31,9 @@ const DiscoveryDrawer = () => {
     const map = useMapStore((state) => state.map);
     const isSatellite = useMapStore((state) => state.isSatellite);
     const setIsSatellite = useMapStore((state) => state.setIsSatellite);
-    const summitHistoryPeakId = useMapStore((state) => state.summitHistoryPeakId);
-    const setSummitHistoryPeakId = useMapStore((state) => state.setSummitHistoryPeakId);
     const isZoomedOutTooFar = useMapStore((state) => state.isZoomedOutTooFar);
+    const selectedPeakUserData = useMapStore((state) => state.selectedPeakUserData);
+    const selectedPeakCommunityData = useMapStore((state) => state.selectedPeakCommunityData);
     const router = useRouter();
     const isMobile = useIsMobile(1024);
     const controls = useAnimation();
@@ -41,7 +42,14 @@ const DiscoveryDrawer = () => {
     const [drawerHeight, setDrawerHeight] = useState<DrawerHeight>("halfway");
     const [heights, setHeights] = useState(DRAWER_HEIGHTS);
     const [activeTab, setActiveTab] = useState<MobileTab>("discover");
+    const [desktopActiveTab, setDesktopActiveTab] = useState<DesktopTab>("discover");
     const [hasInitializedTab, setHasInitializedTab] = useState(false);
+    const [highlightedActivityId, setHighlightedActivityId] = useState<string | null>(null);
+
+    // Check if a peak is selected (has community data - this is set for all users)
+    const hasPeakSelected = Boolean(selectedPeakCommunityData);
+    // Check if user has activity data (only for authenticated users)
+    const hasUserActivityData = Boolean(selectedPeakUserData);
 
     // Set default tab to dashboard if user is authenticated (only once on mount)
     useEffect(() => {
@@ -52,6 +60,22 @@ const DiscoveryDrawer = () => {
             setHasInitializedTab(true);
         }
     }, [isAuthenticated, authLoading, hasInitializedTab]);
+
+    // Auto-switch to appropriate tab when a peak is selected
+    // - Authenticated users: open My Activity tab
+    // - Non-authenticated users: open Community tab
+    useEffect(() => {
+        if (hasPeakSelected && !isMobile) {
+            if (isAuthenticated) {
+                setDesktopActiveTab("myActivity");
+            } else {
+                setDesktopActiveTab("community");
+            }
+        } else if (!hasPeakSelected && !isMobile) {
+            setDesktopActiveTab("discover");
+            setHighlightedActivityId(null);
+        }
+    }, [hasPeakSelected, isAuthenticated, isMobile]);
 
     // Update heights on window resize
     useEffect(() => {
@@ -76,7 +100,7 @@ const DiscoveryDrawer = () => {
     }, [drawerHeight, heights, isMobile, controls]);
 
     const handlePeakClick = (id: string, coords?: [number, number]) => {
-        pushWithMapState(router, `/peaks/${id}`);
+        router.push(`/peaks/${id}`);
         if (map && coords) {
             map.flyTo({
                 center: coords,
@@ -88,7 +112,7 @@ const DiscoveryDrawer = () => {
     };
 
     const handleChallengeClick = (id: string) => {
-        pushWithMapState(router, `/challenges/${id}`);
+        router.push(`/challenges/${id}`);
     };
 
     const handleSatelliteToggle = (enabled: boolean) => {
@@ -152,10 +176,6 @@ const DiscoveryDrawer = () => {
         }
     };
 
-    const handleBackFromSummitHistory = () => {
-        setSummitHistoryPeakId(null);
-    };
-
     const handleTabChange = (tab: MobileTab) => {
         setActiveTab(tab);
         // Expand drawer when switching tabs if collapsed
@@ -164,8 +184,18 @@ const DiscoveryDrawer = () => {
         }
     };
 
-    // Desktop version - no drag functionality, no tabs
+    const handleDesktopTabChange = (tab: DesktopTab) => {
+        setDesktopActiveTab(tab);
+    };
+
+    // Desktop version with tabs
     if (!isMobile) {
+        // Show tabs when a peak is selected
+        // My Activity tab: only for authenticated users
+        // Community tab: for all users
+        const showMyActivityTab = hasPeakSelected && isAuthenticated;
+        const showCommunityTab = hasPeakSelected;
+
         return (
             <motion.div
                 initial={{ x: -100, y: 0, opacity: 0 }}
@@ -174,14 +204,79 @@ const DiscoveryDrawer = () => {
                 className="fixed pointer-events-auto flex flex-col gap-3 z-40 top-20 left-5 bottom-6 w-full max-w-[320px] h-auto"
             >
                 <div className="flex-1 bg-background/85 backdrop-blur-xl border border-border shadow-xl overflow-hidden flex flex-col rounded-2xl">
+                    {/* Tab Header - show when a peak is selected */}
+                    {hasPeakSelected && (
+                        <div className="px-3 py-2 border-b border-border/60 shrink-0">
+                            <div className="flex gap-1 bg-muted/50 p-1 rounded-lg">
+                                <button
+                                    onClick={() => handleDesktopTabChange("discover")}
+                                    onKeyDown={(e) => e.key === "Enter" && handleDesktopTabChange("discover")}
+                                    tabIndex={0}
+                                    aria-label="Explore tab"
+                                    aria-selected={desktopActiveTab === "discover"}
+                                    role="tab"
+                                    className={cn(
+                                        "flex flex-col items-center gap-0.5 px-2 py-1.5 rounded-md text-[10px] font-medium transition-all flex-1 justify-center",
+                                        desktopActiveTab === "discover"
+                                            ? "bg-background text-foreground shadow-sm"
+                                            : "text-muted-foreground hover:text-foreground"
+                                    )}
+                                >
+                                    <Compass className="w-4 h-4" />
+                                    Explore
+                                </button>
+                                {showMyActivityTab && (
+                                    <button
+                                        onClick={() => handleDesktopTabChange("myActivity")}
+                                        onKeyDown={(e) => e.key === "Enter" && handleDesktopTabChange("myActivity")}
+                                        tabIndex={0}
+                                        aria-label="Journal tab"
+                                        aria-selected={desktopActiveTab === "myActivity"}
+                                        role="tab"
+                                        className={cn(
+                                            "flex flex-col items-center gap-0.5 px-2 py-1.5 rounded-md text-[10px] font-medium transition-all flex-1 justify-center",
+                                            desktopActiveTab === "myActivity"
+                                                ? "bg-background text-foreground shadow-sm"
+                                                : "text-muted-foreground hover:text-foreground"
+                                        )}
+                                    >
+                                        <Route className="w-4 h-4" />
+                                        Journal
+                                    </button>
+                                )}
+                                {showCommunityTab && (
+                                    <button
+                                        onClick={() => handleDesktopTabChange("community")}
+                                        onKeyDown={(e) => e.key === "Enter" && handleDesktopTabChange("community")}
+                                        tabIndex={0}
+                                        aria-label="Community tab"
+                                        aria-selected={desktopActiveTab === "community"}
+                                        role="tab"
+                                        className={cn(
+                                            "flex flex-col items-center gap-0.5 px-2 py-1.5 rounded-md text-[10px] font-medium transition-all flex-1 justify-center",
+                                            desktopActiveTab === "community"
+                                                ? "bg-background text-foreground shadow-sm"
+                                                : "text-muted-foreground hover:text-foreground"
+                                        )}
+                                    >
+                                        <Users className="w-4 h-4" />
+                                        Community
+                                    </button>
+                                )}
+                            </div>
+                        </div>
+                    )}
+
                     <div className="flex-1 overflow-y-auto p-5 space-y-6 custom-scrollbar">
                         <AnimatePresence mode="wait">
-                            {summitHistoryPeakId ? (
-                                <SummitHistoryPanel
-                                    key="summit-history"
-                                    peakId={summitHistoryPeakId}
-                                    onBack={handleBackFromSummitHistory}
+                            {desktopActiveTab === "myActivity" && showMyActivityTab ? (
+                                <PeakUserActivity
+                                    key="my-activity"
+                                    highlightedActivityId={highlightedActivityId}
+                                    onHighlightActivity={setHighlightedActivityId}
                                 />
+                            ) : desktopActiveTab === "community" && showCommunityTab ? (
+                                <PeakCommunity key="community" />
                             ) : (
                                 <motion.div
                                     key="discovery"

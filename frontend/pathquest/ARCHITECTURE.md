@@ -113,23 +113,69 @@ Both use:
 |-----------|---------|
 | `MapBackground` | Initializes and renders Mapbox GL, handles map interactions |
 | `UrlOverlayManager` | Reads pathname, renders appropriate detail panel |
-| `PeakDetailPanel` | Fetches and displays peak details, includes fly-to functionality |
+| `PeakDetailPanel` | Fetches and displays peak details, shares user/community data with store, displays GPX lines on map |
 | `ChallengeDetailPanel` | Fetches and displays challenge details with peak list |
-| `DiscoveryDrawer` | Shows visible peaks/challenges in current map viewport. On mobile, includes tabbed navigation with Dashboard tab. |
+| `DiscoveryDrawer` | Shows visible peaks/challenges in current map viewport. Has tabbed navigation (Discover/My Activity/Community on desktop when peak selected). |
+| `DetailBottomSheet` | Mobile-only bottom sheet with tabs (Details/My Activity/Community/Discover/Dashboard) |
+| `PeakUserActivity` | Shows authenticated user's summit history and activities for the selected peak |
+| `PeakCommunity` | Shows public summit history from all users for the selected peak |
 | `DashboardPanel` | Desktop-only slide-out panel for user dashboard (right side) |
 | `DashboardContent` | Reusable dashboard content showing recent summits, challenge progress, and sync status |
 | `Omnibar` | Global search for peaks, challenges, and places |
 
+### Peak Detail Tabs (My Activity & Community)
+
+When viewing a peak, users see contextual tabs in the left drawer (desktop) or bottom sheet (mobile).
+
+#### My Activity Tab (Authenticated Users Only)
+When an authenticated user views a peak, their personal activity data is displayed:
+
+**What's shown:**
+- User's summit history for that peak (dates, weather conditions, notes)
+- User's activity GPX lines on the map (immediate display)
+- "Add Trip Report" CTA button (only if no notes exist for a summit)
+
+#### Community Tab (All Users)
+Shows public summit data from all users for the selected peak:
+
+**What's shown:**
+- List of public summits with user names, dates, weather conditions, and notes
+- Sorted by most recent first
+
+#### Tab Behavior
+
+**Desktop (DiscoveryDrawer):**
+- When a peak is selected, tabs appear: Discover / My Activity (if authenticated) / Community
+- Authenticated users: Auto-switches to My Activity tab
+- Non-authenticated users: Auto-switches to Community tab
+
+**Mobile (DetailBottomSheet):**
+- When a peak is selected, tabs appear: Details / My Activity (if authenticated) / Community / Discover / Dashboard
+- Authenticated users: Auto-switches to My Activity tab
+- Non-authenticated users: Auto-switches to Community tab
+
+**Data Flow:**
+1. `PeakDetailPanel` or `DetailBottomSheet` fetches peak data including `ascents`, `activities`, and `publicSummits`
+2. User data is shared via `selectedPeakUserData` in the Zustand map store
+3. Community data is shared via `selectedPeakCommunityData` in the Zustand map store
+4. `PeakUserActivity` and `PeakCommunity` components read from the store and display the content
+5. GPX lines are drawn on the map using the existing `activities` and `activityStarts` sources
+
 ### Mobile Dashboard Integration
 
-On mobile devices, the user dashboard is integrated into the bottom sheet drawer (`DiscoveryDrawer`) as a tab:
+On mobile devices, the user dashboard is integrated into the bottom sheet drawer (`DetailBottomSheet`) as a tab:
 
+- **Details Tab**: Shows peak/challenge details (only when a detail is selected)
+- **My Activity Tab**: Shows user's summits and activities for the selected peak (only for authenticated users viewing a peak)
+- **Community Tab**: Shows public summit history from all users (only when viewing a peak)
 - **Discover Tab**: Shows visible peaks and challenges in the current map viewport
 - **Dashboard Tab**: Shows user's recent summits, challenge progress, and sync status
 
 **Default Tab Behavior:**
-- If user is **authenticated**: Defaults to Dashboard tab on load
-- If user is **not authenticated**: Defaults to Discover tab
+- When selecting a peak (authenticated): Opens My Activity tab
+- When selecting a peak (not authenticated): Opens Community tab
+- On initial load (authenticated): Defaults to Dashboard tab
+- On initial load (not authenticated): Defaults to Discover tab
 
 The desktop version keeps the dashboard as a separate slide-out panel on the right side, triggered by the dashboard button in the global navigation.
 
