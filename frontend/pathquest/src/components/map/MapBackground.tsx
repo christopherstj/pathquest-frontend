@@ -205,6 +205,33 @@ const MapBackground = () => {
                     }
                 });
             }
+
+            // Selected Peaks Source (for challenge detail, peak detail - displays with larger icons)
+            if (!newMap.getSource("selectedPeaks")) {
+                newMap.addSource("selectedPeaks", {
+                    type: "geojson",
+                    data: {
+                        type: "FeatureCollection",
+                        features: []
+                    }
+                });
+            }
+
+            // Selected Peaks Layer (larger markers for highlighted peaks)
+            if (!newMap.getLayer("selectedPeaks")) {
+                newMap.addLayer({
+                    id: "selectedPeaks",
+                    type: "circle",
+                    source: "selectedPeaks",
+                    paint: {
+                        "circle-color": "#4d7a57",
+                        "circle-radius": 10,
+                        "circle-stroke-width": 3,
+                        "circle-stroke-color": "#e8dfc9",
+                        "circle-opacity": 0.95
+                    }
+                });
+            }
             
             // Trigger initial fetch
             // We need to wait for map to be ready, which style.load implies, 
@@ -258,6 +285,23 @@ const MapBackground = () => {
             newMap.getCanvas().style.cursor = "pointer";
         });
         newMap.on("mouseleave", "peaks-point", () => {
+            newMap.getCanvas().style.cursor = "";
+        });
+
+        // Selected peaks interactions (for challenge detail view)
+        newMap.on("click", "selectedPeaks", (e) => {
+            const feature = e.features?.[0];
+            if (feature) {
+                const id = feature.properties?.id;
+                if (id) {
+                    routerRef.current.push(`/peaks/${id}`);
+                }
+            }
+        });
+        newMap.on("mouseenter", "selectedPeaks", () => {
+            newMap.getCanvas().style.cursor = "pointer";
+        });
+        newMap.on("mouseleave", "selectedPeaks", () => {
             newMap.getCanvas().style.cursor = "";
         });
 

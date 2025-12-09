@@ -22,6 +22,7 @@ const SearchBox = dynamic(
 
 const PeakSearch = () => {
     const map = useMapStore((state) => state.map);
+    const disablePeaksSearch = useMapStore((state) => state.disablePeaksSearch);
 
     const [search, setSearch] = React.useState("");
     const [limitResultsToBbox, setLimitResultsToBbox] = React.useState(true);
@@ -45,8 +46,16 @@ const PeakSearch = () => {
             search,
             limitResultsToBbox,
             setPeaks,
-            map
+            map,
+            undefined,
+            disablePeaksSearch
         );
+
+        if (result.status === "disabled") {
+            setStatus("idle");
+            setIsLoading(false);
+            return;
+        }
 
         if (result.status === "zoomedOut") {
             setStatus("zoomedOut");
@@ -60,7 +69,7 @@ const PeakSearch = () => {
             setStatus("ready");
         }
         setIsLoading(false);
-    }, [map, limitResultsToBbox, search]);
+    }, [map, limitResultsToBbox, search, disablePeaksSearch]);
 
     const onSearchChange = (value: string) => {
         if (timeout) clearTimeout(timeout);

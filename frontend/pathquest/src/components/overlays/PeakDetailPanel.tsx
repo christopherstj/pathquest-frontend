@@ -8,6 +8,8 @@ import { useQuery } from "@tanstack/react-query";
 import getPeakDetails from "@/actions/peaks/getPeakDetails";
 import { useMapStore } from "@/providers/MapProvider";
 import Link from "next/link";
+import convertPeaksToGeoJSON from "@/helpers/convertPeaksToGeoJSON";
+import mapboxgl from "mapbox-gl";
 
 interface Props {
     peakId: string;
@@ -41,6 +43,42 @@ const PeakDetailPanel = ({ peakId, onClose }: Props) => {
             });
         }
     }, [peak?.location_coords, map]);
+
+    // Set selected peak on map with larger icon
+    useEffect(() => {
+        if (!map || !peak) return;
+
+        const setSelectedPeakSource = async () => {
+            let peaksSource = map.getSource("selectedPeaks") as mapboxgl.GeoJSONSource | undefined;
+
+            // Retry a few times if source isn't ready yet
+            let attempts = 0;
+            const maxAttempts = 5;
+
+            while (!peaksSource && attempts < maxAttempts) {
+                attempts++;
+                await new Promise((resolve) => setTimeout(resolve, 300));
+                peaksSource = map.getSource("selectedPeaks") as mapboxgl.GeoJSONSource | undefined;
+            }
+
+            if (peaksSource) {
+                peaksSource.setData(convertPeaksToGeoJSON([peak]));
+            }
+        };
+
+        setSelectedPeakSource();
+
+        // Cleanup: clear selected peak when unmounting
+        return () => {
+            const peaksSource = map.getSource("selectedPeaks") as mapboxgl.GeoJSONSource | undefined;
+            if (peaksSource) {
+                peaksSource.setData({
+                    type: "FeatureCollection",
+                    features: [],
+                });
+            }
+        };
+    }, [map, peak]);
 
     const handleFlyToPeak = () => {
         if (peak?.location_coords && map) {

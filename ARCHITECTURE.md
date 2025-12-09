@@ -187,9 +187,9 @@ Server actions for data fetching and mutations. Organized by domain. Backend cal
 ##### Overlays (`components/overlays/`)
 - `DiscoveryDrawer.tsx` - Main side drawer for discovering peaks and challenges. Adapts to a bottom sheet on mobile devices.
 - `OverlayManager.tsx` - Manages the state of active overlays (legacy query param approach)
-- `PeakDetailPanel.tsx` - Client component for peak detail overlay (used by intercepting routes)
+- `PeakDetailPanel.tsx` - Client component for peak detail overlay (used by intercepting routes). Shows selected peak with a larger icon (0.4 scale vs 0.2) using the `selectedPeaks` map source.
 - `PeakDetailContent.tsx` - Peak detail content with SSR data (used by static pages)
-- `ChallengeDetailPanel.tsx` - Client component for challenge detail overlay (used by intercepting routes)
+- `ChallengeDetailPanel.tsx` - Client component for challenge detail overlay (used by intercepting routes). Hides regular peaks/clusters and shows only challenge peaks on the map using the `selectedPeaks` source, allowing users to see all challenge peaks mapped out.
 - `ChallengeDetailContent.tsx` - Challenge detail content with SSR data (used by static pages)
 
 
@@ -231,6 +231,7 @@ Shadcn/ui components built on Radix UI:
 ### Helpers (`src/helpers/`)
 Utility functions for common operations.
 
+- `peaksSearchState.ts` - Module-level state for disabling peaks search (used when viewing challenge details to prevent general peaks from loading)
 - `checkEmail.ts` - Email validation
 - `convertActivitiesToGeoJSON.ts` - Converts activities to GeoJSON format
 - `convertPeaksToGeoJSON.ts` - Converts peaks to GeoJSON format
@@ -286,7 +287,7 @@ React context providers:
 
 ### Store (`src/store/`)
 Zustand state management stores:
-- `mapStore.tsx` - Map instance store (vanilla Zustand)
+- `mapStore.tsx` - Map instance store (vanilla Zustand). Includes `disablePeaksSearch` flag to prevent peaks loading when viewing challenge details.
 - `userStore.tsx` - User data store (vanilla Zustand)
 
 ### Auth (`src/auth/`)

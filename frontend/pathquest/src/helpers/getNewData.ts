@@ -1,9 +1,10 @@
 import searchPeaks from "@/actions/peaks/searchPeaks";
 import Peak from "@/typeDefs/Peak";
 import convertPeaksToGEOJson from "./convertPeaksToGeoJSON";
+import { isPeaksSearchDisabled } from "./peaksSearchState";
 
 export type GetNewDataResult =
-    | { status: "noMap" | "noBounds" | "zoomedOut"; count: 0 }
+    | { status: "noMap" | "noBounds" | "zoomedOut" | "disabled"; count: 0 }
     | { status: "ok"; count: number };
 
 const clearPeaksSource = (map: mapboxgl.Map) => {
@@ -21,9 +22,18 @@ const getNewData = async (
     limitResultsToBbox: boolean,
     setPeaks: (peaks: Peak[]) => void,
     map: mapboxgl.Map | null,
-    peakFilter?: (peak: Peak) => boolean
+    peakFilter?: (peak: Peak) => boolean,
+    disabled?: boolean
 ): Promise<GetNewDataResult> => {
     if (!map) return { status: "noMap", count: 0 };
+
+    // Check module-level flag directly (avoids React timing issues)
+    // Also check passed parameter for backwards compatibility
+    if (isPeaksSearchDisabled() || disabled) {
+        setPeaks([]);
+        clearPeaksSource(map);
+        return { status: "disabled", count: 0 };
+    }
 
     const bounds = map.getBounds();
 

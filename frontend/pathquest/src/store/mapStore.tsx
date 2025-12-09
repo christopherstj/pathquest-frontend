@@ -8,6 +8,7 @@ export type MapState = {
     visiblePeaks: Peak[];
     visibleChallenges: ChallengeProgress[];
     isSatellite: boolean;
+    disablePeaksSearch: boolean;
 };
 
 export type MapActions = {
@@ -15,6 +16,7 @@ export type MapActions = {
     setVisiblePeaks: (peaks: Peak[]) => void;
     setVisibleChallenges: (challenges: ChallengeProgress[]) => void;
     setIsSatellite: (isSatellite: boolean) => void;
+    setDisablePeaksSearch: (disable: boolean) => void;
 };
 
 export type MapStore = MapState & MapActions;
@@ -25,6 +27,7 @@ export const createMapStore = (
         visiblePeaks: [],
         visibleChallenges: [],
         isSatellite: false,
+        disablePeaksSearch: false,
     }
 ) => {
     return createStore<MapStore>((set) => ({
@@ -33,5 +36,6 @@ export const createMapStore = (
         setVisiblePeaks: (visiblePeaks) => set({ visiblePeaks }),
         setVisibleChallenges: (visibleChallenges) => set({ visibleChallenges }),
         setIsSatellite: (isSatellite) => set({ isSatellite }),
+        setDisablePeaksSearch: (disablePeaksSearch) => set({ disablePeaksSearch }),
     }));
 };

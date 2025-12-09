@@ -9,6 +9,8 @@ import getPublicChallengeDetails from "@/actions/challenges/getPublicChallengeDe
 import { useMapStore } from "@/providers/MapProvider";
 import mapboxgl from "mapbox-gl";
 import Link from "next/link";
+import convertPeaksToGeoJSON from "@/helpers/convertPeaksToGeoJSON";
+import { setPeaksSearchDisabled } from "@/helpers/peaksSearchState";
 
 interface Props {
     challengeId: number;
@@ -17,6 +19,7 @@ interface Props {
 
 const ChallengeDetailPanel = ({ challengeId, onClose }: Props) => {
     const map = useMapStore(state => state.map);
+    const setDisablePeaksSearch = useMapStore(state => state.setDisablePeaksSearch);
 
     const { data, isLoading } = useQuery({
         queryKey: ["challengeDetails", challengeId],
@@ -47,6 +50,29 @@ const ChallengeDetailPanel = ({ challengeId, onClose }: Props) => {
         return lngLat;
     }, [peaks]);
 
+    // Disable peaks search and clear existing peaks when challenge detail opens
+    useEffect(() => {
+        // Set both the module-level flag (immediate, avoids React timing) and store flag
+        setPeaksSearchDisabled(true);
+        setDisablePeaksSearch(true);
+        
+        // Also immediately clear the peaks source to remove any already-loaded peaks
+        if (map) {
+            const peaksSource = map.getSource("peaks") as mapboxgl.GeoJSONSource | undefined;
+            if (peaksSource) {
+                peaksSource.setData({
+                    type: "FeatureCollection",
+                    features: [],
+                });
+            }
+        }
+        
+        return () => {
+            setPeaksSearchDisabled(false);
+            setDisablePeaksSearch(false);
+        };
+    }, [setDisablePeaksSearch, map]);
+
     // Fit map to challenge bounds on mount
     useEffect(() => {
         if (bounds && map) {
@@ -62,6 +88,48 @@ const ChallengeDetailPanel = ({ challengeId, onClose }: Props) => {
             });
         }
     }, [bounds, challenge?.location_coords, map]);
+
+    // Show challenge peaks on the map
+    useEffect(() => {
+        if (!map || !peaks || peaks.length === 0) return;
+
+        const setChallengePeaksOnMap = async () => {
+            // Wait for the source to be available
+            let selectedPeaksSource = map.getSource("selectedPeaks") as mapboxgl.GeoJSONSource | undefined;
+            
+            let attempts = 0;
+            const maxAttempts = 10;
+
+            while (!selectedPeaksSource && attempts < maxAttempts) {
+                attempts++;
+                await new Promise((resolve) => setTimeout(resolve, 300));
+                selectedPeaksSource = map.getSource("selectedPeaks") as mapboxgl.GeoJSONSource | undefined;
+            }
+
+            // Set challenge peaks in the selectedPeaks source
+            if (selectedPeaksSource) {
+                selectedPeaksSource.setData(convertPeaksToGeoJSON(peaks));
+            }
+
+            // Move selectedPeaks layer to the top
+            if (map.getLayer("selectedPeaks")) {
+                map.moveLayer("selectedPeaks");
+            }
+        };
+
+        setChallengePeaksOnMap();
+
+        // Cleanup: clear selected peaks
+        return () => {
+            const selectedPeaksSource = map.getSource("selectedPeaks") as mapboxgl.GeoJSONSource | undefined;
+            if (selectedPeaksSource) {
+                selectedPeaksSource.setData({
+                    type: "FeatureCollection",
+                    features: [],
+                });
+            }
+        };
+    }, [map, peaks]);
 
     const handleShowOnMap = () => {
         if (bounds && map) {
