@@ -36,6 +36,7 @@
         "clsx": "^2.1.1",
         "culori": "^4.0.2",
         "dayjs": "^1.11.13",
+        "framer-motion": "^12.23.25",
         "google-auth-library": "^9.14.1",
         "jsonwebtoken": "^9.0.2",
         "lucide-react": "^0.544.0",

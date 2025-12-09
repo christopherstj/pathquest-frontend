@@ -33,7 +33,8 @@ type Props = {
 
 import MapBackground from "@/components/map/MapBackground";
 import GlobalNavigation from "@/components/app/layout/GlobalNavigation";
-import OverlayManager from "@/components/overlays/OverlayManager";
+import DiscoveryDrawer from "@/components/overlays/DiscoveryDrawer";
+import UrlOverlayManager from "@/components/overlays/UrlOverlayManager";
 
 const layout = ({ children }: Props) => {
     return (
@@ -59,9 +60,12 @@ const layout = ({ children }: Props) => {
                                 <main className="relative w-full h-screen overflow-hidden">
                                     <MapBackground />
                                     <GlobalNavigation />
-                                    <OverlayManager />
+                                    {/* Left discovery drawer - persists across all routes */}
+                                    <DiscoveryDrawer />
+                                    {/* URL-driven overlay manager - renders peak/challenge panels based on pathname */}
+                                    <UrlOverlayManager />
+                                    {/* SEO content from static pages (hidden from view, visible to crawlers) */}
                                     <div className="relative z-10 w-full h-full pointer-events-none">
-                                        {/* Children (Overlays) must have pointer-events-auto */}
                                         {children}
                                     </div>
                                 </main>

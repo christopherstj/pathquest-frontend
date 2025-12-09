@@ -3,6 +3,7 @@ import Peak from "@/typeDefs/Peak";
 
 type SearchPeaksOptions = {
     search?: string;
+    state?: string;
     bounds?: {
         nw: { lat: number; lng: number };
         se: { lat: number; lng: number };
@@ -18,6 +19,7 @@ export const searchPeaksClient = async (
     const params = new URLSearchParams();
 
     if (options.search) params.set("search", options.search);
+    if (options.state) params.set("state", options.state);
     if (options.page) params.set("page", options.page);
     if (options.perPage) params.set("perPage", options.perPage);
     if (options.showSummitted) params.set("showSummittedPeaks", "true");

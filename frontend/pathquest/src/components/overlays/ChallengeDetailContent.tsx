@@ -4,30 +4,26 @@ import React, { useEffect, useMemo } from "react";
 import { motion } from "framer-motion";
 import { X, Trophy, Map as MapIcon, PlayCircle, Mountain, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useQuery } from "@tanstack/react-query";
-import getPublicChallengeDetails from "@/actions/challenges/getPublicChallengeDetails";
+import Challenge from "@/typeDefs/Challenge";
+import Peak from "@/typeDefs/Peak";
+import Activity from "@/typeDefs/Activity";
 import { useMapStore } from "@/providers/MapProvider";
-import mapboxgl from "mapbox-gl";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
+import mapboxgl from "mapbox-gl";
 
 interface Props {
-    challengeId: number;
-    onClose: () => void;
+    challenge: Challenge;
+    peaks?: Peak[];
+    activityCoords?: {
+        id: string;
+        coords: Activity["coords"];
+    }[];
 }
 
-const ChallengeDetailPanel = ({ challengeId, onClose }: Props) => {
-    const map = useMapStore(state => state.map);
-
-    const { data, isLoading } = useQuery({
-        queryKey: ["challengeDetails", challengeId],
-        queryFn: async () => {
-            const res = await getPublicChallengeDetails(String(challengeId));
-            return res;
-        }
-    });
-
-    const challenge = data?.success ? data.data?.challenge : null;
-    const peaks = data?.success ? data.data?.peaks : null;
+const ChallengeDetailContent = ({ challenge, peaks, activityCoords }: Props) => {
+    const map = useMapStore((state) => state.map);
+    const router = useRouter();
 
     // Calculate bounds of all peaks to fit them on the map
     const bounds = useMemo(() => {
@@ -54,14 +50,18 @@ const ChallengeDetailPanel = ({ challengeId, onClose }: Props) => {
                 padding: { top: 100, bottom: 100, left: 50, right: 400 },
                 maxZoom: 12,
             });
-        } else if (challenge?.location_coords && map) {
+        } else if (challenge.location_coords && map) {
             map.flyTo({
                 center: challenge.location_coords,
                 zoom: 10,
                 essential: true,
             });
         }
-    }, [bounds, challenge?.location_coords, map]);
+    }, [bounds, challenge.location_coords, map]);
+
+    const handleClose = () => {
+        router.back();
+    };
 
     const handleShowOnMap = () => {
         if (bounds && map) {
@@ -72,30 +72,13 @@ const ChallengeDetailPanel = ({ challengeId, onClose }: Props) => {
         }
     };
 
-    if (isLoading) {
-        return (
-            <motion.div 
-                initial={{ x: 100, opacity: 0 }}
-                animate={{ x: 0, opacity: 1 }}
-                exit={{ x: 100, opacity: 0 }}
-                className="fixed top-20 right-3 md:right-5 bottom-6 w-[calc(100%-1.5rem)] md:w-[340px] max-w-[340px] pointer-events-auto z-40"
-            >
-                <div className="w-full h-full rounded-2xl bg-background/85 backdrop-blur-xl border border-border shadow-xl p-6 flex items-center justify-center">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-secondary"></div>
-                </div>
-            </motion.div>
-        );
-    }
-
-    if (!challenge) return null;
-
     // Count summitted peaks
     const summittedPeaks = peaks?.filter((p) => p.summits && p.summits > 0).length || 0;
     const totalPeaks = peaks?.length || challenge.num_peaks || 0;
     const progressPercent = totalPeaks > 0 ? Math.round((summittedPeaks / totalPeaks) * 100) : 0;
 
     return (
-        <motion.div 
+        <motion.div
             initial={{ x: 100, opacity: 0 }}
             animate={{ x: 0, opacity: 1 }}
             exit={{ x: 100, opacity: 0 }}
@@ -104,23 +87,28 @@ const ChallengeDetailPanel = ({ challengeId, onClose }: Props) => {
             <div className="flex-1 rounded-2xl bg-background/85 backdrop-blur-xl border border-border shadow-xl overflow-hidden flex flex-col">
                 {/* Header */}
                 <div className="p-5 border-b border-border/60 bg-gradient-to-b from-secondary/10 to-transparent relative">
-                    <button 
-                        onClick={onClose}
+                    <button
+                        onClick={handleClose}
                         className="absolute top-4 right-4 p-2 rounded-full hover:bg-white/10 text-muted-foreground hover:text-foreground transition-colors"
                         aria-label="Close challenge details"
                         tabIndex={0}
                     >
                         <X className="w-4 h-4" />
                     </button>
-                    
+
                     <div className="flex items-center gap-2 mb-2 text-secondary">
                         <span className="px-2 py-1 rounded-full border border-border/70 bg-muted/60 text-[11px] font-mono uppercase tracking-[0.18em] flex items-center gap-1">
                             <Trophy className="w-4 h-4" />
                             Challenge
                         </span>
                     </div>
-                    
-                    <h1 className="text-2xl md:text-3xl font-bold text-foreground" style={{ fontFamily: "var(--font-display)" }}>{challenge.name}</h1>
+
+                    <h1
+                        className="text-2xl md:text-3xl font-bold text-foreground"
+                        style={{ fontFamily: "var(--font-display)" }}
+                    >
+                        {challenge.name}
+                    </h1>
                     {challenge.region && (
                         <div className="mt-2 text-sm text-muted-foreground">{challenge.region}</div>
                     )}
@@ -223,5 +211,5 @@ const ChallengeDetailPanel = ({ challengeId, onClose }: Props) => {
     );
 };
 
-export default ChallengeDetailPanel;
+export default ChallengeDetailContent;
 

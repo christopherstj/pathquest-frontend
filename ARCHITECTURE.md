@@ -26,6 +26,34 @@ Next.js 14 App Router structure with route groups and parallel routes.
 - Persistent MapProvider with Mapbox background (map stays mounted while overlays change)
 - Analytics integration (Vercel Analytics)
 - Global fonts configuration (Fraunces + IBM Plex Mono)
+- Parallel route slot `@overlay` for intercepted routes (peak/challenge details)
+
+#### Static Detail Pages with Intercepting Routes
+
+The peak and challenge detail pages use Next.js intercepting routes to enable:
+- **SEO-friendly static pages** at `/peaks/[id]` and `/challenges/[id]`
+- **Overlay UX** when navigating within the app (map stays mounted)
+
+**Route Structure:**
+```
+src/app/
+├── @overlay/                     # Parallel route slot for overlays
+│   ├── default.tsx              # Empty default
+│   ├── (.)peaks/[id]/page.tsx   # Intercepts /peaks/[id] for in-app nav
+│   └── (.)challenges/[id]/page.tsx
+├── peaks/[id]/page.tsx          # Static ISR page (direct URL/crawlers)
+└── challenges/[id]/page.tsx     # Static ISR page (direct URL/crawlers)
+```
+
+**How it works:**
+- Direct URL access (Google, shared links) → Full static page with ISR
+- In-app navigation → Intercepting route shows overlay, map stays mounted
+- Both share the same URL structure (`/peaks/abc123`)
+
+**Static Generation:**
+- Top 1000 peaks (by public summit count) are pre-generated at build
+- All challenges are pre-generated at build
+- Remaining peaks use on-demand ISR with 24-hour revalidation
 
 #### Pages
 
@@ -53,11 +81,25 @@ Next.js 14 App Router structure with route groups and parallel routes.
 - Grid layout with sidebar (commented out) and main content area
 - Renders `PeakSearch` component with bounds toggle, live map-synced results, zoom-aware empty handling, and loading states
 
-##### `/m/peaks/[id]` (Peak Detail Page)
-- Individual peak detail page
+##### `/m/peaks/[id]` (Peak Detail Page - Legacy)
+- Individual peak detail page (legacy route, may be deprecated)
 - Shows peak information, activities, challenges, public summits
 - Uses `PeakDetailMapInteraction` and `PeakTitle` components
 - Fetches data via `getPublicPeakDetails` server action
+
+##### `/peaks/[id]` (Peak Detail Page - Static/SEO)
+- Static ISR page for SEO indexing
+- Pre-generates top 1000 peaks by summit count
+- Dynamic metadata with `generateMetadata` for SEO
+- Uses `PeakDetailContent` component for overlay display
+- Supports intercepting routes for in-app navigation
+
+##### `/challenges/[id]` (Challenge Detail Page - Static/SEO)
+- Static ISR page for SEO indexing
+- Pre-generates all challenges at build time
+- Dynamic metadata with `generateMetadata` for SEO
+- Uses `ChallengeDetailContent` component for overlay display
+- Supports intercepting routes for in-app navigation
 
 ##### `/m/layout.tsx`
 - Layout for main app section (`/m/*`)
@@ -88,7 +130,9 @@ Server actions for data fetching and mutations. Organized by domain. Backend cal
 - `addChallengeFavorite.ts` - Adds challenge to favorites
 - `deleteChallengeFavorite.ts` - Removes challenge from favorites
 - `getAllChallenges.ts` - Fetches all challenges with filters
-- `getChallengeDetails.ts` - Gets detailed challenge information
+- `getAllChallengeIds.ts` - Fetches all challenge IDs for static generation
+- `getChallengeDetails.ts` - Gets detailed challenge information (requires auth)
+- `getPublicChallengeDetails.ts` - Gets challenge details (public, optional auth)
 - `getChallenges.ts` - Gets paginated challenges list
 - `searchChallenges.ts` - Searches challenges with optional bounds, search, favorites-only, and type filters
 - `getFavoriteChallenges.ts` - Gets user's favorite challenges
@@ -98,6 +142,7 @@ Server actions for data fetching and mutations. Organized by domain. Backend cal
 #### Peaks (`actions/peaks/`)
 - `addManualPeakSummit.ts` - Adds manual peak summit entry
 - `deleteAscent.ts` - Deletes an ascent
+- `getTopPeaks.ts` - Fetches top peaks by summit count (for static generation)
 - `getAscentDetails.ts` - Gets detailed ascent information
 - `getFavoritePeaks.ts` - Gets user's favorite peaks
 - `getIsPeakFavorited.ts` - Checks if peak is favorited
@@ -132,13 +177,20 @@ Server actions for data fetching and mutations. Organized by domain. Backend cal
 
 ##### Layout (`components/app/layout/`)
 - `AppSidebar.tsx` - Main sidebar navigation (currently commented out in layout)
-- `GlobalNavigation.tsx` - Top navigation bar with search and user menu
+- `GlobalNavigation.tsx` - Top navigation bar with logo, search omnibar, and user menu
 - `SidebarLink.tsx` - Sidebar link component
 - `UserButton.tsx` - User menu button
 
+##### Brand (`components/brand/`)
+- `Logo.tsx` - SVG logo component with topographic contour-line mountain design. Uses currentColor for theming, supports size prop.
+
 ##### Overlays (`components/overlays/`)
 - `DiscoveryDrawer.tsx` - Main side drawer for discovering peaks and challenges. Adapts to a bottom sheet on mobile devices.
-- `OverlayManager.tsx` - Manages the state of active overlays
+- `OverlayManager.tsx` - Manages the state of active overlays (legacy query param approach)
+- `PeakDetailPanel.tsx` - Client component for peak detail overlay (used by intercepting routes)
+- `PeakDetailContent.tsx` - Peak detail content with SSR data (used by static pages)
+- `ChallengeDetailPanel.tsx` - Client component for challenge detail overlay (used by intercepting routes)
+- `ChallengeDetailContent.tsx` - Challenge detail content with SSR data (used by static pages)
 
 
 ##### Login (`components/app/login/`)
@@ -202,6 +254,7 @@ Utility functions for common operations.
 - `updateURLWithBounds.ts` - Updates URL with map bounds
 - `useIsMobile.ts` - Mobile detection hook
 - `useWindowResize.tsx` - Window resize hook
+- `stateAbbreviations.ts` - US state abbreviation mapping and search query expansion utilities
 
 ### Libraries (`src/lib/`)
 
@@ -280,8 +333,12 @@ Next.js middleware for route protection:
 
 ### Omnibar Search Flow
 1. User types into the Omnibar (global navigation).
-2. Client fetchers call REST API for peaks/challenges (scoped by map bounds when available) and Mapbox geocoding for places.
-3. Results show with type badges; selecting an item flies the map and updates URL params (`peakId`/`challengeId`) to open the detail overlay.
+2. Search query is expanded using state abbreviation utilities (e.g., "nh" also searches "new hampshire").
+3. Client fetchers call REST API for challenges (with case-insensitive name AND region matching) and peaks.
+4. Mapbox geocoding searches for regions (states), places (cities), POIs (national parks/forests), and localities.
+5. Results are prioritized: Challenges first (max 4), then Peaks (max 3), then Places (max 3).
+6. Places are filtered to outdoor-relevant POIs (parks, forests, trails, etc.).
+7. Selecting an item flies the map and updates URL params (`peakId`/`challengeId`) to open the detail overlay.
 
 ### Peak Search Flow
 1. User navigates to `/m/peaks`
@@ -334,7 +391,11 @@ Next.js middleware for route protection:
 ### Responsive Layout
 - **Mobile First**: Application is designed to be fully functional on mobile devices.
 - **Adaptive Components**: 
-  - `DiscoveryDrawer`: Transforms from a floating side panel on desktop to a bottom sheet on mobile (< 768px).
+  - `DiscoveryDrawer`: Transforms from a floating side panel on desktop to a draggable bottom sheet on mobile (< 1024px). The mobile version features 3 snap heights:
+    - **Collapsed** (~60px): Just the drag handle visible, allowing full map exploration
+    - **Halfway** (~45vh): Default state showing first items while map remains partially visible
+    - **Expanded** (~100vh - 80px): Full screen content up to the search bar
+    - Supports swipe gestures with velocity detection and tap-to-cycle on the handle
   - `GlobalNavigation`: Adapts padding and visibility of elements (logo hidden on mobile) to preserve space.
 - **Hooks**: Uses `useIsMobile` hook (based on `window.matchMedia`) for programmatic layout adaptations.
 

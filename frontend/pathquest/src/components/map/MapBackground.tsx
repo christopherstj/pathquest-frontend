@@ -12,6 +12,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 
 const MapBackground = () => {
     const mapContainer = useRef<HTMLDivElement>(null);
+    const mapInitialized = useRef(false);
     const setMap = useMapStore((state) => state.setMap);
     const setVisiblePeaks = useMapStore((state) => state.setVisiblePeaks);
     const setVisibleChallenges = useMapStore((state) => state.setVisibleChallenges);
@@ -21,6 +22,20 @@ const MapBackground = () => {
     const router = useRouter();
     const isMobile = useIsMobile(1024);
     const isInitialStyleSet = useRef(false);
+    
+    // Use refs for callbacks to avoid them being dependencies
+    const routerRef = useRef(router);
+    const setMapRef = useRef(setMap);
+    const setVisiblePeaksRef = useRef(setVisiblePeaks);
+    const setVisibleChallengesRef = useRef(setVisibleChallenges);
+    
+    // Keep refs up to date
+    useEffect(() => {
+        routerRef.current = router;
+        setMapRef.current = setMap;
+        setVisiblePeaksRef.current = setVisiblePeaks;
+        setVisibleChallengesRef.current = setVisibleChallenges;
+    });
 
     const fetchVisibleChallenges = useCallback(async (mapInstance: mapboxgl.Map) => {
         const bounds = mapInstance.getBounds();
@@ -36,12 +51,12 @@ const MapBackground = () => {
                     se: { lat: se.lat, lng: se.lng },
                 },
             });
-            setVisibleChallenges(challenges);
+            setVisibleChallengesRef.current(challenges);
         } catch (error) {
             console.error("Failed to fetch visible challenges:", error);
-            setVisibleChallenges([]);
+            setVisibleChallengesRef.current([]);
         }
-    }, [setVisibleChallenges]);
+    }, []);
 
     useEffect(() => {
         // Skip the initial render - only apply style changes after user interaction
@@ -67,14 +82,16 @@ const MapBackground = () => {
         await getNewData(
             "", // search
             true, // limitResultsToBbox
-            setVisiblePeaks, // Update store with visible peaks
+            setVisiblePeaksRef.current, // Update store with visible peaks
             map
         );
         fetchVisibleChallenges(map);
-    }, [map, setVisiblePeaks, fetchVisibleChallenges]);
+    }, [map, fetchVisibleChallenges]);
 
     useEffect(() => {
-        if (!mapContainer.current) return;
+        // Prevent double initialization (React Strict Mode or re-renders)
+        if (mapInitialized.current || !mapContainer.current) return;
+        mapInitialized.current = true;
 
         mapboxgl.accessToken = process.env.NEXT_PUBLIC_MAPBOX_TOKEN ?? "";
         // Ensure container is empty before Mapbox initializes
@@ -194,7 +211,7 @@ const MapBackground = () => {
             // but fetching logic uses map instance which is set in state later? 
             // Actually getNewData uses the map instance passed to it.
             // We can call it here using newMap.
-            getNewData("", true, setVisiblePeaks, newMap);
+            getNewData("", true, setVisiblePeaksRef.current, newMap);
             fetchVisibleChallenges(newMap);
         });
 
@@ -204,11 +221,8 @@ const MapBackground = () => {
             if (feature) {
                 const id = feature.properties?.id;
                 if (id) {
-                     // Update URL
-                     // We need to construct the URL manually if we want to preserve other params?
-                     // Actually just pushing ?peakId=... is enough for now, 
-                     // but OverlayManager handles replacing.
-                     router.push(`?peakId=${id}`);
+                     // Navigate to peak detail page (URL-driven overlay via UrlOverlayManager)
+                     routerRef.current.push(`/peaks/${id}`);
                 }
                 
                 // Fly to
@@ -249,16 +263,18 @@ const MapBackground = () => {
 
         // Move end listener to refetch
         newMap.on("moveend", () => {
-            getNewData("", true, setVisiblePeaks, newMap);
+            getNewData("", true, setVisiblePeaksRef.current, newMap);
             fetchVisibleChallenges(newMap);
         });
 
-        setMap(newMap);
+        setMapRef.current(newMap);
 
         return () => {
             newMap.remove();
+            mapInitialized.current = false;
         };
-    }, [setMap, router, setVisiblePeaks, fetchVisibleChallenges]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
 
     return (
         <div className="absolute inset-0 z-0 w-full h-full" aria-hidden="true">

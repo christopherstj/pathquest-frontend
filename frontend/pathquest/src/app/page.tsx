@@ -1,12 +1,8 @@
 import React from "react";
-import DiscoveryDrawer from "@/components/overlays/DiscoveryDrawer";
 
+// Home page - DiscoveryDrawer and map are rendered in root layout
 const Page = () => {
-    return (
-        <div className="w-full h-full pointer-events-none">
-            <DiscoveryDrawer />
-        </div>
-    );
+    return null;
 };
 
 export default Page;
