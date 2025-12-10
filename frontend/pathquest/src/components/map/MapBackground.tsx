@@ -7,7 +7,6 @@ import { useMapStore } from "@/providers/MapProvider";
 import getNewData from "@/helpers/getNewData";
 import { useRouter, useSearchParams } from "next/navigation";
 import { searchChallengesClient } from "@/lib/client/searchChallengesClient";
-import SatelliteButton from "@/components/app/map/SatelliteButton";
 import { useIsMobile } from "@/hooks/use-mobile";
 import getMapStateFromURL from "@/helpers/getMapStateFromURL";
 import updateMapURL from "@/helpers/updateMapURL";
@@ -107,11 +106,6 @@ const MapBackground = () => {
                 : "mapbox://styles/mapbox/outdoors-v12"
         );
     }, [isSatellite, map]);
-
-    const handleSatelliteToggle = (enabled: boolean) => {
-        setIsSatellite(enabled);
-        updateMapURL({ isSatellite: enabled }, router, true);
-    };
 
     const fetchPeaks = useCallback(async () => {
         if (!map) return;
@@ -283,6 +277,62 @@ const MapBackground = () => {
                     }
                 });
             }
+
+            // Activities Source (for GPX lines from user activities)
+            if (!newMap.getSource("activities")) {
+                newMap.addSource("activities", {
+                    type: "geojson",
+                    data: {
+                        type: "FeatureCollection",
+                        features: []
+                    }
+                });
+            }
+
+            // Activities Layer (line for GPX tracks)
+            if (!newMap.getLayer("activities")) {
+                newMap.addLayer({
+                    id: "activities",
+                    type: "line",
+                    source: "activities",
+                    paint: {
+                        "line-color": "#c9915a",
+                        "line-width": 3,
+                        "line-opacity": 0.85
+                    },
+                    layout: {
+                        "line-cap": "round",
+                        "line-join": "round"
+                    }
+                });
+            }
+
+            // Activity Starts Source (for start point markers)
+            if (!newMap.getSource("activityStarts")) {
+                newMap.addSource("activityStarts", {
+                    type: "geojson",
+                    data: {
+                        type: "FeatureCollection",
+                        features: []
+                    }
+                });
+            }
+
+            // Activity Starts Layer (circle for start points)
+            if (!newMap.getLayer("activityStarts")) {
+                newMap.addLayer({
+                    id: "activityStarts",
+                    type: "circle",
+                    source: "activityStarts",
+                    paint: {
+                        "circle-color": "#22c55e",
+                        "circle-radius": 6,
+                        "circle-stroke-width": 2,
+                        "circle-stroke-color": "#ffffff",
+                        "circle-opacity": 0.9
+                    }
+                });
+            }
             
             // Trigger initial fetch
             // We need to wait for map to be ready, which style.load implies, 
@@ -407,14 +457,6 @@ const MapBackground = () => {
                 ref={mapContainer} 
                 className="w-full h-full"
             />
-            {!isMobile && (
-                <div className="absolute bottom-6 right-6 z-50 pointer-events-auto">
-                    <SatelliteButton 
-                        value={isSatellite}
-                        onClick={handleSatelliteToggle}
-                    />
-                </div>
-            )}
         </div>
     );
 };

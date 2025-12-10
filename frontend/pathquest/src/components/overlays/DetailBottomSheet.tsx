@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import { motion, useAnimation, PanInfo, AnimatePresence } from "framer-motion";
 import { ArrowRight, Trophy, TrendingUp, Mountain, X, MapPin, CheckCircle, Navigation, ChevronRight, Heart, Map as MapIcon, LayoutDashboard, Compass, ZoomIn, RefreshCw, Route, Users } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -13,7 +13,6 @@ import addChallengeFavorite from "@/actions/challenges/addChallengeFavorite";
 import deleteChallengeFavorite from "@/actions/challenges/deleteChallengeFavorite";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import SatelliteButton from "../app/map/SatelliteButton";
 import DashboardContent from "./DashboardContent";
 import PeakUserActivity from "./PeakUserActivity";
 import PeakCommunity from "./PeakCommunity";
@@ -44,13 +43,12 @@ const DetailBottomSheet = ({ peakId, challengeId, onClose }: Props) => {
     const visiblePeaks = useMapStore((state) => state.visiblePeaks);
     const visibleChallenges = useMapStore((state) => state.visibleChallenges);
     const map = useMapStore((state) => state.map);
-    const isSatellite = useMapStore((state) => state.isSatellite);
-    const setIsSatellite = useMapStore((state) => state.setIsSatellite);
     const setDisablePeaksSearch = useMapStore((state) => state.setDisablePeaksSearch);
     const isZoomedOutTooFar = useMapStore((state) => state.isZoomedOutTooFar);
     const setSelectedPeakUserData = useMapStore((state) => state.setSelectedPeakUserData);
     const setSelectedPeakCommunityData = useMapStore((state) => state.setSelectedPeakCommunityData);
     const router = useRouter();
+    const routerRef = useRef(router);
     const controls = useAnimation();
     const requireAuth = useRequireAuth();
     const queryClient = useQueryClient();
@@ -63,6 +61,11 @@ const DetailBottomSheet = ({ peakId, challengeId, onClose }: Props) => {
     const [heights, setHeights] = useState(DRAWER_HEIGHTS);
     const [hasInitializedTab, setHasInitializedTab] = useState(false);
     const [highlightedActivityId, setHighlightedActivityId] = useState<string | null>(null);
+
+    // Keep router ref updated to avoid stale closure issues
+    useEffect(() => {
+        routerRef.current = router;
+    }, [router]);
 
     // Set default tab based on auth state and whether there's a detail open
     useEffect(() => {
@@ -348,7 +351,7 @@ const DetailBottomSheet = ({ peakId, challengeId, onClose }: Props) => {
     }, [map, challengePeaks, heights.halfway]);
 
     const handlePeakClick = (id: string, coords?: [number, number]) => {
-        router.push(`/peaks/${id}`);
+        routerRef.current.push(`/peaks/${id}`);
         if (map && coords) {
             map.flyTo({
                 center: coords,
@@ -360,11 +363,7 @@ const DetailBottomSheet = ({ peakId, challengeId, onClose }: Props) => {
     };
 
     const handleChallengeClick = (id: string) => {
-        router.push(`/challenges/${id}`);
-    };
-
-    const handleSatelliteToggle = (enabled: boolean) => {
-        setIsSatellite(enabled);
+        routerRef.current.push(`/challenges/${id}`);
     };
 
     const handleDragEnd = (_event: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
@@ -774,24 +773,25 @@ const DetailBottomSheet = ({ peakId, challengeId, onClose }: Props) => {
                 </div>
 
                 {/* Tab Bar */}
-                <div className="px-4 py-2 border-b border-border/60 flex items-center justify-between shrink-0">
-                    <div className="flex items-center gap-3">
-                        <div className="flex gap-1 bg-muted/50 p-1 rounded-lg">
+                <div className="px-3 py-2 border-b border-border/60 flex items-center justify-between shrink-0">
+                    <div className="flex items-center gap-2 flex-1 min-w-0">
+                        <div className="flex gap-0.5 bg-muted/50 p-0.5 rounded-lg flex-1">
                             {hasDetail && (
                                 <button
                                     onClick={() => handleTabChange("details")}
                                     onKeyDown={(e) => e.key === "Enter" && handleTabChange("details")}
                                     tabIndex={0}
-                                    aria-label="View details tab"
+                                    aria-label="Details tab"
                                     aria-selected={activeTab === "details"}
                                     role="tab"
                                     className={cn(
-                                        "flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md transition-all",
-                                        activeTab === "details" 
-                                            ? "bg-background shadow-sm text-foreground" 
+                                        "flex flex-col items-center gap-0.5 px-2 py-1.5 rounded-md text-[10px] font-medium transition-all flex-1 justify-center min-w-0",
+                                        activeTab === "details"
+                                            ? "bg-background text-foreground shadow-sm"
                                             : "text-muted-foreground hover:text-foreground"
                                     )}
                                 >
+                                    <Mountain className="w-4 h-4" />
                                     Details
                                 </button>
                             )}
@@ -800,18 +800,18 @@ const DetailBottomSheet = ({ peakId, challengeId, onClose }: Props) => {
                                     onClick={() => handleTabChange("myActivity")}
                                     onKeyDown={(e) => e.key === "Enter" && handleTabChange("myActivity")}
                                     tabIndex={0}
-                                    aria-label="My Activity tab"
+                                    aria-label="Journal tab"
                                     aria-selected={activeTab === "myActivity"}
                                     role="tab"
                                     className={cn(
-                                        "flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md transition-all",
-                                        activeTab === "myActivity" 
-                                            ? "bg-background shadow-sm text-foreground" 
+                                        "flex flex-col items-center gap-0.5 px-2 py-1.5 rounded-md text-[10px] font-medium transition-all flex-1 justify-center min-w-0",
+                                        activeTab === "myActivity"
+                                            ? "bg-background text-foreground shadow-sm"
                                             : "text-muted-foreground hover:text-foreground"
                                     )}
                                 >
-                                    <Route className="w-3.5 h-3.5" />
-                                    My Activity
+                                    <Route className="w-4 h-4" />
+                                    Journal
                                 </button>
                             )}
                             {hasPeakSelected && (
@@ -823,13 +823,13 @@ const DetailBottomSheet = ({ peakId, challengeId, onClose }: Props) => {
                                     aria-selected={activeTab === "community"}
                                     role="tab"
                                     className={cn(
-                                        "flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md transition-all",
-                                        activeTab === "community" 
-                                            ? "bg-background shadow-sm text-foreground" 
+                                        "flex flex-col items-center gap-0.5 px-2 py-1.5 rounded-md text-[10px] font-medium transition-all flex-1 justify-center min-w-0",
+                                        activeTab === "community"
+                                            ? "bg-background text-foreground shadow-sm"
                                             : "text-muted-foreground hover:text-foreground"
                                     )}
                                 >
-                                    <Users className="w-3.5 h-3.5" />
+                                    <Users className="w-4 h-4" />
                                     Community
                                 </button>
                             )}
@@ -837,18 +837,18 @@ const DetailBottomSheet = ({ peakId, challengeId, onClose }: Props) => {
                                 onClick={() => handleTabChange("discover")}
                                 onKeyDown={(e) => e.key === "Enter" && handleTabChange("discover")}
                                 tabIndex={0}
-                                aria-label="Discover tab"
+                                aria-label="Explore tab"
                                 aria-selected={activeTab === "discover"}
                                 role="tab"
                                 className={cn(
-                                    "flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md transition-all",
-                                    activeTab === "discover" 
-                                        ? "bg-background shadow-sm text-foreground" 
+                                    "flex flex-col items-center gap-0.5 px-2 py-1.5 rounded-md text-[10px] font-medium transition-all flex-1 justify-center min-w-0",
+                                    activeTab === "discover"
+                                        ? "bg-background text-foreground shadow-sm"
                                         : "text-muted-foreground hover:text-foreground"
                                 )}
                             >
-                                <Compass className="w-3.5 h-3.5" />
-                                Discover
+                                <Compass className="w-4 h-4" />
+                                Explore
                             </button>
                             <button
                                 onClick={() => handleTabChange("dashboard")}
@@ -858,28 +858,23 @@ const DetailBottomSheet = ({ peakId, challengeId, onClose }: Props) => {
                                 aria-selected={activeTab === "dashboard"}
                                 role="tab"
                                 className={cn(
-                                    "flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md transition-all",
-                                    activeTab === "dashboard" 
-                                        ? "bg-background shadow-sm text-foreground" 
+                                    "flex flex-col items-center gap-0.5 px-2 py-1.5 rounded-md text-[10px] font-medium transition-all flex-1 justify-center min-w-0",
+                                    activeTab === "dashboard"
+                                        ? "bg-background text-foreground shadow-sm"
                                         : "text-muted-foreground hover:text-foreground"
                                 )}
                             >
-                                <LayoutDashboard className="w-3.5 h-3.5" />
-                                Dashboard
+                                <LayoutDashboard className="w-4 h-4" />
+                                Home
                             </button>
                         </div>
-                        {/* Sync Status - shown next to tabs */}
+                        {/* Sync Status */}
                         {syncCount > 0 && (
-                            <div className="flex items-center gap-1.5 text-xs text-primary">
+                            <div className="flex items-center gap-1 text-[10px] text-primary shrink-0">
                                 <RefreshCw className="w-3 h-3 animate-spin" />
-                                <span className="hidden sm:inline">Syncing {syncCount}</span>
                             </div>
                         )}
                     </div>
-                    <SatelliteButton 
-                        value={isSatellite}
-                        onClick={handleSatelliteToggle}
-                    />
                 </div>
 
                 {/* Content */}

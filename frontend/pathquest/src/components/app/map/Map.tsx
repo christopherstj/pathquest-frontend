@@ -7,7 +7,6 @@ import addMapConfiguration from "@/lib/map/addMapConfiguration";
 import { useRouter, useSearchParams } from "next/navigation";
 import getMapStateFromURL from "@/helpers/getMapStateFromURL";
 import updateMapURL from "@/helpers/updateMapURL";
-import SatelliteButton from "./SatelliteButton";
 import ThreeDButton from "./ThreeDButton";
 
 // Default map center (Santa Barbara, CA area)
@@ -255,10 +254,6 @@ const Map = () => {
                 ref={mapContainerRef}
             />
             <div className="absolute bottom-34 left-2 z-10 flex flex-col gap-2">
-                <SatelliteButton
-                    value={isSatellite}
-                    onClick={handleSatelliteToggle}
-                />
                 <ThreeDButton value={is3D} onClick={handle3DToggle} />
             </div>
         </>

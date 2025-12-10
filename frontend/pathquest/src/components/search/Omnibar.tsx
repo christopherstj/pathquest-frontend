@@ -7,7 +7,7 @@ import { useMapStore } from "@/providers/MapProvider";
 import { useQuery } from "@tanstack/react-query";
 import Peak from "@/typeDefs/Peak";
 import ChallengeProgress from "@/typeDefs/ChallengeProgress";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { searchPeaksClient } from "@/lib/client/searchPeaksClient";
 import { searchChallengesClient } from "@/lib/client/searchChallengesClient";
 import { expandSearchQuery, extractStateFromQuery } from "@/helpers/stateAbbreviations";
@@ -36,6 +36,13 @@ const Omnibar = () => {
     const inputRef = useRef<HTMLInputElement>(null);
     const map = useMapStore((state) => state.map);
     const router = useRouter();
+    const pathname = usePathname();
+    
+    // Use ref to avoid stale closure issues with router
+    const routerRef = useRef(router);
+    useEffect(() => {
+        routerRef.current = router;
+    }, [router]);
 
     // Debounce the search query
     useEffect(() => {
@@ -243,20 +250,36 @@ const Omnibar = () => {
         setQuery(result.title);
         setIsOpen(false);
         
-        // Route first to ensure navigation happens even if map operations fail
-        if (result.type === 'peak' && result.data?.id) {
-            router.push(`/peaks/${result.data.id}`);
-        } else if (result.type === 'challenge' && result.data?.id) {
-            router.push(`/challenges/${result.data.id}`);
+        // Navigate to peak/challenge detail pages
+        // Use requestAnimationFrame to defer navigation to next frame,
+        // ensuring all React state updates and map cleanup are complete
+        if (result.type === 'peak') {
+            const peakId = result.data?.id || result.data?.peak_id;
+            if (peakId) {
+                const url = `/peaks/${peakId}`;
+                if (pathname === url) return;
+                requestAnimationFrame(() => {
+                    routerRef.current.push(url);
+                });
+            }
+            return;
         }
         
-        // Then handle map operations (wrapped in try-catch to prevent errors from blocking)
+        if (result.type === 'challenge' && result.data?.id) {
+            const url = `/challenges/${result.data.id}`;
+            if (pathname === url) return;
+            requestAnimationFrame(() => {
+                routerRef.current.push(url);
+            });
+            return;
+        }
+        
+        // Only do map operations for places (which don't have detail pages)
         try {
-            if (result.coords && map) {
+            if (result.type === 'place' && result.coords && map) {
                 const zoom = getZoomForResult(result);
                 
-                // For places with a bounding box, fit to bounds instead of flying to center
-                if (result.type === 'place' && result.data?.bbox) {
+                if (result.data?.bbox) {
                     const [minLng, minLat, maxLng, maxLat] = result.data.bbox;
                     map.fitBounds(
                         [[minLng, minLat], [maxLng, maxLat]],

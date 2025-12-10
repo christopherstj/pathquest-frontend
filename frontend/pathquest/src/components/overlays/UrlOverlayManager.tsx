@@ -27,6 +27,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 const UrlOverlayManagerContent = () => {
     const pathname = usePathname();
     const router = useRouter();
+    const routerRef = useRef(router);
     const previousPathRef = useRef<string | null>(null);
     const isMobile = useIsMobile(1024);
 
@@ -36,6 +37,11 @@ const UrlOverlayManagerContent = () => {
 
     const peakId = peakMatch?.[1] ?? null;
     const challengeId = challengeMatch?.[1] ?? null;
+
+    // Keep router ref updated to avoid stale closure issues
+    useEffect(() => {
+        routerRef.current = router;
+    }, [router]);
 
     // Track previous path to determine navigation direction
     useEffect(() => {
@@ -47,11 +53,11 @@ const UrlOverlayManagerContent = () => {
         // If we have browser history and came from within the app, go back
         // Otherwise, navigate to home (preserving map state)
         if (window.history.length > 1 && previousPathRef.current !== pathname) {
-            router.back();
+            routerRef.current.back();
         } else {
-            router.push("/");
+            routerRef.current.push("/");
         }
-    }, [router, pathname]);
+    }, [pathname]);
 
     // Mobile: Use DetailBottomSheet with tabs
     if (isMobile) {

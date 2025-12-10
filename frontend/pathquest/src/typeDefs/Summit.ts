@@ -1,6 +1,7 @@
 export default interface Summit {
     id: string;
     timestamp: string;
+    timezone?: string;
     activity_id: string;
     notes?: string;
     temperature?: number;

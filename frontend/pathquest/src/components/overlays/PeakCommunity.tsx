@@ -62,20 +62,22 @@ const kmhToMph = (kmh: number): number => {
     return kmh * 0.621371;
 };
 
-const formatDate = (timestamp: string) => {
+const formatDate = (timestamp: string, timezone?: string) => {
     const date = new Date(timestamp);
     return date.toLocaleDateString("en-US", {
         year: "numeric",
         month: "short",
         day: "numeric",
+        timeZone: timezone || undefined,
     });
 };
 
-const formatTime = (timestamp: string) => {
+const formatTime = (timestamp: string, timezone?: string) => {
     const date = new Date(timestamp);
     return date.toLocaleTimeString("en-US", {
         hour: "numeric",
         minute: "2-digit",
+        timeZone: timezone || undefined,
     });
 };
 
@@ -154,9 +156,9 @@ const PeakCommunity = () => {
                                         </p>
                                         <div className="flex items-center gap-1 text-xs text-muted-foreground">
                                             <Calendar className="w-3 h-3" />
-                                            <span>{formatDate(summit.timestamp)}</span>
+                                            <span>{formatDate(summit.timestamp, summit.timezone)}</span>
                                             <span className="opacity-50">•</span>
-                                            <span>{formatTime(summit.timestamp)}</span>
+                                            <span>{formatTime(summit.timestamp, summit.timezone)}</span>
                                         </div>
                                     </div>
                                 </div>

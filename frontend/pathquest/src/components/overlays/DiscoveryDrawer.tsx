@@ -1,13 +1,12 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { motion, useAnimation, PanInfo, AnimatePresence } from "framer-motion";
 import { ArrowRight, Trophy, TrendingUp, Mountain, Compass, LayoutDashboard, ZoomIn, Route, Users } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useMapStore } from "@/providers/MapProvider";
 import { useRouter } from "next/navigation";
 import { useIsMobile } from "@/hooks/use-mobile";
-import SatelliteButton from "../app/map/SatelliteButton";
 import DashboardContent from "./DashboardContent";
 import PeakUserActivity from "./PeakUserActivity";
 import PeakCommunity from "./PeakCommunity";
@@ -29,12 +28,11 @@ const DiscoveryDrawer = () => {
     const visiblePeaks = useMapStore((state) => state.visiblePeaks);
     const visibleChallenges = useMapStore((state) => state.visibleChallenges);
     const map = useMapStore((state) => state.map);
-    const isSatellite = useMapStore((state) => state.isSatellite);
-    const setIsSatellite = useMapStore((state) => state.setIsSatellite);
     const isZoomedOutTooFar = useMapStore((state) => state.isZoomedOutTooFar);
     const selectedPeakUserData = useMapStore((state) => state.selectedPeakUserData);
     const selectedPeakCommunityData = useMapStore((state) => state.selectedPeakCommunityData);
     const router = useRouter();
+    const routerRef = useRef(router);
     const isMobile = useIsMobile(1024);
     const controls = useAnimation();
     const { isAuthenticated, isLoading: authLoading } = useIsAuthenticated();
@@ -45,6 +43,11 @@ const DiscoveryDrawer = () => {
     const [desktopActiveTab, setDesktopActiveTab] = useState<DesktopTab>("discover");
     const [hasInitializedTab, setHasInitializedTab] = useState(false);
     const [highlightedActivityId, setHighlightedActivityId] = useState<string | null>(null);
+
+    // Keep router ref updated to avoid stale closure issues
+    useEffect(() => {
+        routerRef.current = router;
+    }, [router]);
 
     // Check if a peak is selected (has community data - this is set for all users)
     const hasPeakSelected = Boolean(selectedPeakCommunityData);
@@ -100,7 +103,7 @@ const DiscoveryDrawer = () => {
     }, [drawerHeight, heights, isMobile, controls]);
 
     const handlePeakClick = (id: string, coords?: [number, number]) => {
-        router.push(`/peaks/${id}`);
+        routerRef.current.push(`/peaks/${id}`);
         if (map && coords) {
             map.flyTo({
                 center: coords,
@@ -112,11 +115,7 @@ const DiscoveryDrawer = () => {
     };
 
     const handleChallengeClick = (id: string) => {
-        router.push(`/challenges/${id}`);
-    };
-
-    const handleSatelliteToggle = (enabled: boolean) => {
-        setIsSatellite(enabled);
+        routerRef.current.push(`/challenges/${id}`);
     };
 
     const handleDragEnd = (_event: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
@@ -444,11 +443,6 @@ const DiscoveryDrawer = () => {
                                 Dashboard
                             </button>
                         </div>
-                        
-                        <SatelliteButton 
-                            value={isSatellite}
-                            onClick={handleSatelliteToggle}
-                        />
                     </div>
                 </div>
 

@@ -68,20 +68,22 @@ const metersToMiles = (meters: number): number => {
     return meters / 1609.344;
 };
 
-const formatDate = (timestamp: string) => {
+const formatDate = (timestamp: string, timezone?: string) => {
     const date = new Date(timestamp);
     return date.toLocaleDateString("en-US", {
         year: "numeric",
         month: "short",
         day: "numeric",
+        timeZone: timezone || undefined,
     });
 };
 
-const formatTime = (timestamp: string) => {
+const formatTime = (timestamp: string, timezone?: string) => {
     const date = new Date(timestamp);
     return date.toLocaleTimeString("en-US", {
         hour: "numeric",
         minute: "2-digit",
+        timeZone: timezone || undefined,
     });
 };
 
@@ -111,7 +113,7 @@ const SummitItem = ({ summit }: SummitItemProps) => {
                 </div>
                 <div className="flex items-center gap-2 text-xs text-muted-foreground">
                     <Clock className="w-3 h-3" />
-                    <span>Summit at {formatTime(summit.timestamp)}</span>
+                    <span>Summit at {formatTime(summit.timestamp, summit.timezone)}</span>
                 </div>
             </div>
 
@@ -304,11 +306,11 @@ const OrphanSummitCard = ({ summit }: OrphanSummitCardProps) => {
                 <div>
                     <div className="flex items-center gap-1 text-sm font-medium text-foreground">
                         <Calendar className="w-3.5 h-3.5 text-muted-foreground" />
-                        <span>{formatDate(summit.timestamp)}</span>
+                        <span>{formatDate(summit.timestamp, summit.timezone)}</span>
                     </div>
                     <div className="flex items-center gap-1 text-xs text-muted-foreground">
                         <Clock className="w-3 h-3" />
-                        <span>{formatTime(summit.timestamp)}</span>
+                        <span>{formatTime(summit.timestamp, summit.timezone)}</span>
                     </div>
                 </div>
             </div>
