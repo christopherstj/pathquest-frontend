@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import { motion } from "framer-motion";
 import {
     Mountain,
@@ -20,13 +20,30 @@ import {
     Smile,
     Zap,
     Flame,
+    Plus,
+    Trash2,
+    Loader2,
 } from "lucide-react";
 import { useMapStore } from "@/providers/MapProvider";
 import { useSummitReportStore } from "@/providers/SummitReportProvider";
+import { useManualSummitStore } from "@/providers/ManualSummitProvider";
 import { Button } from "@/components/ui/button";
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+    AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import Activity from "@/typeDefs/Activity";
 import Summit, { Difficulty, ExperienceRating } from "@/typeDefs/Summit";
 import metersToFt from "@/helpers/metersToFt";
+import deleteAscent from "@/actions/peaks/deleteAscent";
+import { useQueryClient } from "@tanstack/react-query";
 
 // Difficulty display config
 const DIFFICULTY_CONFIG: Record<Difficulty, { label: string; color: string }> = {
@@ -119,6 +136,9 @@ type SummitItemProps = {
 
 const SummitItem = ({ summit, peakId, peakName }: SummitItemProps) => {
     const openSummitReport = useSummitReportStore((state) => state.openSummitReport);
+    const queryClient = useQueryClient();
+    const [isDeleting, setIsDeleting] = useState(false);
+    
     const hasNotes = Boolean(summit.notes && summit.notes.trim().length > 0);
     const hasWeather =
         summit.temperature !== undefined ||
@@ -129,6 +149,16 @@ const SummitItem = ({ summit, peakId, peakName }: SummitItemProps) => {
 
     const handleOpenReport = () => {
         openSummitReport({ summit, peakId, peakName });
+    };
+
+    const handleDelete = async () => {
+        setIsDeleting(true);
+        const result = await deleteAscent(summit.id);
+        if (result.success) {
+            queryClient.invalidateQueries({ queryKey: ["peakDetails", peakId] });
+            queryClient.invalidateQueries({ queryKey: ["recentSummits"] });
+        }
+        setIsDeleting(false);
     };
 
     return (
@@ -144,16 +174,51 @@ const SummitItem = ({ summit, peakId, peakName }: SummitItemProps) => {
                         <span>Summit at {formatTime(summit.timestamp, summit.timezone)}</span>
                     </div>
                 </div>
-                {hasReport && (
-                    <button
-                        onClick={handleOpenReport}
-                        className="p-1.5 rounded-md text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors"
-                        aria-label="Edit summit report"
-                        tabIndex={0}
-                    >
-                        <Pencil className="w-3.5 h-3.5" />
-                    </button>
-                )}
+                <div className="flex items-center gap-1">
+                    {hasReport && (
+                        <button
+                            onClick={handleOpenReport}
+                            className="p-1.5 rounded-md text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors"
+                            aria-label="Edit summit report"
+                            tabIndex={0}
+                        >
+                            <Pencil className="w-3.5 h-3.5" />
+                        </button>
+                    )}
+                    <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                            <button
+                                className="p-1.5 rounded-md text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
+                                aria-label="Delete summit"
+                                tabIndex={0}
+                                disabled={isDeleting}
+                            >
+                                {isDeleting ? (
+                                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                ) : (
+                                    <Trash2 className="w-3.5 h-3.5" />
+                                )}
+                            </button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                            <AlertDialogHeader>
+                                <AlertDialogTitle>Delete Summit?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                    This will permanently delete this summit record. This action cannot be undone.
+                                </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogAction
+                                    onClick={handleDelete}
+                                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                >
+                                    Delete
+                                </AlertDialogAction>
+                            </AlertDialogFooter>
+                        </AlertDialogContent>
+                    </AlertDialog>
+                </div>
             </div>
 
             {/* Weather Conditions */}
@@ -348,6 +413,9 @@ type OrphanSummitCardProps = {
 
 const OrphanSummitCard = ({ summit, peakId, peakName }: OrphanSummitCardProps) => {
     const openSummitReport = useSummitReportStore((state) => state.openSummitReport);
+    const queryClient = useQueryClient();
+    const [isDeleting, setIsDeleting] = useState(false);
+    
     const hasNotes = Boolean(summit.notes && summit.notes.trim().length > 0);
     const hasWeather =
         summit.temperature !== undefined ||
@@ -358,6 +426,16 @@ const OrphanSummitCard = ({ summit, peakId, peakName }: OrphanSummitCardProps) =
 
     const handleOpenReport = () => {
         openSummitReport({ summit, peakId, peakName });
+    };
+
+    const handleDelete = async () => {
+        setIsDeleting(true);
+        const result = await deleteAscent(summit.id);
+        if (result.success) {
+            queryClient.invalidateQueries({ queryKey: ["peakDetails", peakId] });
+            queryClient.invalidateQueries({ queryKey: ["recentSummits"] });
+        }
+        setIsDeleting(false);
     };
 
     return (
@@ -379,16 +457,51 @@ const OrphanSummitCard = ({ summit, peakId, peakName }: OrphanSummitCardProps) =
                         </div>
                     </div>
                 </div>
-                {hasReport && (
-                    <button
-                        onClick={handleOpenReport}
-                        className="p-1.5 rounded-md text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors"
-                        aria-label="Edit summit report"
-                        tabIndex={0}
-                    >
-                        <Pencil className="w-3.5 h-3.5" />
-                    </button>
-                )}
+                <div className="flex items-center gap-1">
+                    {hasReport && (
+                        <button
+                            onClick={handleOpenReport}
+                            className="p-1.5 rounded-md text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors"
+                            aria-label="Edit summit report"
+                            tabIndex={0}
+                        >
+                            <Pencil className="w-3.5 h-3.5" />
+                        </button>
+                    )}
+                    <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                            <button
+                                className="p-1.5 rounded-md text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
+                                aria-label="Delete summit"
+                                tabIndex={0}
+                                disabled={isDeleting}
+                            >
+                                {isDeleting ? (
+                                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                ) : (
+                                    <Trash2 className="w-3.5 h-3.5" />
+                                )}
+                            </button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                            <AlertDialogHeader>
+                                <AlertDialogTitle>Delete Summit?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                    This will permanently delete this summit record. This action cannot be undone.
+                                </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogAction
+                                    onClick={handleDelete}
+                                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                >
+                                    Delete
+                                </AlertDialogAction>
+                            </AlertDialogFooter>
+                        </AlertDialogContent>
+                    </AlertDialog>
+                </div>
             </div>
 
             {/* Weather */}
@@ -465,6 +578,7 @@ type PeakUserActivityProps = {
 
 const PeakUserActivity = ({ highlightedActivityId, onHighlightActivity }: PeakUserActivityProps) => {
     const selectedPeakUserData = useMapStore((state) => state.selectedPeakUserData);
+    const openManualSummit = useManualSummitStore((state) => state.openManualSummit);
 
     if (!selectedPeakUserData) {
         return (
@@ -478,7 +592,15 @@ const PeakUserActivity = ({ highlightedActivityId, onHighlightActivity }: PeakUs
         );
     }
 
-    const { peakId, peakName, ascents, activities } = selectedPeakUserData;
+    const { peakId, peakName, peakCoords, ascents, activities } = selectedPeakUserData;
+
+    const handleLogSummit = () => {
+        openManualSummit({
+            peakId,
+            peakName,
+            peakCoords,
+        });
+    };
 
     // Debug logging
     console.log("Activities:", activities.map(a => ({ id: a.id, title: a.title })));
@@ -560,6 +682,15 @@ const PeakUserActivity = ({ highlightedActivityId, onHighlightActivity }: PeakUs
                     {totalActivities > 0 && ` • ${totalActivities} activit${totalActivities !== 1 ? "ies" : "y"}`}
                 </p>
             </div>
+
+            {/* Log Summit CTA */}
+            <Button
+                onClick={handleLogSummit}
+                className="w-full gap-2 bg-green-600 hover:bg-green-700 text-white"
+            >
+                <Plus className="w-4 h-4" />
+                Log Summit
+            </Button>
 
             {/* Activities with Summits */}
             {activitiesWithSummits.length > 0 && (

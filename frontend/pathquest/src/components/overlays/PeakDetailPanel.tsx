@@ -10,6 +10,7 @@ import {
     Navigation,
     ChevronRight,
     LogIn,
+    Plus,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -56,10 +57,11 @@ const PeakDetailPanel = ({ peakId, onClose }: Props) => {
 
     // Share user's ascents and activities with the map store for DiscoveryDrawer (only for authenticated users)
     useEffect(() => {
-        if (peak && isAuthenticated) {
+        if (peak && isAuthenticated && peak.location_coords) {
             setSelectedPeakUserData({
                 peakId: peakId,
                 peakName: peak.name || "Unknown Peak",
+                peakCoords: peak.location_coords,
                 ascents: peak.ascents || [],
                 activities: activities || [],
             });
@@ -338,23 +340,23 @@ const PeakDetailPanel = ({ peakId, onClose }: Props) => {
 
                     {/* Actions */}
                     <div className="flex flex-col gap-3">
-                        <Button
-                            onClick={handleLogSummit}
-                            className="w-full bg-primary text-primary-foreground hover:bg-primary/90 gap-2"
-                        >
-                            <CheckCircle className="w-4 h-4" />
-                            Log Summit
-                        </Button>
-                        <div className="flex gap-2">
+                        {!isAuthenticated && (
                             <Button
-                                variant="outline"
-                                onClick={handleFlyToPeak}
-                                className="flex-1 gap-2 border-primary/20 hover:bg-primary/10 hover:text-primary"
+                                onClick={handleLogSummit}
+                                className="w-full gap-2 bg-green-600 hover:bg-green-700 text-white"
                             >
-                                <Navigation className="w-4 h-4" />
-                                Fly to
+                                <Plus className="w-4 h-4" />
+                                Log Summit
                             </Button>
-                        </div>
+                        )}
+                        <Button
+                            variant="outline"
+                            onClick={handleFlyToPeak}
+                            className="w-full gap-2 border-primary/20 hover:bg-primary/10 hover:text-primary"
+                        >
+                            <Navigation className="w-4 h-4" />
+                            Fly to Peak
+                        </Button>
                     </div>
 
                     {/* Challenges Section */}

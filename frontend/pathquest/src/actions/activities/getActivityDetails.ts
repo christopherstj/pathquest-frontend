@@ -19,7 +19,8 @@ const getActivityDetails = async (
         return null;
     }
 
-    const token = await getGoogleIdToken();
+    const token = await getGoogleIdToken().catch(() => null);
+    const userId = session.user?.id;
 
     const url = `${backendUrl}/activities/${activityId}`;
 
@@ -27,7 +28,10 @@ const getActivityDetails = async (
         method: "GET",
         headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+            ...(process.env.NODE_ENV === "development" && userId
+                ? { "x-user-id": userId }
+                : {}),
         },
     });
 

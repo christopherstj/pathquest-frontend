@@ -2,7 +2,7 @@
 
 import React, { useEffect } from "react";
 import { motion } from "framer-motion";
-import { X, Mountain, MapPin, CheckCircle, Navigation, ChevronRight } from "lucide-react";
+import { X, Mountain, MapPin, CheckCircle, Navigation, ChevronRight, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Peak from "@/typeDefs/Peak";
 import Summit from "@/typeDefs/Summit";
@@ -11,6 +11,7 @@ import Activity from "@/typeDefs/Activity";
 import { useMapStore } from "@/providers/MapProvider";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import useRequireAuth, { useIsAuthenticated } from "@/hooks/useRequireAuth";
 
 interface Props {
     peak: Peak;
@@ -22,6 +23,8 @@ interface Props {
 const PeakDetailContent = ({ peak, publicSummits, challenges, activities }: Props) => {
     const map = useMapStore((state) => state.map);
     const router = useRouter();
+    const { isAuthenticated } = useIsAuthenticated();
+    const requireAuth = useRequireAuth();
 
     // Fly to peak on mount
     useEffect(() => {
@@ -116,10 +119,15 @@ const PeakDetailContent = ({ peak, publicSummits, challenges, activities }: Prop
 
                     {/* Actions */}
                     <div className="flex flex-col gap-3">
-                        <Button className="w-full bg-primary text-primary-foreground hover:bg-primary/90 gap-2">
-                            <CheckCircle className="w-4 h-4" />
-                            Log Summit
-                        </Button>
+                        {!isAuthenticated && (
+                            <Button 
+                                onClick={() => requireAuth()}
+                                className="w-full gap-2 bg-green-600 hover:bg-green-700 text-white"
+                            >
+                                <Plus className="w-4 h-4" />
+                                Log Summit
+                            </Button>
+                        )}
                         <Button
                             variant="outline"
                             onClick={handleFlyToPeak}

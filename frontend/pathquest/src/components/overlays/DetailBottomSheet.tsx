@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import { motion, useAnimation, PanInfo, AnimatePresence } from "framer-motion";
-import { ArrowRight, Trophy, TrendingUp, Mountain, X, MapPin, CheckCircle, Navigation, ChevronRight, Heart, Map as MapIcon, LayoutDashboard, Compass, ZoomIn, RefreshCw, Route, Users } from "lucide-react";
+import { ArrowRight, Trophy, TrendingUp, Mountain, X, MapPin, CheckCircle, Navigation, ChevronRight, Heart, Map as MapIcon, LayoutDashboard, Compass, ZoomIn, RefreshCw, Route, Users, Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useMapStore } from "@/providers/MapProvider";
 import { useRouter, usePathname } from "next/navigation";
@@ -124,10 +124,11 @@ const DetailBottomSheet = ({ peakId, challengeId, onClose }: Props) => {
 
     // Share user's ascents and activities with the map store (for My Activity tab - authenticated users only)
     useEffect(() => {
-        if (peak && isAuthenticated && peakId) {
+        if (peak && isAuthenticated && peakId && peak.location_coords) {
             setSelectedPeakUserData({
                 peakId: peakId,
                 peakName: peak.name || "Unknown Peak",
+                peakCoords: peak.location_coords,
                 ascents: peak.ascents || [],
                 activities: peakActivities || [],
             });
@@ -520,11 +521,16 @@ const DetailBottomSheet = ({ peakId, challengeId, onClose }: Props) => {
 
                 {/* Actions */}
                 <div className="flex gap-2">
-                    <Button className="flex-1 bg-primary text-primary-foreground hover:bg-primary/90 gap-2 h-9 text-sm">
-                        <CheckCircle className="w-3.5 h-3.5" />
-                        Log Summit
-                    </Button>
-                    <Button variant="outline" onClick={handleFlyToPeak} className="flex-1 gap-2 h-9 text-sm border-primary/20 hover:bg-primary/10">
+                    {!isAuthenticated && (
+                        <Button 
+                            onClick={() => requireAuth()}
+                            className="flex-1 gap-2 h-9 text-sm bg-green-600 hover:bg-green-700 text-white"
+                        >
+                            <Plus className="w-3.5 h-3.5" />
+                            Log Summit
+                        </Button>
+                    )}
+                    <Button variant="outline" onClick={handleFlyToPeak} className={cn("gap-2 h-9 text-sm border-primary/20 hover:bg-primary/10", isAuthenticated ? "flex-1" : "")}>
                         <Navigation className="w-3.5 h-3.5" />
                         Fly to Peak
                     </Button>

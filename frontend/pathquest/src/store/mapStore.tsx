@@ -8,6 +8,7 @@ import Activity from "@/typeDefs/Activity";
 export type SelectedPeakUserData = {
     peakId: string;
     peakName: string;
+    peakCoords: [number, number];
     ascents: Summit[];
     activities: Activity[];
 } | null;

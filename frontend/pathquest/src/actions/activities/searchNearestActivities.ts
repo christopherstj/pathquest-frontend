@@ -18,7 +18,8 @@ const searchNearestActivities = async (
         return [];
     }
 
-    const token = await getGoogleIdToken();
+    const token = await getGoogleIdToken().catch(() => null);
+    const userId = session.user?.id;
 
     const url = search
         ? `${backendUrl}/activities/search/nearest?lat=${lat}&lng=${lng}&page=${page}&search=${search}`
@@ -27,7 +28,10 @@ const searchNearestActivities = async (
     const response = await fetch(url, {
         cache: "no-cache",
         headers: {
-            Authorization: `Bearer ${token}`,
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+            ...(process.env.NODE_ENV === "development" && userId
+                ? { "x-user-id": userId }
+                : {}),
         },
     });
 
