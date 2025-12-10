@@ -23,6 +23,7 @@ import { setPeaksSearchDisabled } from "@/helpers/peaksSearchState";
 import metersToFt from "@/helpers/metersToFt";
 import useRequireAuth, { useIsAuthenticated } from "@/hooks/useRequireAuth";
 import getActivitiesProcessing from "@/actions/users/getActivitiesProcessing";
+import CurrentConditions from "../app/peaks/CurrentConditions";
 
 type DrawerHeight = "collapsed" | "halfway" | "expanded";
 type TabMode = "details" | "discover" | "dashboard" | "myActivity" | "community";
@@ -224,7 +225,9 @@ const DetailBottomSheet = ({ peakId, challengeId, onClose }: Props) => {
                 // For challenges: always go to details
                 setActiveTab("details");
             }
-            if (drawerHeight === "collapsed") {
+            // If drawer is full-screen, bring it down to half-height
+            // If already at halfway or collapsed, keep it as-is
+            if (drawerHeight === "expanded") {
                 setDrawerHeight("halfway");
             }
         }
@@ -244,9 +247,10 @@ const DetailBottomSheet = ({ peakId, challengeId, onClose }: Props) => {
             zoom: 13,
             pitch: 50,
             bearing: 20,
+            padding: { top: 20, bottom: heights[drawerHeight] + 20, left: 0, right: 0 },
             essential: true,
         });
-    }, [peak?.location_coords, map]);
+    }, [peak?.location_coords, map, heights, drawerHeight]);
 
     // Set selected peak on map
     useEffect(() => {
@@ -357,6 +361,7 @@ const DetailBottomSheet = ({ peakId, challengeId, onClose }: Props) => {
                 center: coords,
                 zoom: 14,
                 pitch: 60,
+                padding: { top: 20, bottom: heights[drawerHeight] + 20, left: 0, right: 0 },
                 essential: true
             });
         }
@@ -404,6 +409,7 @@ const DetailBottomSheet = ({ peakId, challengeId, onClose }: Props) => {
                 zoom: 14,
                 pitch: 60,
                 bearing: 30,
+                padding: { top: 20, bottom: heights[drawerHeight] + 20, left: 0, right: 0 },
                 essential: true
             });
         }
@@ -503,6 +509,14 @@ const DetailBottomSheet = ({ peakId, challengeId, onClose }: Props) => {
                         <p className="text-lg font-mono text-foreground">{peak.public_summits || publicSummits?.length || 0}</p>
                     </div>
                 </div>
+
+                {/* Current Conditions */}
+                {peak.location_coords && (
+                    <CurrentConditions
+                        lat={peak.location_coords[1]}
+                        lng={peak.location_coords[0]}
+                    />
+                )}
 
                 {/* Actions */}
                 <div className="flex gap-2">

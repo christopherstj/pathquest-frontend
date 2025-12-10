@@ -9,13 +9,11 @@ import {
     CheckCircle,
     Navigation,
     ChevronRight,
-    Heart,
     LogIn,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import getPeakDetails from "@/actions/peaks/getPeakDetails";
-import toggleFavoritePeak from "@/actions/peaks/toggleFavoritePeak";
 import { useMapStore } from "@/providers/MapProvider";
 import Link from "next/link";
 import convertPeaksToGeoJSON from "@/helpers/convertPeaksToGeoJSON";
@@ -54,7 +52,6 @@ const PeakDetailPanel = ({ peakId, onClose }: Props) => {
     const challenges = data?.success ? data.data?.challenges : null;
     const publicSummits = data?.success ? data.data?.publicSummits : null;
     const activities = data?.success ? data.data?.activities : null;
-    const isFavorited = peak?.is_favorited ?? false;
     const userSummits = peak?.summits ?? 0;
 
     // Share user's ascents and activities with the map store for DiscoveryDrawer (only for authenticated users)
@@ -195,16 +192,6 @@ const PeakDetailPanel = ({ peakId, onClose }: Props) => {
                 essential: true,
             });
         }
-    };
-
-    const handleToggleFavorite = () => {
-        requireAuth(async () => {
-            await toggleFavoritePeak(peakId);
-            // Refetch peak details
-            queryClient.invalidateQueries({
-                queryKey: ["peakDetails", peakId],
-            });
-        });
     };
 
     const handleLogSummit = () => {
@@ -359,22 +346,6 @@ const PeakDetailPanel = ({ peakId, onClose }: Props) => {
                             Log Summit
                         </Button>
                         <div className="flex gap-2">
-                            <Button
-                                variant="outline"
-                                onClick={handleToggleFavorite}
-                                className={`flex-1 gap-2 ${
-                                    isFavorited
-                                        ? "border-red-500/30 text-red-500 hover:bg-red-500/10"
-                                        : "border-primary/20 hover:bg-primary/10 hover:text-primary"
-                                }`}
-                            >
-                                <Heart
-                                    className={`w-4 h-4 ${
-                                        isFavorited ? "fill-current" : ""
-                                    }`}
-                                />
-                                {isFavorited ? "Saved" : "Save"}
-                            </Button>
                             <Button
                                 variant="outline"
                                 onClick={handleFlyToPeak}

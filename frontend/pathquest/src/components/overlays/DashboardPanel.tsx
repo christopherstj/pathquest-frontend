@@ -18,9 +18,8 @@ const DashboardPanel = () => {
     const pathname = usePathname();
     const hasAutoOpened = useRef(false);
 
-    // Check if we're on a detail page (peak or challenge)
-    const isDetailPage = pathname?.startsWith("/peaks/") || pathname?.startsWith("/challenges/");
     const isLandingPage = pathname === "/" || pathname === "";
+    const prevPathname = useRef(pathname);
 
     // Auto-open dashboard on desktop when user is authenticated and on landing page (only once)
     useEffect(() => {
@@ -30,12 +29,15 @@ const DashboardPanel = () => {
         }
     }, [authLoading, isAuthenticated, isMobile, openDashboard, isLandingPage]);
 
-    // Close dashboard when navigating to a detail page (peak or challenge)
+    // Close dashboard when route changes
     useEffect(() => {
-        if (isDetailPage && isOpen) {
-            closeDashboard();
+        if (prevPathname.current !== pathname) {
+            if (isOpen) {
+                closeDashboard();
+            }
+            prevPathname.current = pathname;
         }
-    }, [isDetailPage, isOpen, closeDashboard]);
+    }, [pathname, isOpen, closeDashboard]);
 
     // Don't render if auth is still loading or user is not authenticated
     if (authLoading || !isAuthenticated) {

@@ -11,9 +11,29 @@ import {
     Wind,
     Droplets,
     Users,
+    Star,
+    Smile,
+    Zap,
+    Flame,
 } from "lucide-react";
 import { useMapStore } from "@/providers/MapProvider";
-import Summit from "@/typeDefs/Summit";
+import Summit, { Difficulty, ExperienceRating } from "@/typeDefs/Summit";
+
+// Difficulty display config
+const DIFFICULTY_CONFIG: Record<Difficulty, { label: string; color: string }> = {
+    easy: { label: "Easy", color: "text-emerald-500" },
+    moderate: { label: "Moderate", color: "text-amber-500" },
+    hard: { label: "Hard", color: "text-orange-500" },
+    expert: { label: "Expert", color: "text-red-500" },
+};
+
+// Experience display config
+const EXPERIENCE_CONFIG: Record<ExperienceRating, { label: string; color: string; icon: React.ReactNode }> = {
+    amazing: { label: "Amazing", color: "text-yellow-500", icon: <Star className="w-3.5 h-3.5" /> },
+    good: { label: "Good", color: "text-green-500", icon: <Smile className="w-3.5 h-3.5" /> },
+    tough: { label: "Tough", color: "text-blue-500", icon: <Zap className="w-3.5 h-3.5" /> },
+    epic: { label: "Epic", color: "text-purple-500", icon: <Flame className="w-3.5 h-3.5" /> },
+};
 
 // Extended summit type that includes user_name from the API
 interface PublicSummit extends Summit {
@@ -163,6 +183,24 @@ const PeakCommunity = () => {
                                     </div>
                                 </div>
                             </div>
+
+                            {/* Difficulty & Experience Ratings (if available) */}
+                            {(summit.difficulty || summit.experience_rating) && (
+                                <div className="flex flex-wrap gap-3 mt-3">
+                                    {summit.difficulty && (
+                                        <div className={`flex items-center gap-1.5 ${DIFFICULTY_CONFIG[summit.difficulty].color}`}>
+                                            <Mountain className="w-3.5 h-3.5" />
+                                            <span className="text-sm font-medium">{DIFFICULTY_CONFIG[summit.difficulty].label}</span>
+                                        </div>
+                                    )}
+                                    {summit.experience_rating && (
+                                        <div className={`flex items-center gap-1.5 ${EXPERIENCE_CONFIG[summit.experience_rating].color}`}>
+                                            {EXPERIENCE_CONFIG[summit.experience_rating].icon}
+                                            <span className="text-sm font-medium">{EXPERIENCE_CONFIG[summit.experience_rating].label}</span>
+                                        </div>
+                                    )}
+                                </div>
+                            )}
 
                             {/* Weather Conditions (if available) */}
                             {(summit.temperature !== undefined ||

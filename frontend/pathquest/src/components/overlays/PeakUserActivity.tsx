@@ -11,15 +11,38 @@ import {
     Droplets,
     FileText,
     PenLine,
+    Pencil,
     Route,
     Clock,
     ExternalLink,
     TrendingUp,
+    Star,
+    Smile,
+    Zap,
+    Flame,
 } from "lucide-react";
 import { useMapStore } from "@/providers/MapProvider";
+import { useSummitReportStore } from "@/providers/SummitReportProvider";
 import { Button } from "@/components/ui/button";
 import Activity from "@/typeDefs/Activity";
-import Summit from "@/typeDefs/Summit";
+import Summit, { Difficulty, ExperienceRating } from "@/typeDefs/Summit";
+import metersToFt from "@/helpers/metersToFt";
+
+// Difficulty display config
+const DIFFICULTY_CONFIG: Record<Difficulty, { label: string; color: string }> = {
+    easy: { label: "Easy", color: "text-emerald-500" },
+    moderate: { label: "Moderate", color: "text-amber-500" },
+    hard: { label: "Hard", color: "text-orange-500" },
+    expert: { label: "Expert", color: "text-red-500" },
+};
+
+// Experience display config
+const EXPERIENCE_CONFIG: Record<ExperienceRating, { label: string; color: string; icon: React.ReactNode }> = {
+    amazing: { label: "Amazing", color: "text-yellow-500", icon: <Star className="w-3 h-3" /> },
+    good: { label: "Good", color: "text-green-500", icon: <Smile className="w-3 h-3" /> },
+    tough: { label: "Tough", color: "text-blue-500", icon: <Zap className="w-3 h-3" /> },
+    epic: { label: "Epic", color: "text-purple-500", icon: <Flame className="w-3 h-3" /> },
+};
 
 // Weather code to description mapping (WMO codes)
 const getWeatherDescription = (code: number | undefined): string => {
@@ -90,31 +113,47 @@ const formatTime = (timestamp: string, timezone?: string) => {
 // Inline Summit Item (used inside activity cards)
 type SummitItemProps = {
     summit: Summit;
+    peakId: string;
+    peakName: string;
 };
 
-const SummitItem = ({ summit }: SummitItemProps) => {
+const SummitItem = ({ summit, peakId, peakName }: SummitItemProps) => {
+    const openSummitReport = useSummitReportStore((state) => state.openSummitReport);
     const hasNotes = Boolean(summit.notes && summit.notes.trim().length > 0);
     const hasWeather =
         summit.temperature !== undefined ||
         summit.weather_code !== undefined ||
         summit.wind_speed !== undefined;
+    const hasRatings = summit.difficulty || summit.experience_rating;
+    const hasReport = hasNotes || hasRatings;
 
-    const handleAddTripReport = () => {
-        // Dummy CTA for now - will be implemented later
-        console.log("Add trip report for summit:", summit.id);
+    const handleOpenReport = () => {
+        openSummitReport({ summit, peakId, peakName });
     };
 
     return (
-        <div className="p-3 rounded-lg bg-background/60 border border-border/50">
+        <div className="p-3 rounded-lg bg-green-500/5 border border-green-500/20">
             {/* Summit Time */}
-            <div className="flex items-center gap-2 mb-2">
-                <div className="w-6 h-6 rounded-full bg-green-500/10 flex items-center justify-center">
-                    <Mountain className="w-3 h-3 text-green-500" />
+            <div className="flex items-center justify-between gap-2 mb-2">
+                <div className="flex items-center gap-2">
+                    <div className="w-6 h-6 rounded-full bg-green-500/10 flex items-center justify-center">
+                        <Mountain className="w-3 h-3 text-green-500" />
+                    </div>
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                        <Clock className="w-3 h-3" />
+                        <span>Summit at {formatTime(summit.timestamp, summit.timezone)}</span>
+                    </div>
                 </div>
-                <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                    <Clock className="w-3 h-3" />
-                    <span>Summit at {formatTime(summit.timestamp, summit.timezone)}</span>
-                </div>
+                {hasReport && (
+                    <button
+                        onClick={handleOpenReport}
+                        className="p-1.5 rounded-md text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors"
+                        aria-label="Edit summit report"
+                        tabIndex={0}
+                    >
+                        <Pencil className="w-3.5 h-3.5" />
+                    </button>
+                )}
             </div>
 
             {/* Weather Conditions */}
@@ -155,9 +194,27 @@ const SummitItem = ({ summit }: SummitItemProps) => {
                 </div>
             )}
 
+            {/* Difficulty & Experience Ratings */}
+            {hasRatings && (
+                <div className="mb-2 flex flex-wrap gap-3 text-xs">
+                    {summit.difficulty && (
+                        <div className={`flex items-center gap-1 ${DIFFICULTY_CONFIG[summit.difficulty].color}`}>
+                            <Mountain className="w-3 h-3" />
+                            <span className="font-medium">{DIFFICULTY_CONFIG[summit.difficulty].label}</span>
+                        </div>
+                    )}
+                    {summit.experience_rating && (
+                        <div className={`flex items-center gap-1 ${EXPERIENCE_CONFIG[summit.experience_rating].color}`}>
+                            {EXPERIENCE_CONFIG[summit.experience_rating].icon}
+                            <span className="font-medium">{EXPERIENCE_CONFIG[summit.experience_rating].label}</span>
+                        </div>
+                    )}
+                </div>
+            )}
+
             {/* Trip Notes or Add Trip Report CTA */}
             {hasNotes ? (
-                <div className="p-2.5 rounded-md bg-primary/5 border border-primary/20">
+                <div className="p-2.5 rounded-md bg-background border border-primary/20">
                     <div className="flex items-center gap-1.5 text-xs text-primary mb-1">
                         <FileText className="w-3 h-3" />
                         <span className="font-medium">Trip Notes</span>
@@ -166,16 +223,16 @@ const SummitItem = ({ summit }: SummitItemProps) => {
                         {summit.notes}
                     </p>
                 </div>
-            ) : (
+            ) : !hasReport ? (
                 <Button
                     size="sm"
-                    onClick={handleAddTripReport}
+                    onClick={handleOpenReport}
                     className="w-full h-9 gap-2 bg-gradient-to-r from-primary to-primary/80 text-primary-foreground hover:from-primary/90 hover:to-primary/70 shadow-sm text-xs font-medium"
                 >
                     <PenLine className="w-3.5 h-3.5" />
                     Add Trip Report
                 </Button>
-            )}
+            ) : null}
         </div>
     );
 };
@@ -186,9 +243,11 @@ type ActivityWithSummitsProps = {
     summits: Summit[];
     isHighlighted?: boolean;
     onHighlight?: (activityId: string) => void;
+    peakId: string;
+    peakName: string;
 };
 
-const ActivityWithSummits = ({ activity, summits, isHighlighted, onHighlight }: ActivityWithSummitsProps) => {
+const ActivityWithSummits = ({ activity, summits, isHighlighted, onHighlight, peakId, peakName }: ActivityWithSummitsProps) => {
     const handleHighlight = () => {
         if (onHighlight) {
             onHighlight(activity.id);
@@ -245,7 +304,7 @@ const ActivityWithSummits = ({ activity, summits, isHighlighted, onHighlight }: 
                     {activity.gain && (
                         <div className="flex items-center gap-1.5 text-muted-foreground">
                             <TrendingUp className="w-3.5 h-3.5" />
-                            <span className="font-mono">{activity.gain.toLocaleString()} ft</span>
+                            <span className="font-mono">{Math.round(metersToFt(activity.gain)).toLocaleString()} ft</span>
                         </div>
                     )}
                 </div>
@@ -272,7 +331,7 @@ const ActivityWithSummits = ({ activity, summits, isHighlighted, onHighlight }: 
                         <span>{summits.length} summit{summits.length !== 1 ? "s" : ""} on this activity</span>
                     </div>
                     {summits.map((summit) => (
-                        <SummitItem key={summit.id} summit={summit} />
+                        <SummitItem key={summit.id} summit={summit} peakId={peakId} peakName={peakName} />
                     ))}
                 </div>
             )}
@@ -283,36 +342,53 @@ const ActivityWithSummits = ({ activity, summits, isHighlighted, onHighlight }: 
 // Orphan Summit Card (summits without an activity)
 type OrphanSummitCardProps = {
     summit: Summit;
+    peakId: string;
+    peakName: string;
 };
 
-const OrphanSummitCard = ({ summit }: OrphanSummitCardProps) => {
+const OrphanSummitCard = ({ summit, peakId, peakName }: OrphanSummitCardProps) => {
+    const openSummitReport = useSummitReportStore((state) => state.openSummitReport);
     const hasNotes = Boolean(summit.notes && summit.notes.trim().length > 0);
     const hasWeather =
         summit.temperature !== undefined ||
         summit.weather_code !== undefined ||
         summit.wind_speed !== undefined;
+    const hasRatings = summit.difficulty || summit.experience_rating;
+    const hasReport = hasNotes || hasRatings;
 
-    const handleAddTripReport = () => {
-        console.log("Add trip report for summit:", summit.id);
+    const handleOpenReport = () => {
+        openSummitReport({ summit, peakId, peakName });
     };
 
     return (
         <div className="p-4 rounded-xl bg-card border border-border/70">
             {/* Date Header */}
-            <div className="flex items-center gap-2 mb-3">
-                <div className="w-8 h-8 rounded-full bg-green-500/10 flex items-center justify-center">
-                    <Mountain className="w-4 h-4 text-green-500" />
-                </div>
-                <div>
-                    <div className="flex items-center gap-1 text-sm font-medium text-foreground">
-                        <Calendar className="w-3.5 h-3.5 text-muted-foreground" />
-                        <span>{formatDate(summit.timestamp, summit.timezone)}</span>
+            <div className="flex items-center justify-between gap-2 mb-3">
+                <div className="flex items-center gap-2">
+                    <div className="w-8 h-8 rounded-full bg-green-500/10 flex items-center justify-center">
+                        <Mountain className="w-4 h-4 text-green-500" />
                     </div>
-                    <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                        <Clock className="w-3 h-3" />
-                        <span>{formatTime(summit.timestamp, summit.timezone)}</span>
+                    <div>
+                        <div className="flex items-center gap-1 text-sm font-medium text-foreground">
+                            <Calendar className="w-3.5 h-3.5 text-muted-foreground" />
+                            <span>{formatDate(summit.timestamp, summit.timezone)}</span>
+                        </div>
+                        <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                            <Clock className="w-3 h-3" />
+                            <span>{formatTime(summit.timestamp, summit.timezone)}</span>
+                        </div>
                     </div>
                 </div>
+                {hasReport && (
+                    <button
+                        onClick={handleOpenReport}
+                        className="p-1.5 rounded-md text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors"
+                        aria-label="Edit summit report"
+                        tabIndex={0}
+                    >
+                        <Pencil className="w-3.5 h-3.5" />
+                    </button>
+                )}
             </div>
 
             {/* Weather */}
@@ -339,6 +415,24 @@ const OrphanSummitCard = ({ summit }: OrphanSummitCardProps) => {
                 </div>
             )}
 
+            {/* Difficulty & Experience Ratings */}
+            {hasRatings && (
+                <div className="mb-3 flex flex-wrap gap-3 text-xs">
+                    {summit.difficulty && (
+                        <div className={`flex items-center gap-1 ${DIFFICULTY_CONFIG[summit.difficulty].color}`}>
+                            <Mountain className="w-3 h-3" />
+                            <span className="font-medium">{DIFFICULTY_CONFIG[summit.difficulty].label}</span>
+                        </div>
+                    )}
+                    {summit.experience_rating && (
+                        <div className={`flex items-center gap-1 ${EXPERIENCE_CONFIG[summit.experience_rating].color}`}>
+                            {EXPERIENCE_CONFIG[summit.experience_rating].icon}
+                            <span className="font-medium">{EXPERIENCE_CONFIG[summit.experience_rating].label}</span>
+                        </div>
+                    )}
+                </div>
+            )}
+
             {/* Notes or CTA */}
             {hasNotes ? (
                 <div className="p-2.5 rounded-md bg-primary/5 border border-primary/20">
@@ -350,16 +444,16 @@ const OrphanSummitCard = ({ summit }: OrphanSummitCardProps) => {
                         {summit.notes}
                     </p>
                 </div>
-            ) : (
+            ) : !hasReport ? (
                 <Button
                     size="sm"
-                    onClick={handleAddTripReport}
+                    onClick={handleOpenReport}
                     className="w-full h-9 gap-2 bg-gradient-to-r from-primary to-primary/80 text-primary-foreground hover:from-primary/90 hover:to-primary/70 shadow-sm font-medium"
                 >
                     <PenLine className="w-3.5 h-3.5" />
                     Add Trip Report
                 </Button>
-            )}
+            ) : null}
         </div>
     );
 };
@@ -384,7 +478,7 @@ const PeakUserActivity = ({ highlightedActivityId, onHighlightActivity }: PeakUs
         );
     }
 
-    const { peakName, ascents, activities } = selectedPeakUserData;
+    const { peakId, peakName, ascents, activities } = selectedPeakUserData;
 
     // Debug logging
     console.log("Activities:", activities.map(a => ({ id: a.id, title: a.title })));
@@ -477,6 +571,8 @@ const PeakUserActivity = ({ highlightedActivityId, onHighlightActivity }: PeakUs
                             summits={summitsByActivity.get(String(activity.id)) || []}
                             isHighlighted={highlightedActivityId === activity.id}
                             onHighlight={handleHighlightActivity}
+                            peakId={peakId}
+                            peakName={peakName}
                         />
                     ))}
                 </section>
@@ -493,7 +589,7 @@ const PeakUserActivity = ({ highlightedActivityId, onHighlightActivity }: PeakUs
                     </div>
                     <div className="space-y-3">
                         {sortedOrphanSummits.map((summit) => (
-                            <OrphanSummitCard key={summit.id} summit={summit} />
+                            <OrphanSummitCard key={summit.id} summit={summit} peakId={peakId} peakName={peakName} />
                         ))}
                     </div>
                 </section>
@@ -516,6 +612,8 @@ const PeakUserActivity = ({ highlightedActivityId, onHighlightActivity }: PeakUs
                                 summits={[]}
                                 isHighlighted={highlightedActivityId === activity.id}
                                 onHighlight={handleHighlightActivity}
+                                peakId={peakId}
+                                peakName={peakName}
                             />
                         ))}
                     </div>

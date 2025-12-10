@@ -21,8 +21,7 @@ const updateAscent = async (
         };
     }
 
-    const token = await getGoogleIdToken();
-
+    const token = await getGoogleIdToken().catch(() => null);
     const userId = session.user.id;
 
     const url = `${backendUrl}/peaks/ascent/${ascent.id}`;
@@ -31,7 +30,9 @@ const updateAscent = async (
         method: "PUT",
         headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+            // Pass user info via headers for backend auth (especially in dev)
+            ...(userId ? { "x-user-id": userId } : {}),
         },
         body: JSON.stringify({ ascent }),
     });

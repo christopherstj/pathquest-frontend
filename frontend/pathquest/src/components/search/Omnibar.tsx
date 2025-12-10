@@ -11,6 +11,7 @@ import { useRouter, usePathname } from "next/navigation";
 import { searchPeaksClient } from "@/lib/client/searchPeaksClient";
 import { searchChallengesClient } from "@/lib/client/searchChallengesClient";
 import { expandSearchQuery, extractStateFromQuery } from "@/helpers/stateAbbreviations";
+import metersToFt from "@/helpers/metersToFt";
 
 interface SearchResult {
     id: string;
@@ -182,7 +183,7 @@ const Omnibar = () => {
                     id: `peak-${p.id}`,
                     type: "peak" as const,
                     title: p.name || "Unknown Peak",
-                    subtitle: `${p.elevation ? `${p.elevation} ft` : ''}${p.state ? ` • ${p.state}` : ''}`,
+                    subtitle: `${p.elevation ? `${Math.round(metersToFt(p.elevation)).toLocaleString()} ft` : ''}${p.state ? ` • ${p.state}` : ''}`,
                     coords: p.location_coords,
                     data: p
                 }));

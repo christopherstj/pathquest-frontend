@@ -1,3 +1,5 @@
+import { Difficulty, ExperienceRating } from "./Summit";
+
 export default interface AscentDetail {
     id: string;
     timestamp: string;
@@ -6,4 +8,6 @@ export default interface AscentDetail {
     notes?: string;
     is_public: boolean;
     timezone?: string;
+    difficulty?: Difficulty;
+    experience_rating?: ExperienceRating;
 }

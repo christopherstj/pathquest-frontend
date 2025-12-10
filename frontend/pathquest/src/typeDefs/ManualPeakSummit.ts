@@ -1,3 +1,5 @@
+import { Difficulty, ExperienceRating } from "./Summit";
+
 export default interface ManualPeakSummit {
     id: string;
     user_id: string;
@@ -7,4 +9,6 @@ export default interface ManualPeakSummit {
     is_public: boolean;
     timestamp: string;
     timezone: string;
+    difficulty?: Difficulty;
+    experience_rating?: ExperienceRating;
 }

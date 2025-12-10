@@ -12,6 +12,7 @@ import {
 import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 import { useIsAuthenticated } from "@/hooks/useRequireAuth";
+import { useSummitReportStore } from "@/providers/SummitReportProvider";
 import metersToFt from "@/helpers/metersToFt";
 import dayjs from "@/helpers/dayjs";
 import ManualPeakSummit from "@/typeDefs/ManualPeakSummit";
@@ -135,11 +136,26 @@ const RecentSummitsSection = ({
     summits,
     isLoading,
 }: RecentSummitsSectionProps) => {
-    const handleAddTripReport = (e: React.MouseEvent, summitId: string) => {
+    const openSummitReport = useSummitReportStore((state) => state.openSummitReport);
+
+    const handleAddTripReport = (e: React.MouseEvent, summit: Peak & ManualPeakSummit) => {
         e.preventDefault();
         e.stopPropagation();
-        // TODO: Open trip report modal
-        console.log("Add trip report for summit:", summitId);
+        // Convert ManualPeakSummit to Summit format for the modal
+        openSummitReport({
+            summit: {
+                id: summit.id,
+                timestamp: summit.timestamp,
+                timezone: summit.timezone,
+                activity_id: summit.activity_id || "",
+                notes: summit.notes,
+                is_public: summit.is_public,
+                difficulty: summit.difficulty,
+                experience_rating: summit.experience_rating,
+            },
+            peakId: summit.peak_id,
+            peakName: summit.name,
+        });
     };
 
     return (
@@ -199,7 +215,7 @@ const RecentSummitsSection = ({
                                 <div className="flex items-center gap-2 flex-shrink-0">
                                     {!hasNotes && (
                                         <button
-                                            onClick={(e) => handleAddTripReport(e, summit.id)}
+                                            onClick={(e) => handleAddTripReport(e, summit)}
                                             className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-semibold text-primary-foreground bg-primary hover:bg-primary/90 rounded-md transition-colors cursor-pointer shadow-sm"
                                             aria-label="Add trip report"
                                             tabIndex={0}
