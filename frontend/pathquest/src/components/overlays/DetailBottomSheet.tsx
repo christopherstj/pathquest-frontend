@@ -25,12 +25,16 @@ import ChallengeDetailsMobile from "./mobile/challenge-details-mobile";
 import DiscoveryContentMobile from "./mobile/discovery-content-mobile";
 import ActivityDetailsMobile from "./mobile/activity-details-mobile";
 import getActivityDetails from "@/actions/activities/getActivityDetails";
+import getUserProfile from "@/actions/users/getUserProfile";
 import { useActivityMapEffects } from "@/hooks/use-activity-map-effects";
+import { useProfileMapEffects } from "@/hooks/use-profile-map-effects";
 import { convertSummitsToPeaks } from "@/helpers/convertSummitsToPeaks";
 import ActivityAnalytics from "@/components/app/activities/ActivityAnalytics";
+import ProfileDetailsMobile from "./mobile/profile-details-mobile";
+import ProfileSummitsList from "./ProfileSummitsList";
 
 type DrawerHeight = "collapsed" | "halfway" | "expanded";
-type TabMode = "details" | "discover" | "dashboard" | "myActivity" | "community" | "analytics";
+type TabMode = "details" | "discover" | "dashboard" | "myActivity" | "community" | "analytics" | "profilePeaks";
 
 const DRAWER_HEIGHTS = {
     collapsed: 60,
@@ -42,10 +46,11 @@ interface Props {
     peakId?: string | null;
     challengeId?: number | null;
     activityId?: string | null;
+    userId?: string | null;
     onClose: () => void;
 }
 
-const DetailBottomSheet = ({ peakId, challengeId, activityId, onClose }: Props) => {
+const DetailBottomSheet = ({ peakId, challengeId, activityId, userId, onClose }: Props) => {
     const visiblePeaks = useMapStore((state) => state.visiblePeaks);
     const visibleChallenges = useMapStore((state) => state.visibleChallenges);
     const map = useMapStore((state) => state.map);
@@ -60,9 +65,10 @@ const DetailBottomSheet = ({ peakId, challengeId, activityId, onClose }: Props) 
     const queryClient = useQueryClient();
     const { isAuthenticated, isLoading: authLoading } = useIsAuthenticated();
     
-    const hasDetail = Boolean(peakId || challengeId || activityId);
+    const hasDetail = Boolean(peakId || challengeId || activityId || userId);
     const hasPeakSelected = Boolean(peakId);
     const hasActivitySelected = Boolean(activityId);
+    const hasProfileSelected = Boolean(userId);
     const [activeTab, setActiveTab] = useState<TabMode>("discover");
     const [drawerHeight, setDrawerHeight] = useState<DrawerHeight>("halfway");
     const [heights, setHeights] = useState(DRAWER_HEIGHTS);
@@ -121,6 +127,23 @@ const DetailBottomSheet = ({ peakId, challengeId, activityId, onClose }: Props) 
         enabled: Boolean(activityId),
     });
 
+    // Fetch profile details
+    const { data: profileData, isLoading: profileLoading } = useQuery({
+        queryKey: ["userProfile", userId],
+        queryFn: async () => {
+            if (!userId) return null;
+            const res = await getUserProfile(userId);
+            return res;
+        },
+        enabled: Boolean(userId),
+    });
+
+    const profileResult = profileData?.success ? profileData.data : null;
+    const profileUser = profileResult?.user ?? null;
+    const profileStats = profileResult?.stats ?? null;
+    const profileAcceptedChallenges = profileResult?.acceptedChallenges ?? [];
+    const profilePeaksForMap = profileResult?.peaksForMap ?? [];
+
     const activity = activityData?.activity ?? null;
     const activitySummits = activityData?.summits ?? [];
     const activityPeakSummits = useMemo(() => convertSummitsToPeaks(activitySummits), [activitySummits]);
@@ -132,6 +155,13 @@ const DetailBottomSheet = ({ peakId, challengeId, activityId, onClose }: Props) 
         peakSummits: activityPeakSummits,
         hoverCoords: activityHoverCoords,
         flyToOnLoad: true,
+        padding: { top: 100, bottom: heights.halfway + 50, left: 50, right: 50 },
+    });
+
+    // Profile map effects
+    const { showOnMap: showProfileOnMap } = useProfileMapEffects({
+        userId,
+        peaks: profilePeaksForMap,
         padding: { top: 100, bottom: heights.halfway + 50, left: 50, right: 50 },
     });
 
@@ -495,7 +525,7 @@ const DetailBottomSheet = ({ peakId, challengeId, activityId, onClose }: Props) 
         }
     };
 
-    const isLoading = (peakId && peakLoading) || (challengeId && challengeLoading) || (activityId && activityLoading);
+    const isLoading = (peakId && peakLoading) || (challengeId && challengeLoading) || (activityId && activityLoading) || (userId && profileLoading);
 
     return (
         <motion.div
@@ -605,6 +635,25 @@ const DetailBottomSheet = ({ peakId, challengeId, activityId, onClose }: Props) 
                                     Analytics
                                 </button>
                             )}
+                            {hasProfileSelected && (
+                                <button
+                                    onClick={() => handleTabChange("profilePeaks")}
+                                    onKeyDown={(e) => e.key === "Enter" && handleTabChange("profilePeaks")}
+                                    tabIndex={0}
+                                    aria-label="Peaks tab"
+                                    aria-selected={activeTab === "profilePeaks"}
+                                    role="tab"
+                                    className={cn(
+                                        "flex flex-col items-center gap-0.5 px-2 py-1.5 rounded-md text-[10px] font-medium transition-all flex-1 justify-center min-w-0",
+                                        activeTab === "profilePeaks"
+                                            ? "bg-background text-foreground shadow-sm"
+                                            : "text-muted-foreground hover:text-foreground"
+                                    )}
+                                >
+                                    <Mountain className="w-4 h-4" />
+                                    Peaks
+                                </button>
+                            )}
                             <button
                                 onClick={() => handleTabChange("discover")}
                                 onKeyDown={(e) => e.key === "Enter" && handleTabChange("discover")}
@@ -698,6 +747,14 @@ const DetailBottomSheet = ({ peakId, challengeId, activityId, onClose }: Props) 
                                         onToggleFavorite={handleToggleFavorite}
                                         onShowOnMap={handleShowChallengeOnMap}
                                     />
+                                ) : userId && profileUser && profileStats ? (
+                                    <ProfileDetailsMobile
+                                        user={profileUser}
+                                        stats={profileStats}
+                                        acceptedChallenges={profileAcceptedChallenges}
+                                        onClose={onClose}
+                                        onShowOnMap={showProfileOnMap}
+                                    />
                                 ) : (
                                     <div className="text-center py-8 text-muted-foreground">
                                         <p className="text-sm">Select a peak or challenge to view details.</p>
@@ -752,6 +809,16 @@ const DetailBottomSheet = ({ peakId, challengeId, activityId, onClose }: Props) 
                                 transition={{ duration: 0.15 }}
                             >
                                 <ActivityAnalytics activity={activity} />
+                            </motion.div>
+                        ) : activeTab === "profilePeaks" && userId ? (
+                            <motion.div
+                                key="profilePeaks"
+                                initial={{ opacity: 0, x: -10 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                exit={{ opacity: 0, x: -10 }}
+                                transition={{ duration: 0.15 }}
+                            >
+                                <ProfileSummitsList userId={userId} compact />
                             </motion.div>
                         ) : (
                             <motion.div

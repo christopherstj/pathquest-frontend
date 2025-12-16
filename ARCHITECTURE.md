@@ -89,6 +89,24 @@ src/app/
   - Strava link and share button
   - Manual summit logging for peaks along the route
 
+##### `/users/[userId]` (User Profile Page - Dynamic)
+- **Not statically generated** (too many users, privacy concerns)
+- Dynamic page with runtime data fetching
+- Privacy-aware: only accessible if user is public, or by the owner
+- Components:
+  - `ProfileDetailPanel` (desktop): Right-side panel with profile stats and accepted challenges
+  - `ProfileDetailsMobile` (mobile): Bottom sheet content with same structure
+  - `ProfileSummitsList`: Left drawer list with Peaks/Summits tabs and search
+- Features:
+  - User info (name, avatar, location)
+  - Accomplishment stats (peaks summited, total summits, highest peak, challenges completed, elevation gained)
+  - Year-over-year summit comparison
+  - States/countries climbed
+  - Peak type breakdown (14ers, 13ers, etc.)
+  - Accepted challenges with progress bars
+  - All summited peaks displayed on map via `useProfileMapEffects` hook
+  - Searchable peaks and summits lists
+
 ##### Legacy Routes (Removed)
 - `/login`, `/signup`, `/signup/email-form`, `/m/*` routes have been removed
 - Auth is now handled via the `AuthModal` component (modal overlay)
@@ -167,7 +185,10 @@ Server actions for data fetching and mutations. Organized by domain. Backend cal
 - `getActivitiesProcessing.ts` - Gets count of processing activities
 - `getIsUserSubscribed.ts` - Checks subscription status
 - `getUser.ts` - Gets user profile
+- `getUserProfile.ts` - Gets aggregated profile data (stats, accepted challenges, peaks for map)
 - `processHistoricalData.ts` - Initiates historical data processing
+- `searchUserPeaks.ts` - Searches user's summited peaks with counts and pagination
+- `searchUserSummits.ts` - Searches user's individual summit entries with pagination
 - `updateUser.ts` - Updates user profile
 
 #### Root Actions
@@ -188,14 +209,18 @@ Server actions for data fetching and mutations. Organized by domain. Backend cal
 - `Logo.tsx` - SVG logo component with topographic contour-line mountain design. Uses currentColor for theming, supports size prop.
 
 ##### Overlays (`components/overlays/`)
-- `UrlOverlayManager.tsx` - Central overlay orchestrator. On desktop, renders DiscoveryDrawer (left panel) plus PeakDetailPanel/ChallengeDetailPanel/ActivityDetailPanel (right panel). On mobile (< 1024px), renders DetailBottomSheet with tabbed interface. Routes handled: `/peaks/[id]`, `/challenges/[id]`, `/activities/[id]`.
-- `DiscoveryDrawer.tsx` - Desktop left panel for discovering peaks and challenges. Supports "summit history" drill-down mode via `summitHistoryPeakId` in mapStore—when set, shows SummitHistoryPanel instead of discovery content.
+- `UrlOverlayManager.tsx` - Central overlay orchestrator. On desktop, renders DiscoveryDrawer (left panel) plus PeakDetailPanel/ChallengeDetailPanel/ActivityDetailPanel/ProfileDetailPanel (right panel). On mobile (< 1024px), renders DetailBottomSheet with tabbed interface. Routes handled: `/peaks/[id]`, `/challenges/[id]`, `/activities/[id]`, `/users/[userId]`.
+- `DiscoveryDrawer.tsx` - Desktop left panel for discovering peaks and challenges. Supports multiple modes:
+  - Default: Discovery content showing visible peaks and challenges
+  - Peak selected: My Activity, Community tabs (summit history drill-down mode via `summitHistoryPeakId` in mapStore—when set, shows SummitHistoryPanel)
+  - Activity selected: Summits tab showing activity summits
+  - Profile selected: Peaks and Journal tabs (hides Explore tab)
 - `DetailBottomSheet.tsx` - Mobile-only bottom sheet with Details/Discover tabs. Uses extracted mobile components (PeakDetailsMobile, ChallengeDetailsMobile, DiscoveryContentMobile). Manages drawer height with snap points (collapsed/halfway/expanded).
 - `SummitHistoryPanel.tsx` - Full summit history list for a peak. Shows all public summits with user names, dates, and weather conditions at summit time. Used inside DiscoveryDrawer (desktop) or DetailBottomSheet (mobile).
 - `PeakDetailPanel.tsx` - Desktop right panel for peak details. Uses shared components (DetailPanelHeader, StatsGrid, DetailLoadingState) and usePeakMapEffects hook. Includes CurrentConditions weather widget, summit status for authenticated users.
 - `PeakDetailContent.tsx` - Peak detail content with SSR data (used by static pages). Uses shared UI components.
 - `PeakCommunity.tsx` - Community summit history display component (shows public summits with user names and weather)
-- `PeakUserActivity.tsx` - User's activity display for a peak (shows user's ascents, activities, and allows editing). Activity cards link to `/activities/[id]` detail pages.
+- `PeakUserActivity.tsx` - User's activity display for a peak (shows user's ascents, activities, and allows editing). Activity cards link to `/activities/[id]` detail pages. Uses shared `ActivityWithSummits` and `OrphanSummitCard` components.
 - `ChallengeDetailPanel.tsx` - Desktop right panel for challenge details. Uses shared components and useChallengeMapEffects hook. Shows challenge progress for authenticated users.
 - `ChallengeDetailContent.tsx` - Challenge detail content with SSR data (used by static pages). Uses shared UI components.
 - `DashboardPanel.tsx` - User dashboard panel (authenticated only). Wrapper component that renders DashboardContent.
@@ -203,12 +228,17 @@ Server actions for data fetching and mutations. Organized by domain. Backend cal
 - `AddManualSummitModal.tsx` - Modal for logging manual peak summits. Supports two flows: peak-first (from peak detail) and activity-first (from activity detail with peak search along route). Triggered by ManualSummitProvider.
 - `SummitReportModal.tsx` - Modal for editing summit experiences/reports (triggered by SummitReportProvider)
 - `ActivityDetailPanel.tsx` - Desktop right panel for activity details. Shows Details/Summits/Analytics tabs, GPX route on map, elevation profile with hover interaction.
+- `ProfileDetailPanel.tsx` - Desktop right panel for user profile details. Shows profile stats, accepted challenges, and action buttons. Uses useProfileMapEffects hook.
+- `ProfileDetailContent.tsx` - Profile detail content with SSR data (used by static pages). Uses shared UI components.
+- `ProfileSummitsList.tsx` - User's peaks list with search. When `compact` prop is true, hides internal tabs (tabs are in DiscoveryDrawer). Supports ordering by summit count descending.
+- `ProfileJournal.tsx` - User's summit journal grouped by activity. Fetches all summits via `searchUserSummits`, groups by activity_id, fetches activity details, and renders `ActivityWithSummits` and `OrphanSummitCard` components. Similar to PeakUserActivity but for all peaks.
 
 ##### Mobile Overlays (`components/overlays/mobile/`)
 - `peak-details-mobile.tsx` - Mobile-optimized peak detail view extracted from DetailBottomSheet
 - `challenge-details-mobile.tsx` - Mobile-optimized challenge detail view extracted from DetailBottomSheet
 - `discovery-content-mobile.tsx` - Mobile-optimized discovery content using shared discovery components
 - `activity-details-mobile.tsx` - Mobile-optimized activity detail view with Details/Summits/Analytics tabs
+- `profile-details-mobile.tsx` - Mobile-optimized profile detail view with stats, highest peak, and accepted challenges
 
 ##### Auth (`components/auth/`)
 - `AuthModal.tsx` - Modal-based authentication flow. Two modes: login (Strava OAuth) and email collection (post-OAuth). Opens via `useRequireAuth` hook when user attempts auth-gated action.
@@ -225,8 +255,10 @@ Server actions for data fetching and mutations. Organized by domain. Backend cal
 ##### Activities (`components/app/activities/`)
 - `ActivityElevationProfile.tsx` - Interactive elevation profile chart using visx. Supports hover interaction that shows a marker on the GPX track at the corresponding distance point via `onHover` callback, displays summit markers on chart, shows min/max elevation labels.
 - `ActivitySummitsList.tsx` - List of individual summits during an activity (not grouped by peak). Uses shared `SummitItem` component with `showPeakHeader=true` to display peak name at top of each summit. Includes "Log Another Summit" button. Supports `onSummitHover` callback for map marker highlighting.
+- `ActivityWithSummits.tsx` - Shared activity card with nested summits. Used by PeakUserActivity and ProfileJournal. Shows activity header with link, stats (distance, elevation gain), Strava link, and nested summit items. Supports both `Summit[]` and `SummitWithPeak[]` for summits. Props: `activity`, `summits`, `summitsWithPeak`, `isHighlighted`, `onHighlight`, `peakId`, `peakName`, `showPeakHeaders`.
 
 ##### Summits (`components/app/summits/`)
+- `OrphanSummitCard.tsx` - Shared orphan summit card for manual summits without an activity. Used by PeakUserActivity and ProfileJournal. Shows date/time, weather conditions, difficulty/experience ratings, notes, and edit button. Supports both `Summit` and `SummitWithPeak` types. Optional `showPeakHeader` prop for profile context.
 - `SummitItem.tsx` - Shared summit display component used by both Journal tab (PeakUserActivity) and Activity Summits tab (ActivitySummitsList). Features:
   - Works with both `Summit` and `SummitWithPeak` types
   - Optional peak header for activity context (`showPeakHeader` prop)
@@ -380,6 +412,8 @@ TypeScript type definitions:
 - `StravaCreds.ts` - Strava OAuth credentials
 - `Summit.ts` - Summit data structure with difficulty and experience rating
 - `SummitWithPeak.ts` - Individual summit entry with nested peak data. Used by activity detail API response. Includes all summit fields (notes, weather, difficulty, experience rating) plus peak info.
+- `ProfileStats.ts` - User profile statistics (peaks summited, total summits, highest peak, challenges completed, elevation gained, states/countries, year stats, peak type breakdown)
+- `UserPeakWithSummitCount.ts` - Peak with summit count and first/last summit dates for user profile search results
 - `User.ts` - User data structure
 - `UserChallengeFavorite.ts` - User challenge favorite
 
@@ -647,6 +681,7 @@ The following legacy/unused components were removed:
 - `use-map-source.ts` - Manages Mapbox GeoJSON source data with retry logic. Handles waiting for source availability and cleanup on unmount.
 - `use-peak-map-effects.ts` - Handles map effects when viewing a peak detail. Sets selected peak marker, displays activity GPX lines, and provides flyTo functionality.
 - `use-challenge-map-effects.ts` - Handles map effects when viewing a challenge. Disables general peaks search, shows challenge peaks on map, and fits map to challenge bounds.
+- `use-profile-map-effects.ts` - Handles map effects when viewing a user profile. Disables general peaks search, shows all user's summited peaks on map, and fits map to bounds.
 - `use-drawer-height.ts` - Manages draggable drawer height with snap points (collapsed/halfway/expanded). Used by DetailBottomSheet for mobile UI.
 
 ### Refactored Components

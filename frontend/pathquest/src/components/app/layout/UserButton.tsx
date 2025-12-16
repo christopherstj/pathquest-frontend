@@ -1,8 +1,16 @@
 "use client";
 import { Button } from "@/components/ui/button";
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuSeparator,
+    DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { signIn, signOut, useSession } from "next-auth/react";
 import Link from "next/link";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
+import { User, LogOut, ChevronDown } from "lucide-react";
 import React from "react";
 
 const UserButton = () => {
@@ -16,17 +24,13 @@ const UserButton = () => {
     const redirectPath = `${pathname}${queryString ? `?${queryString}` : ""}`;
 
     const name = session?.user?.name;
-
-    console.log(session);
+    const userId = session?.user?.id;
+    const pic = session?.user?.image;
 
     const login = async () => {
-        const res = await signIn("strava", {
+        await signIn("strava", {
             redirect: false,
         });
-
-        // if (!res?.ok) {
-        //     router.push(`/signup?redirect=${encodeURIComponent(redirectPath)}`);
-        // }
     };
 
     const logout = async () => {
@@ -44,32 +48,54 @@ const UserButton = () => {
                     <Link href={`/signup?redirect=${redirectTo}`}>Signup</Link>
                 </Button>
                 <Button
-                    // asChild
                     className="rounded-md bg-primary hover:bg-primary-foreground-dim/20 text-white"
                     size="sm"
                     onClick={login}
                 >
                     Login
-                    {/* <Link href={`/login?redirect=${redirectTo}`}>Login</Link> */}
                 </Button>
             </div>
         );
     }
 
     return (
-        <div className="flex flex-col">
-            <div className="rounded-lg bg-primary-dim">
-                <p className="p-2 text-primary-dim-foreground">
-                    {name ?? "Unnamed"}
-                </p>
-            </div>
-            <Button
-                onClick={logout}
-                className="rounded-md bg-primary hover:bg-primary/80 text-primary-foreground"
-            >
-                Logout
-            </Button>
-        </div>
+        <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+                <button className="flex items-center gap-2 rounded-lg bg-card/80 hover:bg-card border border-border px-3 py-2 transition-colors focus:outline-none focus:ring-2 focus:ring-primary/20">
+                    {pic ? (
+                        <img
+                            src={pic}
+                            alt={name || "User"}
+                            className="w-7 h-7 rounded-full border border-border"
+                        />
+                    ) : (
+                        <div className="w-7 h-7 rounded-full bg-muted flex items-center justify-center">
+                            <User className="w-4 h-4 text-muted-foreground" />
+                        </div>
+                    )}
+                    <span className="text-sm font-medium text-foreground max-w-[100px] truncate hidden sm:block">
+                        {name ?? "User"}
+                    </span>
+                    <ChevronDown className="w-4 h-4 text-muted-foreground" />
+                </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-48">
+                <DropdownMenuItem asChild>
+                    <Link href={`/users/${userId}`} className="flex items-center gap-2 cursor-pointer">
+                        <User className="w-4 h-4" />
+                        <span>Profile</span>
+                    </Link>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                    onClick={logout}
+                    className="flex items-center gap-2 cursor-pointer text-red-500 focus:text-red-500 focus:bg-red-500/10"
+                >
+                    <LogOut className="w-4 h-4" />
+                    <span>Logout</span>
+                </DropdownMenuItem>
+            </DropdownMenuContent>
+        </DropdownMenu>
     );
 };
 

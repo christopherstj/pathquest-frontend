@@ -2,7 +2,7 @@
 
 import React, { Suspense } from "react";
 import Omnibar from "@/components/search/Omnibar";
-import { User, LayoutDashboard, LogIn } from "lucide-react";
+import { User, LayoutDashboard, LogIn, LogOut } from "lucide-react";
 import Link from "next/link";
 import Logo from "@/components/brand/Logo";
 import { useIsAuthenticated } from "@/hooks/useRequireAuth";
@@ -13,6 +13,14 @@ import {
     TooltipContent,
     TooltipTrigger,
 } from "@/components/ui/tooltip";
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuSeparator,
+    DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { signOut } from "next-auth/react";
 
 const GlobalNavigation = () => {
     const { isAuthenticated, user } = useIsAuthenticated();
@@ -88,11 +96,11 @@ const GlobalNavigation = () => {
                             </TooltipContent>
                         </Tooltip>
 
-                        {/* User Avatar */}
-                        <Tooltip>
-                            <TooltipTrigger asChild>
+                        {/* User Avatar with Dropdown */}
+                        <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
                                 <button
-                                    className="flex items-center justify-center w-10 h-10 rounded-full bg-card/80 backdrop-blur border border-border hover:bg-card hover:border-primary/50 transition-all shadow-lg overflow-hidden"
+                                    className="flex items-center justify-center w-10 h-10 rounded-full bg-card/80 backdrop-blur border border-border hover:bg-card hover:border-primary/50 transition-all shadow-lg overflow-hidden focus:outline-none focus:ring-2 focus:ring-primary/30"
                                     aria-label="User menu"
                                     tabIndex={0}
                                 >
@@ -106,11 +114,28 @@ const GlobalNavigation = () => {
                                         <User className="w-5 h-5 text-muted-foreground" />
                                     )}
                                 </button>
-                            </TooltipTrigger>
-                            <TooltipContent side="bottom">
-                                <p>{user?.name || "Account"}</p>
-                            </TooltipContent>
-                        </Tooltip>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" className="w-48" sideOffset={8}>
+                                <div className="px-2 py-1.5 text-sm font-medium text-foreground truncate">
+                                    {user?.name || "User"}
+                                </div>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem asChild>
+                                    <Link href={`/users/${user?.id}`} className="flex items-center gap-2 cursor-pointer">
+                                        <User className="w-4 h-4" />
+                                        <span>Profile</span>
+                                    </Link>
+                                </DropdownMenuItem>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem
+                                    onClick={() => signOut()}
+                                    className="flex items-center gap-2 cursor-pointer text-red-500 focus:text-red-500 focus:bg-red-500/10"
+                                >
+                                    <LogOut className="w-4 h-4" />
+                                    <span>Logout</span>
+                                </DropdownMenuItem>
+                            </DropdownMenuContent>
+                        </DropdownMenu>
                     </>
                 ) : (
                     /* Login Button */

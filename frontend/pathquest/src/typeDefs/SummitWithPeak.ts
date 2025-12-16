@@ -4,7 +4,9 @@ export default interface SummitWithPeak {
     id: string;
     timestamp: string;
     timezone?: string;
+    activity_id?: string;
     notes?: string;
+    is_public?: boolean;
     difficulty?: Difficulty;
     experience_rating?: ExperienceRating;
     temperature?: number;

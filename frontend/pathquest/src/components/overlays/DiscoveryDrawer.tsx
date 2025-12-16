@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import { motion, useAnimation, PanInfo, AnimatePresence } from "framer-motion";
-import { ArrowRight, Trophy, TrendingUp, Mountain, Compass, LayoutDashboard, ZoomIn, Route, Users } from "lucide-react";
+import { ArrowRight, Trophy, TrendingUp, Mountain, Compass, LayoutDashboard, ZoomIn, Route, Users, BookOpen } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useMapStore } from "@/providers/MapProvider";
 import { useRouter, usePathname } from "next/navigation";
@@ -12,13 +12,15 @@ import DashboardContent from "./DashboardContent";
 import PeakUserActivity from "./PeakUserActivity";
 import PeakCommunity from "./PeakCommunity";
 import ActivitySummitsList from "@/components/app/activities/ActivitySummitsList";
+import ProfileSummitsList from "./ProfileSummitsList";
+import ProfileJournal from "./ProfileJournal";
 import getActivityDetails from "@/actions/activities/getActivityDetails";
 import metersToFt from "@/helpers/metersToFt";
 import { useIsAuthenticated } from "@/hooks/useRequireAuth";
 
 type DrawerHeight = "collapsed" | "halfway" | "expanded";
 type MobileTab = "discover" | "dashboard";
-type DesktopTab = "discover" | "myActivity" | "community" | "summits";
+type DesktopTab = "discover" | "myActivity" | "community" | "summits" | "profilePeaks" | "profileJournal";
 
 // Height values in pixels for mobile drawer snap points
 const DRAWER_HEIGHTS = {
@@ -54,6 +56,11 @@ const DiscoveryDrawer = () => {
     const activityId = activityMatch?.[1] ?? null;
     const hasActivitySelected = Boolean(activityId);
 
+    // Detect profile from URL
+    const profileMatch = pathname.match(/^\/users\/([^\/]+)$/);
+    const profileUserId = profileMatch?.[1] ?? null;
+    const hasProfileSelected = Boolean(profileUserId);
+
     // Fetch activity details when activity is selected
     const { data: activityData } = useQuery({
         queryKey: ["activityDetails", activityId],
@@ -86,12 +93,15 @@ const DiscoveryDrawer = () => {
         }
     }, [isAuthenticated, authLoading, hasInitializedTab]);
 
-    // Auto-switch to appropriate tab when a peak or activity is selected
+    // Auto-switch to appropriate tab when a peak, activity, or profile is selected
+    // - Profile selected: open Profile Peaks tab
     // - Peak selected + authenticated: open My Activity tab
     // - Peak selected + not authenticated: open Community tab
     // - Activity selected: open Summits tab
     useEffect(() => {
-        if (hasActivitySelected && !isMobile) {
+        if (hasProfileSelected && !isMobile) {
+            setDesktopActiveTab("profilePeaks");
+        } else if (hasActivitySelected && !isMobile) {
             setDesktopActiveTab("summits");
         } else if (hasPeakSelected && !isMobile) {
             if (isAuthenticated) {
@@ -99,11 +109,11 @@ const DiscoveryDrawer = () => {
             } else {
                 setDesktopActiveTab("community");
             }
-        } else if (!hasPeakSelected && !hasActivitySelected && !isMobile) {
+        } else if (!hasPeakSelected && !hasActivitySelected && !hasProfileSelected && !isMobile) {
             setDesktopActiveTab("discover");
             setHighlightedActivityId(null);
         }
-    }, [hasPeakSelected, hasActivitySelected, isAuthenticated, isMobile]);
+    }, [hasPeakSelected, hasActivitySelected, hasProfileSelected, isAuthenticated, isMobile]);
 
     // Update heights on window resize
     useEffect(() => {
@@ -214,14 +224,17 @@ const DiscoveryDrawer = () => {
 
     // Desktop version with tabs
     if (!isMobile) {
-        // Show tabs when a peak or activity is selected
+        // Show tabs when a peak, activity, or profile is selected
         // My Activity tab: only for authenticated users when peak selected
         // Community tab: for all users when peak selected
         // Summits tab: when activity is selected
+        // Profile tabs: when profile is selected
         const showMyActivityTab = hasPeakSelected && isAuthenticated;
         const showCommunityTab = hasPeakSelected;
         const showSummitsTab = hasActivitySelected;
-        const showTabs = hasPeakSelected || hasActivitySelected;
+        const showProfilePeaksTab = hasProfileSelected;
+        const showProfileJournalTab = hasProfileSelected;
+        const showTabs = hasPeakSelected || hasActivitySelected || hasProfileSelected;
 
         return (
             <motion.div
@@ -235,23 +248,25 @@ const DiscoveryDrawer = () => {
                     {showTabs && (
                         <div className="px-3 py-2 border-b border-border/60 shrink-0">
                             <div className="flex gap-1 bg-muted/50 p-1 rounded-lg">
-                                <button
-                                    onClick={() => handleDesktopTabChange("discover")}
-                                    onKeyDown={(e) => e.key === "Enter" && handleDesktopTabChange("discover")}
-                                    tabIndex={0}
-                                    aria-label="Explore tab"
-                                    aria-selected={desktopActiveTab === "discover"}
-                                    role="tab"
-                                    className={cn(
-                                        "flex flex-col items-center gap-0.5 px-2 py-1.5 rounded-md text-[10px] font-medium transition-all flex-1 justify-center",
-                                        desktopActiveTab === "discover"
-                                            ? "bg-background text-foreground shadow-sm"
-                                            : "text-muted-foreground hover:text-foreground"
-                                    )}
-                                >
-                                    <Compass className="w-4 h-4" />
-                                    Explore
-                                </button>
+                                {!hasProfileSelected && (
+                                    <button
+                                        onClick={() => handleDesktopTabChange("discover")}
+                                        onKeyDown={(e) => e.key === "Enter" && handleDesktopTabChange("discover")}
+                                        tabIndex={0}
+                                        aria-label="Explore tab"
+                                        aria-selected={desktopActiveTab === "discover"}
+                                        role="tab"
+                                        className={cn(
+                                            "flex flex-col items-center gap-0.5 px-2 py-1.5 rounded-md text-[10px] font-medium transition-all flex-1 justify-center",
+                                            desktopActiveTab === "discover"
+                                                ? "bg-background text-foreground shadow-sm"
+                                                : "text-muted-foreground hover:text-foreground"
+                                        )}
+                                    >
+                                        <Compass className="w-4 h-4" />
+                                        Explore
+                                    </button>
+                                )}
                                 {showMyActivityTab && (
                                     <button
                                         onClick={() => handleDesktopTabChange("myActivity")}
@@ -309,13 +324,71 @@ const DiscoveryDrawer = () => {
                                         Summits
                                     </button>
                                 )}
+                                {showProfilePeaksTab && (
+                                    <button
+                                        onClick={() => handleDesktopTabChange("profilePeaks")}
+                                        onKeyDown={(e) => e.key === "Enter" && handleDesktopTabChange("profilePeaks")}
+                                        tabIndex={0}
+                                        aria-label="Peaks tab"
+                                        aria-selected={desktopActiveTab === "profilePeaks"}
+                                        role="tab"
+                                        className={cn(
+                                            "flex flex-col items-center gap-0.5 px-2 py-1.5 rounded-md text-[10px] font-medium transition-all flex-1 justify-center",
+                                            desktopActiveTab === "profilePeaks"
+                                                ? "bg-background text-foreground shadow-sm"
+                                                : "text-muted-foreground hover:text-foreground"
+                                        )}
+                                    >
+                                        <Mountain className="w-4 h-4" />
+                                        Peaks
+                                    </button>
+                                )}
+                                {showProfileJournalTab && (
+                                    <button
+                                        onClick={() => handleDesktopTabChange("profileJournal")}
+                                        onKeyDown={(e) => e.key === "Enter" && handleDesktopTabChange("profileJournal")}
+                                        tabIndex={0}
+                                        aria-label="Journal tab"
+                                        aria-selected={desktopActiveTab === "profileJournal"}
+                                        role="tab"
+                                        className={cn(
+                                            "flex flex-col items-center gap-0.5 px-2 py-1.5 rounded-md text-[10px] font-medium transition-all flex-1 justify-center",
+                                            desktopActiveTab === "profileJournal"
+                                                ? "bg-background text-foreground shadow-sm"
+                                                : "text-muted-foreground hover:text-foreground"
+                                        )}
+                                    >
+                                        <BookOpen className="w-4 h-4" />
+                                        Journal
+                                    </button>
+                                )}
                             </div>
                         </div>
                     )}
 
                     <div className="flex-1 overflow-y-auto p-5 space-y-6 custom-scrollbar">
                         <AnimatePresence mode="wait">
-                            {desktopActiveTab === "summits" && showSummitsTab && activityId ? (
+                            {desktopActiveTab === "profilePeaks" && showProfilePeaksTab && profileUserId ? (
+                                <motion.div
+                                    key="profile-peaks"
+                                    initial={{ opacity: 0, x: -20 }}
+                                    animate={{ opacity: 1, x: 0 }}
+                                    exit={{ opacity: 0, x: -20 }}
+                                    className="h-full -m-5"
+                                >
+                                    <ProfileSummitsList userId={profileUserId} compact />
+                                </motion.div>
+                            ) : desktopActiveTab === "profileJournal" && showProfileJournalTab && profileUserId ? (
+                                <motion.div
+                                    key="profile-journal"
+                                    initial={{ opacity: 0, x: -20 }}
+                                    animate={{ opacity: 1, x: 0 }}
+                                    exit={{ opacity: 0, x: -20 }}
+                                    className="h-full -m-5"
+                                >
+                                    <ProfileJournal userId={profileUserId} />
+                                </motion.div>
+                            ) : desktopActiveTab === "summits" && showSummitsTab && activityId ? (
                                 <motion.div
                                     key="summits"
                                     initial={{ opacity: 0, x: -20 }}
