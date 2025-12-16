@@ -1,4 +1,4 @@
-import { getVercelOidcToken } from "@vercel/functions/oidc";
+import { getVercelOidcToken } from "@vercel/oidc";
 import { ExternalAccountClient } from "google-auth-library";
 import jwt from "jsonwebtoken";
 

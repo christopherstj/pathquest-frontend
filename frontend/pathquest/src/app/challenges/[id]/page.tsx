@@ -17,14 +17,15 @@ export const dynamicParams = true;
 export const revalidate = 86400;
 
 type Props = {
-    params: {
+    params: Promise<{
         id: string;
-    };
+    }>;
 };
 
 // Generate dynamic metadata for SEO
 export const generateMetadata = async ({ params }: Props): Promise<Metadata> => {
-    const result = await getPublicChallengeDetails(params.id);
+    const { id } = await params;
+    const result = await getPublicChallengeDetails(id);
 
     if (!result.success || !result.data?.challenge) {
         return {
@@ -70,7 +71,7 @@ export const generateMetadata = async ({ params }: Props): Promise<Metadata> => 
  * This ensures the Mapbox instance never reloads during navigation.
  */
 const ChallengePage = async ({ params }: Props) => {
-    const { id } = params;
+    const { id } = await params;
     const result = await getPublicChallengeDetails(id);
 
     if (!result.success || !result.data?.challenge) {

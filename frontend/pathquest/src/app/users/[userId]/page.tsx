@@ -7,14 +7,15 @@ import metersToFt from "@/helpers/metersToFt";
 export const dynamic = "force-dynamic";
 
 type Props = {
-    params: {
+    params: Promise<{
         userId: string;
-    };
+    }>;
 };
 
 // Generate dynamic metadata for SEO
 export const generateMetadata = async ({ params }: Props): Promise<Metadata> => {
-    const result = await getUserProfile(params.userId);
+    const { userId } = await params;
+    const result = await getUserProfile(userId);
 
     if (!result.success || !result.data?.user) {
         return {
@@ -60,7 +61,7 @@ export const generateMetadata = async ({ params }: Props): Promise<Metadata> => 
  * This ensures the Mapbox instance never reloads during navigation.
  */
 const UserProfilePage = async ({ params }: Props) => {
-    const { userId } = params;
+    const { userId } = await params;
     const result = await getUserProfile(userId);
 
     if (!result.success || !result.data?.user) {

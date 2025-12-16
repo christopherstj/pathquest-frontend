@@ -1,9 +1,9 @@
 import { NextResponse } from "next/server";
-import type { NextRequest } from "next/server";
-import { getToken } from "next-auth/jwt";
+import type { Request } from "next/server";
 
-export async function middleware(request: NextRequest) {
-    const { pathname } = request.nextUrl;
+export function proxy(request: Request) {
+    const url = new URL(request.url);
+    const { pathname } = url;
 
     // Redirect legacy auth routes to home (auth is now handled via modal)
     if (
@@ -11,10 +11,9 @@ export async function middleware(request: NextRequest) {
         pathname.startsWith("/signup") ||
         pathname.startsWith("/m/")
     ) {
-        const url = request.nextUrl.clone();
-        url.pathname = "/";
-        url.search = "";
-        return NextResponse.redirect(url);
+        const redirectUrl = new URL("/", request.url);
+        redirectUrl.search = "";
+        return NextResponse.redirect(redirectUrl);
     }
 
     return NextResponse.next();
@@ -30,3 +29,4 @@ export const config = {
         "/m/:path*",
     ],
 };
+

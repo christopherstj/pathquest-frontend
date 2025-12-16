@@ -1,10 +1,11 @@
 # PathQuest Frontend Architecture
 
 ## Overview
-PathQuest Frontend is a Next.js 14 application built with React, TypeScript, and TailwindCSS. It provides a modern web interface for users to explore mountain peaks, track their summits, view challenges, and manage their Strava-connected activities.
+PathQuest Frontend is a Next.js 16 application built with React 19, TypeScript, and TailwindCSS. It provides a modern web interface for users to explore mountain peaks, track their summits, view challenges, and manage their Strava-connected activities.
 
 ## Tech Stack
-- **Framework**: Next.js 14 (App Router)
+- **Framework**: Next.js 16 (App Router)
+- **React**: React 19
 - **Language**: TypeScript
 - **Styling**: TailwindCSS 4.x
 - **UI Components**: Radix UI, Shadcn/ui
@@ -18,7 +19,7 @@ PathQuest Frontend is a Next.js 14 application built with React, TypeScript, and
 ## Project Structure
 
 ### App Router (`src/app/`)
-Next.js 14 App Router structure with route groups and parallel routes.
+Next.js 16 App Router structure with route groups and parallel routes.
 
 #### Root Layout (`layout.tsx`)
 - Provides theme provider (dark mode by default, retro topo palette)
@@ -608,7 +609,7 @@ Required environment variables:
 ## Notes
 
 ### Architecture Decisions
-- **App Router**: Uses Next.js 14 App Router (not Pages Router)
+- **App Router**: Uses Next.js 16 App Router (not Pages Router)
 - **Server Actions**: Uses server actions instead of API routes for data mutations
 - **No API Routes**: Minimal API routes (only NextAuth)
 - **Client Components**: Most components are client components for interactivity
