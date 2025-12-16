@@ -231,7 +231,7 @@ Server actions for data fetching and mutations. Organized by domain. Backend cal
 - `ProfileDetailPanel.tsx` - Desktop right panel for user profile details. Shows profile stats, accepted challenges, and action buttons. Uses useProfileMapEffects hook.
 - `ProfileDetailContent.tsx` - Profile detail content with SSR data (used by static pages). Uses shared UI components.
 - `ProfileSummitsList.tsx` - User's peaks list with search. When `compact` prop is true, hides internal tabs (tabs are in DiscoveryDrawer). Supports ordering by summit count descending.
-- `ProfileJournal.tsx` - User's summit journal grouped by activity. Fetches all summits via `searchUserSummits`, groups by activity_id, fetches activity details, and renders `ActivityWithSummits` and `OrphanSummitCard` components. Similar to PeakUserActivity but for all peaks.
+- `ProfileJournal.tsx` - User's summit journal grouped by activity. Fetches all summits via `searchUserSummits`, groups by activity_id, fetches activity details, and renders `ActivityWithSummits` and `OrphanSummitCard` components. Similar to PeakUserActivity but for all peaks. Detects ownership via `useIsAuthenticated` hook and passes `isOwner` prop to child components to control edit/delete button visibility. Invalidates query cache when summits are deleted.
 
 ##### Mobile Overlays (`components/overlays/mobile/`)
 - `peak-details-mobile.tsx` - Mobile-optimized peak detail view extracted from DetailBottomSheet
@@ -255,16 +255,19 @@ Server actions for data fetching and mutations. Organized by domain. Backend cal
 ##### Activities (`components/app/activities/`)
 - `ActivityElevationProfile.tsx` - Interactive elevation profile chart using visx. Supports hover interaction that shows a marker on the GPX track at the corresponding distance point via `onHover` callback, displays summit markers on chart, shows min/max elevation labels.
 - `ActivitySummitsList.tsx` - List of individual summits during an activity (not grouped by peak). Uses shared `SummitItem` component with `showPeakHeader=true` to display peak name at top of each summit. Includes "Log Another Summit" button. Supports `onSummitHover` callback for map marker highlighting.
-- `ActivityWithSummits.tsx` - Shared activity card with nested summits. Used by PeakUserActivity and ProfileJournal. Shows activity header with link, stats (distance, elevation gain), Strava link, and nested summit items. Supports both `Summit[]` and `SummitWithPeak[]` for summits. Props: `activity`, `summits`, `summitsWithPeak`, `isHighlighted`, `onHighlight`, `peakId`, `peakName`, `showPeakHeaders`.
+- `ActivityWithSummits.tsx` - Shared activity card with nested summits. Used by PeakUserActivity and ProfileJournal. Shows activity header with link, stats (distance, elevation gain), Strava link, and nested summit items. Supports both `Summit[]` and `SummitWithPeak[]` for summits. Props: `activity`, `summits`, `summitsWithPeak`, `isHighlighted`, `onHighlight`, `peakId`, `peakName`, `showPeakHeaders`, `isOwner` (controls edit/delete button visibility), `onSummitDeleted` (callback when a summit is deleted).
 
 ##### Summits (`components/app/summits/`)
-- `OrphanSummitCard.tsx` - Shared orphan summit card for manual summits without an activity. Used by PeakUserActivity and ProfileJournal. Shows date/time, weather conditions, difficulty/experience ratings, notes, and edit button. Supports both `Summit` and `SummitWithPeak` types. Optional `showPeakHeader` prop for profile context.
+- `OrphanSummitCard.tsx` - Shared orphan summit card for manual summits without an activity. Used by PeakUserActivity and ProfileJournal. Shows date/time, weather conditions, difficulty/experience ratings, notes, and edit/delete buttons (only visible when `isOwner` is true). Supports both `Summit` and `SummitWithPeak` types. Optional `showPeakHeader` prop for profile context. Props include `isOwner` and `onDeleted` callback.
 - `SummitItem.tsx` - Shared summit display component used by both Journal tab (PeakUserActivity) and Activity Summits tab (ActivitySummitsList). Features:
   - Works with both `Summit` and `SummitWithPeak` types
   - Optional peak header for activity context (`showPeakHeader` prop)
   - Hover callbacks (`onHoverStart`, `onHoverEnd`) for map marker highlighting
   - Weather conditions (temperature, weather code, wind speed, humidity) with colored icons
   - Difficulty badge (easy/moderate/hard/expert) with color-coded text
+  - `isOwner` prop controls visibility of edit/delete buttons (only shown to owner)
+  - Delete button with confirmation dialog, calls `deleteAscent` action
+  - `onDeleted` callback for refreshing parent component after deletion
   - Experience rating badge (amazing/good/tough/epic) with icons
   - Trip notes in styled box
   - Edit button for summit reports (opens SummitReportModal)

@@ -147,6 +147,7 @@ const PeakUserActivity = ({ highlightedActivityId, onHighlightActivity }: PeakUs
                             onHighlight={handleHighlightActivity}
                             peakId={peakId}
                             peakName={peakName}
+                            isOwner={true}
                         />
                     ))}
                 </section>
@@ -163,7 +164,7 @@ const PeakUserActivity = ({ highlightedActivityId, onHighlightActivity }: PeakUs
                     </div>
                     <div className="space-y-3">
                         {sortedOrphanSummits.map((summit) => (
-                            <OrphanSummitCard key={summit.id} summit={summit} peakId={peakId} peakName={peakName} />
+                            <OrphanSummitCard key={summit.id} summit={summit} peakId={peakId} peakName={peakName} isOwner={true} />
                         ))}
                     </div>
                 </section>
@@ -188,6 +189,7 @@ const PeakUserActivity = ({ highlightedActivityId, onHighlightActivity }: PeakUs
                                 onHighlight={handleHighlightActivity}
                                 peakId={peakId}
                                 peakName={peakName}
+                                isOwner={true}
                             />
                         ))}
                     </div>

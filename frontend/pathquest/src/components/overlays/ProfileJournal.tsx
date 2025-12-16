@@ -3,13 +3,14 @@
 import React, { useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import { Search, Mountain, Route, Calendar, BookOpen } from "lucide-react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import searchUserSummits from "@/actions/users/searchUserSummits";
 import getActivityDetails from "@/actions/activities/getActivityDetails";
 import ActivityWithSummits from "@/components/app/activities/ActivityWithSummits";
 import OrphanSummitCard from "@/components/app/summits/OrphanSummitCard";
 import SummitWithPeak from "@/typeDefs/SummitWithPeak";
 import Activity from "@/typeDefs/Activity";
+import { useIsAuthenticated } from "@/hooks/useRequireAuth";
 
 interface ProfileJournalProps {
     userId: string;
@@ -18,6 +19,16 @@ interface ProfileJournalProps {
 const ProfileJournal = ({ userId }: ProfileJournalProps) => {
     const [search, setSearch] = useState("");
     const [debouncedSearch, setDebouncedSearch] = useState("");
+    const queryClient = useQueryClient();
+    
+    // Determine if current user is the owner of this profile
+    const { user } = useIsAuthenticated();
+    const isOwner = user?.id === userId;
+    
+    // Callback to refresh data when a summit is deleted
+    const handleSummitDeleted = () => {
+        queryClient.invalidateQueries({ queryKey: ["userSummitsJournal", userId] });
+    };
 
     // Debounce search
     React.useEffect(() => {
@@ -166,6 +177,8 @@ const ProfileJournal = ({ userId }: ProfileJournalProps) => {
                                             summits={[]}
                                             summitsWithPeak={summits}
                                             showPeakHeaders={true}
+                                            isOwner={isOwner}
+                                            onSummitDeleted={handleSummitDeleted}
                                         />
                                     );
                                 })}
@@ -186,6 +199,8 @@ const ProfileJournal = ({ userId }: ProfileJournalProps) => {
                                         key={summit.id}
                                         summit={summit}
                                         showPeakHeader={true}
+                                        isOwner={isOwner}
+                                        onDeleted={handleSummitDeleted}
                                     />
                                 ))}
                             </section>

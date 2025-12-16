@@ -42,6 +42,8 @@ export type ActivityWithSummitsProps = {
     peakId?: string;
     peakName?: string;
     showPeakHeaders?: boolean;
+    isOwner?: boolean;
+    onSummitDeleted?: () => void;
 };
 
 const ActivityWithSummits = ({
@@ -53,6 +55,8 @@ const ActivityWithSummits = ({
     peakId,
     peakName,
     showPeakHeaders = false,
+    isOwner = false,
+    onSummitDeleted,
 }: ActivityWithSummitsProps) => {
     const handleHighlight = () => {
         if (onHighlight) {
@@ -154,6 +158,8 @@ const ActivityWithSummits = ({
                                   key={summit.id}
                                   summit={summit}
                                   showPeakHeader={showPeakHeaders}
+                                  isOwner={isOwner}
+                                  onDeleted={onSummitDeleted}
                               />
                           ))
                         : summits.map((summit) => (
@@ -162,6 +168,8 @@ const ActivityWithSummits = ({
                                   summit={summit}
                                   peakId={peakId}
                                   peakName={peakName}
+                                  isOwner={isOwner}
+                                  onDeleted={onSummitDeleted}
                               />
                           ))}
                 </div>

@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import {
     Mountain,
     Clock,
@@ -15,12 +15,14 @@ import {
     Smile,
     Zap,
     Flame,
+    Trash2,
 } from "lucide-react";
 import { useSummitReportStore } from "@/providers/SummitReportProvider";
 import { Button } from "@/components/ui/button";
 import Summit, { Difficulty, ExperienceRating } from "@/typeDefs/Summit";
 import SummitWithPeak from "@/typeDefs/SummitWithPeak";
 import Link from "next/link";
+import deleteAscent from "@/actions/peaks/deleteAscent";
 
 // Difficulty display config
 const DIFFICULTY_CONFIG: Record<Difficulty, { label: string; color: string }> = {
@@ -108,10 +110,13 @@ export type SummitItemProps = {
     showPeakHeader?: boolean;
     onHoverStart?: (peakId: string) => void;
     onHoverEnd?: (peakId: string) => void;
+    isOwner?: boolean;
+    onDeleted?: () => void;
 };
 
-const SummitItem = ({ summit, peakId, peakName, showPeakHeader = false, onHoverStart, onHoverEnd }: SummitItemProps) => {
+const SummitItem = ({ summit, peakId, peakName, showPeakHeader = false, onHoverStart, onHoverEnd, isOwner = false, onDeleted }: SummitItemProps) => {
     const openSummitReport = useSummitReportStore((state) => state.openSummitReport);
+    const [isDeleting, setIsDeleting] = useState(false);
     
     // Resolve peak info from either prop or nested peak
     const resolvedPeakId = isSummitWithPeak(summit) ? summit.peak.id : peakId || "";
@@ -149,6 +154,29 @@ const SummitItem = ({ summit, peakId, peakName, showPeakHeader = false, onHoverS
         e.preventDefault();
         e.stopPropagation();
         openSummitReport({ summit: summitForReport, peakId: resolvedPeakId, peakName: resolvedPeakName });
+    };
+
+    const handleDelete = async (e: React.MouseEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+        
+        if (!confirm("Are you sure you want to delete this summit? This action cannot be undone.")) {
+            return;
+        }
+        
+        setIsDeleting(true);
+        try {
+            const result = await deleteAscent(summit.id);
+            if (result.success) {
+                onDeleted?.();
+            } else {
+                alert(result.error || "Failed to delete summit");
+            }
+        } catch (error) {
+            alert("Failed to delete summit");
+        } finally {
+            setIsDeleting(false);
+        }
     };
 
     const handleMouseEnter = () => {
@@ -194,15 +222,32 @@ const SummitItem = ({ summit, peakId, peakName, showPeakHeader = false, onHoverS
                         <span>Summit at {formatTime(summit.timestamp, summit.timezone)}</span>
                     </div>
                 </div>
-                {hasReport && (
-                    <button
-                        onClick={handleOpenReport}
-                        className="p-1.5 rounded-md text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors"
-                        aria-label="Edit summit report"
-                        tabIndex={0}
-                    >
-                        <Pencil className="w-3.5 h-3.5" />
-                    </button>
+                {isOwner && (
+                    <div className="flex items-center gap-1">
+                        {hasReport && (
+                            <button
+                                onClick={handleOpenReport}
+                                className="p-1.5 rounded-md text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors"
+                                aria-label="Edit summit report"
+                                tabIndex={0}
+                            >
+                                <Pencil className="w-3.5 h-3.5" />
+                            </button>
+                        )}
+                        <button
+                            onClick={handleDelete}
+                            disabled={isDeleting}
+                            className="p-1.5 rounded-md text-muted-foreground hover:text-red-500 hover:bg-red-500/10 transition-colors disabled:opacity-50"
+                            aria-label="Delete summit"
+                            tabIndex={0}
+                        >
+                            {isDeleting ? (
+                                <div className="w-3.5 h-3.5 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                            ) : (
+                                <Trash2 className="w-3.5 h-3.5" />
+                            )}
+                        </button>
+                    </div>
                 )}
             </div>
 
@@ -273,7 +318,7 @@ const SummitItem = ({ summit, peakId, peakName, showPeakHeader = false, onHoverS
                         {summit.notes}
                     </p>
                 </div>
-            ) : !hasReport ? (
+            ) : !hasReport && isOwner ? (
                 <Button
                     size="sm"
                     onClick={handleOpenReport}
