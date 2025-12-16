@@ -15,8 +15,10 @@ import {
     Smile,
     Zap,
     Flame,
+    ExternalLink,
 } from "lucide-react";
 import { useMapStore } from "@/providers/MapProvider";
+import Link from "next/link";
 import Summit, { Difficulty, ExperienceRating } from "@/typeDefs/Summit";
 
 // Difficulty display config
@@ -82,22 +84,32 @@ const kmhToMph = (kmh: number): number => {
     return kmh * 0.621371;
 };
 
+// Extract IANA timezone from format like "(GMT-07:00) America/Boise"
+const extractIanaTimezone = (timezone?: string): string | undefined => {
+    if (!timezone) return undefined;
+    // Split by space and take the last part to get the IANA identifier
+    // This handles both "America/Boise" and "(GMT-07:00) America/Boise" formats
+    return timezone.split(" ").slice(-1)[0];
+};
+
 const formatDate = (timestamp: string, timezone?: string) => {
     const date = new Date(timestamp);
+    const ianaTimezone = extractIanaTimezone(timezone);
     return date.toLocaleDateString("en-US", {
         year: "numeric",
         month: "short",
         day: "numeric",
-        timeZone: timezone || undefined,
+        timeZone: ianaTimezone,
     });
 };
 
 const formatTime = (timestamp: string, timezone?: string) => {
     const date = new Date(timestamp);
+    const ianaTimezone = extractIanaTimezone(timezone);
     return date.toLocaleTimeString("en-US", {
         hour: "numeric",
         minute: "2-digit",
-        timeZone: timezone || undefined,
+        timeZone: ianaTimezone,
     });
 };
 
@@ -159,105 +171,127 @@ const PeakCommunity = () => {
                 </div>
             ) : (
                 <div className="space-y-3">
-                    {sortedSummits.map((summit, idx) => (
-                        <div
-                            key={summit.id || idx}
-                            className="p-4 rounded-xl bg-card border border-border/70 hover:border-border transition-colors"
-                        >
-                            {/* User and Date */}
-                            <div className="flex items-start justify-between mb-3">
-                                <div className="flex items-center gap-2">
-                                    <div className="w-8 h-8 rounded-full bg-secondary/10 flex items-center justify-center">
-                                        <User className="w-4 h-4 text-secondary" />
+                    {sortedSummits.map((summit, idx) => {
+                        const hasActivity = Boolean(summit.activity_id);
+                        const cardContent = (
+                            <>
+                                {/* User and Date */}
+                                <div className="flex items-start justify-between mb-3">
+                                    <div className="flex items-center gap-2">
+                                        <div className="w-8 h-8 rounded-full bg-secondary/10 flex items-center justify-center">
+                                            <User className="w-4 h-4 text-secondary" />
+                                        </div>
+                                        <div>
+                                            <p className="font-medium text-foreground text-sm">
+                                                {summit.user_name || "Anonymous Hiker"}
+                                            </p>
+                                            <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                                                <Calendar className="w-3 h-3" />
+                                                <span>{formatDate(summit.timestamp, summit.timezone)}</span>
+                                                <span className="opacity-50">•</span>
+                                                <span>{formatTime(summit.timestamp, summit.timezone)}</span>
+                                            </div>
+                                        </div>
                                     </div>
-                                    <div>
-                                        <p className="font-medium text-foreground text-sm">
-                                            {summit.user_name || "Anonymous Hiker"}
+                                    {hasActivity && (
+                                        <div className="text-muted-foreground">
+                                            <ExternalLink className="w-3.5 h-3.5" />
+                                        </div>
+                                    )}
+                                </div>
+
+                                {/* Difficulty & Experience Ratings (if available) */}
+                                {(summit.difficulty || summit.experience_rating) && (
+                                    <div className="flex flex-wrap gap-3 mt-3">
+                                        {summit.difficulty && (
+                                            <div className={`flex items-center gap-1.5 ${DIFFICULTY_CONFIG[summit.difficulty].color}`}>
+                                                <Mountain className="w-3.5 h-3.5" />
+                                                <span className="text-sm font-medium">{DIFFICULTY_CONFIG[summit.difficulty].label}</span>
+                                            </div>
+                                        )}
+                                        {summit.experience_rating && (
+                                            <div className={`flex items-center gap-1.5 ${EXPERIENCE_CONFIG[summit.experience_rating].color}`}>
+                                                {EXPERIENCE_CONFIG[summit.experience_rating].icon}
+                                                <span className="text-sm font-medium">{EXPERIENCE_CONFIG[summit.experience_rating].label}</span>
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
+
+                                {/* Weather Conditions (if available) */}
+                                {(summit.temperature !== undefined ||
+                                    summit.weather_code !== undefined ||
+                                    summit.wind_speed !== undefined) && (
+                                    <div className="mt-3 pt-3 border-t border-border/50">
+                                        <div className="flex items-center gap-1 text-xs text-muted-foreground mb-2">
+                                            <Cloud className="w-3 h-3" />
+                                            <span>Conditions at summit</span>
+                                        </div>
+                                        <div className="grid grid-cols-2 gap-2">
+                                            {summit.temperature !== undefined && (
+                                                <div className="flex items-center gap-1.5">
+                                                    <Thermometer className="w-3.5 h-3.5 text-orange-400" />
+                                                    <span className="text-sm text-foreground">
+                                                        {Math.round(celsiusToFahrenheit(summit.temperature))}°F
+                                                    </span>
+                                                </div>
+                                            )}
+                                            {summit.weather_code !== undefined && (
+                                                <div className="flex items-center gap-1.5">
+                                                    <Cloud className="w-3.5 h-3.5 text-blue-400" />
+                                                    <span className="text-sm text-foreground truncate">
+                                                        {getWeatherDescription(summit.weather_code)}
+                                                    </span>
+                                                </div>
+                                            )}
+                                            {summit.wind_speed !== undefined && (
+                                                <div className="flex items-center gap-1.5">
+                                                    <Wind className="w-3.5 h-3.5 text-cyan-400" />
+                                                    <span className="text-sm text-foreground">
+                                                        {Math.round(kmhToMph(summit.wind_speed))} mph
+                                                    </span>
+                                                </div>
+                                            )}
+                                            {summit.humidity !== undefined && (
+                                                <div className="flex items-center gap-1.5">
+                                                    <Droplets className="w-3.5 h-3.5 text-blue-300" />
+                                                    <span className="text-sm text-foreground">
+                                                        {Math.round(summit.humidity)}%
+                                                    </span>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Notes (if available) */}
+                                {summit.notes && (
+                                    <div className="mt-3 pt-3 border-t border-border/50">
+                                        <p className="text-sm text-muted-foreground italic">
+                                            "{summit.notes}"
                                         </p>
-                                        <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                                            <Calendar className="w-3 h-3" />
-                                            <span>{formatDate(summit.timestamp, summit.timezone)}</span>
-                                            <span className="opacity-50">•</span>
-                                            <span>{formatTime(summit.timestamp, summit.timezone)}</span>
-                                        </div>
                                     </div>
-                                </div>
+                                )}
+                            </>
+                        );
+
+                        return hasActivity ? (
+                            <Link
+                                key={summit.id || idx}
+                                href={`/activities/${summit.activity_id}`}
+                                className="block p-4 rounded-xl bg-card border border-border/70 hover:border-primary/50 transition-colors cursor-pointer"
+                            >
+                                {cardContent}
+                            </Link>
+                        ) : (
+                            <div
+                                key={summit.id || idx}
+                                className="p-4 rounded-xl bg-card border border-border/70"
+                            >
+                                {cardContent}
                             </div>
-
-                            {/* Difficulty & Experience Ratings (if available) */}
-                            {(summit.difficulty || summit.experience_rating) && (
-                                <div className="flex flex-wrap gap-3 mt-3">
-                                    {summit.difficulty && (
-                                        <div className={`flex items-center gap-1.5 ${DIFFICULTY_CONFIG[summit.difficulty].color}`}>
-                                            <Mountain className="w-3.5 h-3.5" />
-                                            <span className="text-sm font-medium">{DIFFICULTY_CONFIG[summit.difficulty].label}</span>
-                                        </div>
-                                    )}
-                                    {summit.experience_rating && (
-                                        <div className={`flex items-center gap-1.5 ${EXPERIENCE_CONFIG[summit.experience_rating].color}`}>
-                                            {EXPERIENCE_CONFIG[summit.experience_rating].icon}
-                                            <span className="text-sm font-medium">{EXPERIENCE_CONFIG[summit.experience_rating].label}</span>
-                                        </div>
-                                    )}
-                                </div>
-                            )}
-
-                            {/* Weather Conditions (if available) */}
-                            {(summit.temperature !== undefined ||
-                                summit.weather_code !== undefined ||
-                                summit.wind_speed !== undefined) && (
-                                <div className="mt-3 pt-3 border-t border-border/50">
-                                    <div className="flex items-center gap-1 text-xs text-muted-foreground mb-2">
-                                        <Cloud className="w-3 h-3" />
-                                        <span>Conditions at summit</span>
-                                    </div>
-                                    <div className="grid grid-cols-2 gap-2">
-                                        {summit.temperature !== undefined && (
-                                            <div className="flex items-center gap-1.5">
-                                                <Thermometer className="w-3.5 h-3.5 text-orange-400" />
-                                                <span className="text-sm text-foreground">
-                                                    {Math.round(celsiusToFahrenheit(summit.temperature))}°F
-                                                </span>
-                                            </div>
-                                        )}
-                                        {summit.weather_code !== undefined && (
-                                            <div className="flex items-center gap-1.5">
-                                                <Cloud className="w-3.5 h-3.5 text-blue-400" />
-                                                <span className="text-sm text-foreground truncate">
-                                                    {getWeatherDescription(summit.weather_code)}
-                                                </span>
-                                            </div>
-                                        )}
-                                        {summit.wind_speed !== undefined && (
-                                            <div className="flex items-center gap-1.5">
-                                                <Wind className="w-3.5 h-3.5 text-cyan-400" />
-                                                <span className="text-sm text-foreground">
-                                                    {Math.round(kmhToMph(summit.wind_speed))} mph
-                                                </span>
-                                            </div>
-                                        )}
-                                        {summit.humidity !== undefined && (
-                                            <div className="flex items-center gap-1.5">
-                                                <Droplets className="w-3.5 h-3.5 text-blue-300" />
-                                                <span className="text-sm text-foreground">
-                                                    {Math.round(summit.humidity)}%
-                                                </span>
-                                            </div>
-                                        )}
-                                    </div>
-                                </div>
-                            )}
-
-                            {/* Notes (if available) */}
-                            {summit.notes && (
-                                <div className="mt-3 pt-3 border-t border-border/50">
-                                    <p className="text-sm text-muted-foreground italic">
-                                        "{summit.notes}"
-                                    </p>
-                                </div>
-                            )}
-                        </div>
-                    ))}
+                        );
+                    })}
                 </div>
             )}
         </motion.div>

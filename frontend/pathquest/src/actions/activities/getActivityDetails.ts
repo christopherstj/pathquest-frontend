@@ -3,7 +3,7 @@ import getGoogleIdToken from "@/auth/getGoogleIdToken";
 import getBackendUrl from "@/helpers/getBackendUrl";
 import { useAuth } from "@/auth/useAuth";
 import Activity from "@/typeDefs/Activity";
-import Peak from "@/typeDefs/Peak";
+import SummitWithPeak from "@/typeDefs/SummitWithPeak";
 
 const backendUrl = getBackendUrl();
 
@@ -11,7 +11,7 @@ const getActivityDetails = async (
     activityId: string
 ): Promise<{
     activity: Activity;
-    peakSummits: Peak[];
+    summits: SummitWithPeak[];
 } | null> => {
     const session = await useAuth();
 

@@ -1,18 +1,16 @@
 "use client";
 
-import React, { useState, useEffect, useCallback, useRef } from "react";
+import React, { useState, useEffect, useRef, useMemo } from "react";
 import { motion, useAnimation, PanInfo, AnimatePresence } from "framer-motion";
-import { ArrowRight, Trophy, TrendingUp, Mountain, X, MapPin, CheckCircle, Navigation, ChevronRight, Heart, Map as MapIcon, LayoutDashboard, Compass, ZoomIn, RefreshCw, Route, Users, Plus } from "lucide-react";
+import { Mountain, LayoutDashboard, Compass, RefreshCw, Route, Users, BarChart3 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useMapStore } from "@/providers/MapProvider";
-import { useRouter, usePathname } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import getPeakDetails from "@/actions/peaks/getPeakDetails";
 import getPublicChallengeDetails from "@/actions/challenges/getPublicChallengeDetails";
 import addChallengeFavorite from "@/actions/challenges/addChallengeFavorite";
 import deleteChallengeFavorite from "@/actions/challenges/deleteChallengeFavorite";
-import { Button } from "@/components/ui/button";
-import Link from "next/link";
 import DashboardContent from "./DashboardContent";
 import PeakUserActivity from "./PeakUserActivity";
 import PeakCommunity from "./PeakCommunity";
@@ -20,13 +18,19 @@ import mapboxgl from "mapbox-gl";
 import convertPeaksToGeoJSON from "@/helpers/convertPeaksToGeoJSON";
 import convertActivitiesToGeoJSON from "@/helpers/convertActivitiesToGeoJSON";
 import { setPeaksSearchDisabled } from "@/helpers/peaksSearchState";
-import metersToFt from "@/helpers/metersToFt";
 import useRequireAuth, { useIsAuthenticated } from "@/hooks/useRequireAuth";
 import getActivitiesProcessing from "@/actions/users/getActivitiesProcessing";
-import CurrentConditions from "../app/peaks/CurrentConditions";
+import PeakDetailsMobile from "./mobile/peak-details-mobile";
+import ChallengeDetailsMobile from "./mobile/challenge-details-mobile";
+import DiscoveryContentMobile from "./mobile/discovery-content-mobile";
+import ActivityDetailsMobile from "./mobile/activity-details-mobile";
+import getActivityDetails from "@/actions/activities/getActivityDetails";
+import { useActivityMapEffects } from "@/hooks/use-activity-map-effects";
+import { convertSummitsToPeaks } from "@/helpers/convertSummitsToPeaks";
+import ActivityAnalytics from "@/components/app/activities/ActivityAnalytics";
 
 type DrawerHeight = "collapsed" | "halfway" | "expanded";
-type TabMode = "details" | "discover" | "dashboard" | "myActivity" | "community";
+type TabMode = "details" | "discover" | "dashboard" | "myActivity" | "community" | "analytics";
 
 const DRAWER_HEIGHTS = {
     collapsed: 60,
@@ -37,10 +41,11 @@ const DRAWER_HEIGHTS = {
 interface Props {
     peakId?: string | null;
     challengeId?: number | null;
+    activityId?: string | null;
     onClose: () => void;
 }
 
-const DetailBottomSheet = ({ peakId, challengeId, onClose }: Props) => {
+const DetailBottomSheet = ({ peakId, challengeId, activityId, onClose }: Props) => {
     const visiblePeaks = useMapStore((state) => state.visiblePeaks);
     const visibleChallenges = useMapStore((state) => state.visibleChallenges);
     const map = useMapStore((state) => state.map);
@@ -55,8 +60,9 @@ const DetailBottomSheet = ({ peakId, challengeId, onClose }: Props) => {
     const queryClient = useQueryClient();
     const { isAuthenticated, isLoading: authLoading } = useIsAuthenticated();
     
-    const hasDetail = Boolean(peakId || challengeId);
+    const hasDetail = Boolean(peakId || challengeId || activityId);
     const hasPeakSelected = Boolean(peakId);
+    const hasActivitySelected = Boolean(activityId);
     const [activeTab, setActiveTab] = useState<TabMode>("discover");
     const [drawerHeight, setDrawerHeight] = useState<DrawerHeight>("halfway");
     const [heights, setHeights] = useState(DRAWER_HEIGHTS);
@@ -104,6 +110,31 @@ const DetailBottomSheet = ({ peakId, challengeId, onClose }: Props) => {
         enabled: Boolean(challengeId),
     });
 
+    // Fetch activity details
+    const { data: activityData, isLoading: activityLoading } = useQuery({
+        queryKey: ["activityDetails", activityId],
+        queryFn: async () => {
+            if (!activityId) return null;
+            const res = await getActivityDetails(activityId);
+            return res;
+        },
+        enabled: Boolean(activityId),
+    });
+
+    const activity = activityData?.activity ?? null;
+    const activitySummits = activityData?.summits ?? [];
+    const activityPeakSummits = useMemo(() => convertSummitsToPeaks(activitySummits), [activitySummits]);
+    const [activityHoverCoords, setActivityHoverCoords] = useState<[number, number] | null>(null);
+
+    // Activity map effects
+    const { flyToActivity } = useActivityMapEffects({
+        activity,
+        peakSummits: activityPeakSummits,
+        hoverCoords: activityHoverCoords,
+        flyToOnLoad: true,
+        padding: { top: 100, bottom: heights.halfway + 50, left: 50, right: 50 },
+    });
+
     // Fetch sync status (only when authenticated and on dashboard tab)
     const { data: processingResult } = useQuery({
         queryKey: ["activitiesProcessing"],
@@ -121,6 +152,7 @@ const DetailBottomSheet = ({ peakId, challengeId, onClose }: Props) => {
     
     const challenge = challengeData?.success ? challengeData.data?.challenge : null;
     const challengePeaks = challengeData?.success ? challengeData.data?.peaks : null;
+    const isFavorited = challenge?.is_favorited ?? false;
 
     // Share user's ascents and activities with the map store (for My Activity tab - authenticated users only)
     useEffect(() => {
@@ -183,20 +215,20 @@ const DetailBottomSheet = ({ peakId, challengeId, onClose }: Props) => {
         setActivitiesOnMap();
 
         return () => {
-            const activitiesSource = map.getSource("activities") as mapboxgl.GeoJSONSource | undefined;
-            const activityStartsSource = map.getSource("activityStarts") as mapboxgl.GeoJSONSource | undefined;
+            if (!map) return;
+            
+            try {
+                const activitiesSource = map.getSource("activities") as mapboxgl.GeoJSONSource | undefined;
+                const activityStartsSource = map.getSource("activityStarts") as mapboxgl.GeoJSONSource | undefined;
 
-            if (activitiesSource) {
-                activitiesSource.setData({
-                    type: "FeatureCollection",
-                    features: [],
-                });
-            }
-            if (activityStartsSource) {
-                activityStartsSource.setData({
-                    type: "FeatureCollection",
-                    features: [],
-                });
+                if (activitiesSource) {
+                    activitiesSource.setData({ type: "FeatureCollection", features: [] });
+                }
+                if (activityStartsSource) {
+                    activityStartsSource.setData({ type: "FeatureCollection", features: [] });
+                }
+            } catch (error) {
+                console.debug("Failed to cleanup activities map source:", error);
             }
         };
     }, [map, peakActivities]);
@@ -220,19 +252,16 @@ const DetailBottomSheet = ({ peakId, challengeId, onClose }: Props) => {
     useEffect(() => {
         if (hasDetail && hasInitializedTab) {
             if (hasPeakSelected) {
-                // For peaks: authenticated users go to myActivity, others go to community
                 setActiveTab(isAuthenticated ? "myActivity" : "community");
             } else {
-                // For challenges: always go to details
+                // For both challenges and activities, default to details tab
                 setActiveTab("details");
             }
-            // If drawer is full-screen, bring it down to half-height
-            // If already at halfway or collapsed, keep it as-is
             if (drawerHeight === "expanded") {
                 setDrawerHeight("halfway");
             }
         }
-    }, [hasDetail, peakId, challengeId, hasInitializedTab, hasPeakSelected, isAuthenticated]);
+    }, [hasDetail, peakId, challengeId, activityId, hasInitializedTab, hasPeakSelected, isAuthenticated, drawerHeight]);
 
     // Animate to new height when drawerHeight state changes
     useEffect(() => {
@@ -276,9 +305,15 @@ const DetailBottomSheet = ({ peakId, challengeId, onClose }: Props) => {
         setSelectedPeakSource();
 
         return () => {
-            const peaksSource = map.getSource("selectedPeaks") as mapboxgl.GeoJSONSource | undefined;
-            if (peaksSource) {
-                peaksSource.setData({ type: "FeatureCollection", features: [] });
+            if (!map) return;
+            
+            try {
+                const peaksSource = map.getSource("selectedPeaks") as mapboxgl.GeoJSONSource | undefined;
+                if (peaksSource) {
+                    peaksSource.setData({ type: "FeatureCollection", features: [] });
+                }
+            } catch (error) {
+                console.debug("Failed to cleanup selectedPeaks map source:", error);
             }
         };
     }, [map, peak]);
@@ -348,9 +383,15 @@ const DetailBottomSheet = ({ peakId, challengeId, onClose }: Props) => {
         }
 
         return () => {
-            const selectedPeaksSource = map.getSource("selectedPeaks") as mapboxgl.GeoJSONSource | undefined;
-            if (selectedPeaksSource) {
-                selectedPeaksSource.setData({ type: "FeatureCollection", features: [] });
+            if (!map) return;
+            
+            try {
+                const selectedPeaksSource = map.getSource("selectedPeaks") as mapboxgl.GeoJSONSource | undefined;
+                if (selectedPeaksSource) {
+                    selectedPeaksSource.setData({ type: "FeatureCollection", features: [] });
+                }
+            } catch (error) {
+                console.debug("Failed to cleanup selectedPeaks map source:", error);
             }
         };
     }, [map, challengePeaks, heights.halfway]);
@@ -433,8 +474,6 @@ const DetailBottomSheet = ({ peakId, challengeId, onClose }: Props) => {
         }
     };
 
-    const isFavorited = challenge?.is_favorited ?? false;
-
     const handleToggleFavorite = () => {
         if (!challengeId) return;
         
@@ -444,325 +483,19 @@ const DetailBottomSheet = ({ peakId, challengeId, onClose }: Props) => {
             } else {
                 await addChallengeFavorite(String(challengeId));
             }
-            // Invalidate queries to refresh data
-            queryClient.invalidateQueries({
-                queryKey: ["challengeDetails", challengeId],
-            });
-            queryClient.invalidateQueries({
-                queryKey: ["favoriteChallenges"],
-            });
+            queryClient.invalidateQueries({ queryKey: ["challengeDetails", challengeId] });
+            queryClient.invalidateQueries({ queryKey: ["favoriteChallenges"] });
         });
     };
 
     const handleTabChange = (tab: TabMode) => {
         setActiveTab(tab);
-        // Expand drawer when switching tabs if collapsed
         if (drawerHeight === "collapsed") {
             setDrawerHeight("halfway");
         }
     };
 
-    const isLoading = (peakId && peakLoading) || (challengeId && challengeLoading);
-
-    // Render peak details content
-    const renderPeakDetails = () => {
-        if (!peak) return null;
-        
-        const location = [peak.county, peak.state, peak.country].filter(Boolean).join(", ");
-        
-        return (
-            <div className="space-y-5">
-                {/* Header */}
-                <div className="relative">
-                    <button 
-                        onClick={onClose}
-                        className="absolute top-0 right-0 p-2 rounded-full hover:bg-white/10 text-muted-foreground hover:text-foreground transition-colors"
-                        aria-label="Close peak details"
-                        tabIndex={0}
-                    >
-                        <X className="w-4 h-4" />
-                    </button>
-                    
-                    <div className="flex items-center gap-2 mb-2 text-primary">
-                        <span className="px-2 py-1 rounded-full border border-border/70 bg-muted/60 text-[11px] font-mono uppercase tracking-[0.18em] flex items-center gap-1">
-                            <Mountain className="w-3.5 h-3.5" />
-                            Peak
-                        </span>
-                    </div>
-                    
-                    <h1 className="text-xl font-bold text-foreground pr-8" style={{ fontFamily: "var(--font-display)" }}>{peak.name}</h1>
-                    {location && (
-                        <div className="flex items-center gap-2 mt-1 text-muted-foreground">
-                            <MapPin className="w-3.5 h-3.5" />
-                            <span className="text-xs">{location}</span>
-                        </div>
-                    )}
-                </div>
-
-                {/* Stats */}
-                <div className="grid grid-cols-2 gap-2">
-                    <div className="p-3 rounded-xl bg-card border border-border/70">
-                        <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-0.5">Elevation</p>
-                        <p className="text-lg font-mono text-foreground">{peak.elevation ? Math.round(metersToFt(peak.elevation)).toLocaleString() : 0} ft</p>
-                    </div>
-                    <div className="p-3 rounded-xl bg-card border border-border/70">
-                        <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-0.5">Summits</p>
-                        <p className="text-lg font-mono text-foreground">{peak.public_summits || publicSummits?.length || 0}</p>
-                    </div>
-                </div>
-
-                {/* Current Conditions */}
-                {peak.location_coords && (
-                    <CurrentConditions
-                        lat={peak.location_coords[1]}
-                        lng={peak.location_coords[0]}
-                    />
-                )}
-
-                {/* Actions */}
-                <div className="flex gap-2">
-                    {!isAuthenticated && (
-                        <Button 
-                            onClick={() => requireAuth()}
-                            className="flex-1 gap-2 h-9 text-sm bg-green-600 hover:bg-green-700 text-white"
-                        >
-                            <Plus className="w-3.5 h-3.5" />
-                            Log Summit
-                        </Button>
-                    )}
-                    <Button variant="outline" onClick={handleFlyToPeak} className={cn("gap-2 h-9 text-sm border-primary/20 hover:bg-primary/10", isAuthenticated ? "flex-1" : "")}>
-                        <Navigation className="w-3.5 h-3.5" />
-                        Fly to Peak
-                    </Button>
-                </div>
-
-                {/* Challenges */}
-                {peakChallenges && peakChallenges.length > 0 && (
-                    <div className="space-y-2">
-                        <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                            Part of {peakChallenges.length} Challenge{peakChallenges.length !== 1 ? "s" : ""}
-                        </h3>
-                        <div className="space-y-1.5">
-                            {peakChallenges.slice(0, 3).map((ch) => (
-                                <Link
-                                    key={ch.id}
-                                    href={`/challenges/${ch.id}`}
-                                    className="flex items-center justify-between p-2.5 rounded-lg bg-card border border-border/70 hover:bg-card/80 transition-colors group"
-                                >
-                                    <span className="text-sm font-medium text-foreground">{ch.name}</span>
-                                    <ChevronRight className="w-4 h-4 text-muted-foreground group-hover:text-foreground transition-colors" />
-                                </Link>
-                            ))}
-                        </div>
-                    </div>
-                )}
-            </div>
-        );
-    };
-
-    // Render challenge details content
-    const renderChallengeDetails = () => {
-        if (!challenge) return null;
-        
-        const summittedPeaks = challengePeaks?.filter((p) => p.summits && p.summits > 0).length || 0;
-        const totalPeaks = challengePeaks?.length || challenge.num_peaks || 0;
-        const progressPercent = totalPeaks > 0 ? Math.round((summittedPeaks / totalPeaks) * 100) : 0;
-
-        return (
-            <div className="space-y-5">
-                {/* Header */}
-                <div className="relative">
-                    <button 
-                        onClick={onClose}
-                        className="absolute top-0 right-0 p-2 rounded-full hover:bg-white/10 text-muted-foreground hover:text-foreground transition-colors"
-                        aria-label="Close challenge details"
-                        tabIndex={0}
-                    >
-                        <X className="w-4 h-4" />
-                    </button>
-                    
-                    <div className="flex items-center gap-2 mb-2 text-secondary">
-                        <span className="px-2 py-1 rounded-full border border-border/70 bg-muted/60 text-[11px] font-mono uppercase tracking-[0.18em] flex items-center gap-1">
-                            <Trophy className="w-3.5 h-3.5" />
-                            Challenge
-                        </span>
-                    </div>
-                    
-                    <h1 className="text-xl font-bold text-foreground pr-8" style={{ fontFamily: "var(--font-display)" }}>{challenge.name}</h1>
-                    {challenge.region && (
-                        <div className="mt-1 text-xs text-muted-foreground">{challenge.region}</div>
-                    )}
-                </div>
-
-                {/* Stats */}
-                <div className="grid grid-cols-2 gap-2">
-                    <div className="p-3 rounded-xl bg-card border border-border/70">
-                        <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-0.5">Total Peaks</p>
-                        <p className="text-lg font-mono text-foreground">{totalPeaks}</p>
-                    </div>
-                    <div className="p-3 rounded-xl bg-card border border-border/70">
-                        <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-0.5">Summitted</p>
-                        <p className="text-lg font-mono text-foreground">
-                            {summittedPeaks}
-                            <span className="text-xs text-muted-foreground ml-1">({progressPercent}%)</span>
-                        </p>
-                    </div>
-                </div>
-
-                {/* Progress Bar */}
-                <div className="space-y-1.5">
-                    <div className="flex justify-between text-xs text-muted-foreground">
-                        <span>Progress</span>
-                        <span>{summittedPeaks} / {totalPeaks}</span>
-                    </div>
-                    <div className="h-1.5 bg-muted rounded-full overflow-hidden">
-                        <div
-                            className="h-full bg-secondary rounded-full transition-all duration-500"
-                            style={{ width: `${progressPercent}%` }}
-                        />
-                    </div>
-                </div>
-
-                {/* Actions */}
-                <div className="flex gap-2">
-                    <Button
-                        onClick={handleToggleFavorite}
-                        className={`flex-1 gap-2 h-9 text-sm ${
-                            isFavorited
-                                ? "bg-secondary/20 text-secondary hover:bg-secondary/30 border border-secondary/30"
-                                : "bg-secondary text-secondary-foreground hover:bg-secondary/90"
-                        }`}
-                        variant={isFavorited ? "outline" : "default"}
-                    >
-                        <Heart className={`w-3.5 h-3.5 ${isFavorited ? "fill-current" : ""}`} />
-                        {isFavorited ? "Accepted" : "Accept"}
-                    </Button>
-                    <Button variant="outline" onClick={handleShowChallengeOnMap} className="flex-1 gap-2 h-9 text-sm border-secondary/20 hover:bg-secondary/10">
-                        <MapIcon className="w-3.5 h-3.5" />
-                        Show on Map
-                    </Button>
-                </div>
-
-                {/* Peaks List */}
-                {challengePeaks && challengePeaks.length > 0 && (
-                    <div className="space-y-2">
-                        <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                            Peaks in Challenge
-                        </h3>
-                        <div className="space-y-1.5 max-h-[200px] overflow-y-auto custom-scrollbar">
-                            {[...challengePeaks].sort((a, b) => (b.elevation || 0) - (a.elevation || 0)).map((pk) => (
-                                <Link
-                                    key={pk.id}
-                                    href={`/peaks/${pk.id}`}
-                                    className="flex items-center justify-between p-2.5 rounded-lg bg-card border border-border/70 hover:bg-card/80 transition-colors group"
-                                >
-                                    <div className="flex items-center gap-2.5">
-                                        <Mountain
-                                            className={`w-3.5 h-3.5 ${
-                                                pk.summits && pk.summits > 0 ? "text-green-500" : "text-muted-foreground"
-                                            }`}
-                                        />
-                                        <div>
-                                            <span className="text-sm font-medium text-foreground block">{pk.name}</span>
-                                            <span className="text-xs text-muted-foreground">{pk.elevation ? Math.round(metersToFt(pk.elevation)).toLocaleString() : 0} ft</span>
-                                        </div>
-                                    </div>
-                                    <ChevronRight className="w-4 h-4 text-muted-foreground group-hover:text-foreground transition-colors" />
-                                </Link>
-                            ))}
-                        </div>
-                    </div>
-                )}
-            </div>
-        );
-    };
-
-    // Render discovery content
-    const renderDiscoveryContent = () => (
-        <div className="space-y-5">
-            {/* Challenges */}
-            {visibleChallenges.length > 0 && (
-                <section>
-                    <div className="flex items-center gap-2 mb-3">
-                        <Trophy className="w-4 h-4 text-secondary" />
-                        <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Visible Challenges</h2>
-                    </div>
-                    <div className="space-y-2">
-                        {visibleChallenges.map((ch) => (
-                            <div 
-                                key={ch.id} 
-                                onClick={() => handleChallengeClick(ch.id)}
-                                onKeyDown={(e) => e.key === "Enter" && handleChallengeClick(ch.id)}
-                                tabIndex={0}
-                                role="button"
-                                aria-label={`View challenge: ${ch.name}`}
-                                className="group relative overflow-hidden rounded-xl bg-card border border-border/70 p-3 hover:border-primary/50 transition-colors cursor-pointer"
-                            >
-                                <div className="flex justify-between items-start">
-                                    <div>
-                                        <h3 className="font-medium text-sm group-hover:text-primary transition-colors">{ch.name}</h3>
-                                        <p className="text-xs text-muted-foreground mt-0.5">{ch.num_peaks} Peaks</p>
-                                    </div>
-                                    <ArrowRight className="w-4 h-4 text-muted-foreground opacity-0 group-hover:opacity-100 -translate-x-2 group-hover:translate-x-0 transition-all" />
-                                </div>
-                                <div className={cn("absolute bottom-0 left-0 h-0.5 w-full opacity-50 bg-primary")} />
-                            </div>
-                        ))}
-                    </div>
-                </section>
-            )}
-
-            {/* Peaks */}
-            {visiblePeaks.length > 0 && (
-                <section>
-                    <div className="flex items-center gap-2 mb-3">
-                        <TrendingUp className="w-4 h-4 text-primary" />
-                        <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Visible Peaks</h2>
-                    </div>
-                    <div className="space-y-1.5">
-                        {visiblePeaks.map((pk) => (
-                            <div 
-                                key={pk.id} 
-                                onClick={() => handlePeakClick(pk.id, pk.location_coords)}
-                                onKeyDown={(e) => e.key === "Enter" && handlePeakClick(pk.id, pk.location_coords)}
-                                tabIndex={0}
-                                role="button"
-                                aria-label={`View peak: ${pk.name}`}
-                                className="flex items-center justify-between p-2.5 rounded-lg hover:bg-muted/60 transition-colors cursor-pointer group"
-                            >
-                                <div className="flex items-center gap-2.5">
-                                    <div className="w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center text-primary">
-                                        <Mountain className="w-3.5 h-3.5" />
-                                    </div>
-                                    <div>
-                                        <p className="font-medium text-sm group-hover:text-primary-foreground transition-colors">{pk.name}</p>
-                                        <p className="text-xs font-mono text-muted-foreground">{pk.elevation ? `${Math.round(metersToFt(pk.elevation)).toLocaleString()} ft` : ''}</p>
-                                    </div>
-                                </div>
-                            </div>
-                        ))}
-                    </div>
-                </section>
-            )}
-
-            {visibleChallenges.length === 0 && visiblePeaks.length === 0 && (
-                <div className="text-center py-8 text-muted-foreground">
-                    {isZoomedOutTooFar ? (
-                        <>
-                            <ZoomIn className="w-8 h-8 mx-auto mb-2 text-muted-foreground/50" />
-                            <p className="text-sm font-medium">Zoom in to explore</p>
-                            <p className="text-xs mt-1">Zoom in on the map to see peaks and challenges in that area.</p>
-                        </>
-                    ) : (
-                        <>
-                            <p className="text-sm">No peaks or challenges visible in this area.</p>
-                            <p className="text-xs mt-1">Try moving the map or zooming out.</p>
-                        </>
-                    )}
-                </div>
-            )}
-        </div>
-    );
+    const isLoading = (peakId && peakLoading) || (challengeId && challengeLoading) || (activityId && activityLoading);
 
     return (
         <motion.div
@@ -853,6 +586,25 @@ const DetailBottomSheet = ({ peakId, challengeId, onClose }: Props) => {
                                     Community
                                 </button>
                             )}
+                            {hasActivitySelected && (
+                                <button
+                                    onClick={() => handleTabChange("analytics")}
+                                    onKeyDown={(e) => e.key === "Enter" && handleTabChange("analytics")}
+                                    tabIndex={0}
+                                    aria-label="Analytics tab"
+                                    aria-selected={activeTab === "analytics"}
+                                    role="tab"
+                                    className={cn(
+                                        "flex flex-col items-center gap-0.5 px-2 py-1.5 rounded-md text-[10px] font-medium transition-all flex-1 justify-center min-w-0",
+                                        activeTab === "analytics"
+                                            ? "bg-background text-foreground shadow-sm"
+                                            : "text-muted-foreground hover:text-foreground"
+                                    )}
+                                >
+                                    <BarChart3 className="w-4 h-4" />
+                                    Analytics
+                                </button>
+                            )}
                             <button
                                 onClick={() => handleTabChange("discover")}
                                 onKeyDown={(e) => e.key === "Enter" && handleTabChange("discover")}
@@ -921,7 +673,32 @@ const DetailBottomSheet = ({ peakId, challengeId, onClose }: Props) => {
                                 exit={{ opacity: 0, x: -10 }}
                                 transition={{ duration: 0.15 }}
                             >
-                                {peakId ? renderPeakDetails() : challengeId ? renderChallengeDetails() : (
+                                {peakId && peak ? (
+                                    <PeakDetailsMobile
+                                        peak={peak}
+                                        challenges={peakChallenges}
+                                        publicSummits={publicSummits}
+                                        onClose={onClose}
+                                        onFlyToPeak={handleFlyToPeak}
+                                    />
+                                ) : activityId && activity ? (
+                                    <ActivityDetailsMobile
+                                        activity={activity}
+                                        summits={activitySummits}
+                                        onClose={onClose}
+                                        onShowOnMap={flyToActivity}
+                                        onHover={setActivityHoverCoords}
+                                    />
+                                ) : challengeId && challenge ? (
+                                    <ChallengeDetailsMobile
+                                        challenge={challenge}
+                                        peaks={challengePeaks}
+                                        isFavorited={isFavorited}
+                                        onClose={onClose}
+                                        onToggleFavorite={handleToggleFavorite}
+                                        onShowOnMap={handleShowChallengeOnMap}
+                                    />
+                                ) : (
                                     <div className="text-center py-8 text-muted-foreground">
                                         <p className="text-sm">Select a peak or challenge to view details.</p>
                                     </div>
@@ -958,7 +735,23 @@ const DetailBottomSheet = ({ peakId, challengeId, onClose }: Props) => {
                                 exit={{ opacity: 0, x: -10 }}
                                 transition={{ duration: 0.15 }}
                             >
-                                {renderDiscoveryContent()}
+                                <DiscoveryContentMobile
+                                    visibleChallenges={visibleChallenges}
+                                    visiblePeaks={visiblePeaks}
+                                    isZoomedOutTooFar={isZoomedOutTooFar}
+                                    onPeakClick={handlePeakClick}
+                                    onChallengeClick={handleChallengeClick}
+                                />
+                            </motion.div>
+                        ) : activeTab === "analytics" && activityId && activity ? (
+                            <motion.div
+                                key="analytics"
+                                initial={{ opacity: 0, x: -10 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                exit={{ opacity: 0, x: -10 }}
+                                transition={{ duration: 0.15 }}
+                            >
+                                <ActivityAnalytics activity={activity} />
                             </motion.div>
                         ) : (
                             <motion.div

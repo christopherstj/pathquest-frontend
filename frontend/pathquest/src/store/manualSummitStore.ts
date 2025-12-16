@@ -4,6 +4,7 @@ export interface ManualSummitData {
     peakId: string;
     peakName: string;
     peakCoords: [number, number];
+    preselectedActivityId?: string;
 }
 
 export interface ManualSummitState {

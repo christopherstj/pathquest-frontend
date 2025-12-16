@@ -34,6 +34,7 @@ import { useManualSummitStore } from "@/providers/ManualSummitProvider";
 import addManualPeakSummit from "@/actions/peaks/addManualPeakSummit";
 import searchNearestActivities from "@/actions/activities/searchNearestActivities";
 import getActivityDetails from "@/actions/activities/getActivityDetails";
+import searchPeaksAlongRoute, { PeakWithDistance } from "@/actions/peaks/searchPeaksAlongRoute";
 import { useQueryClient } from "@tanstack/react-query";
 import { Difficulty, ExperienceRating } from "@/typeDefs/Summit";
 import { ActivityStart } from "@/typeDefs/ActivityStart";
@@ -144,6 +145,13 @@ const AddManualSummitModal = () => {
     const [loadingActivities, setLoadingActivities] = useState(false);
     const [loadingActivityDetails, setLoadingActivityDetails] = useState(false);
 
+    // Peak search state (for activity-first flow)
+    const [showPeakSearch, setShowPeakSearch] = useState(false);
+    const [peakSearch, setPeakSearch] = useState("");
+    const [nearbyPeaks, setNearbyPeaks] = useState<PeakWithDistance[]>([]);
+    const [loadingPeaks, setLoadingPeaks] = useState(false);
+    const [selectedPeak, setSelectedPeak] = useState<PeakWithDistance | null>(null);
+
     // Elevation profile selection
     const [profileSelectedTime, setProfileSelectedTime] = useState<dayjs.Dayjs | null>(null);
 
@@ -170,11 +178,27 @@ const AddManualSummitModal = () => {
                 setShowActivitySearch(false);
                 setActivitySearch("");
                 setNearbyActivities([]);
-                setSelectedActivityId(null);
-                setSelectedActivity(null);
                 setProfileSelectedTime(null);
                 setIsSubmitting(false);
                 setShowSuccess(false);
+
+                // If a preselected activity ID is provided, load it
+                if (data.preselectedActivityId) {
+                    setSelectedActivityId(data.preselectedActivityId);
+                    // If we don't have a peak, show peak search
+                    if (!data.peakId) {
+                        setShowPeakSearch(true);
+                    }
+                } else {
+                    setSelectedActivityId(null);
+                    setSelectedActivity(null);
+                }
+                
+                // Reset peak search state
+                setPeakSearch("");
+                setNearbyPeaks([]);
+                setSelectedPeak(null);
+                setShowPeakSearch(!data.peakId && !!data.preselectedActivityId);
             }
         };
         initializeForm();
@@ -234,6 +258,21 @@ const AddManualSummitModal = () => {
         }
     }, [profileSelectedTime]);
 
+    // Search peaks along activity route
+    useEffect(() => {
+        if (isOpen && selectedActivityId && showPeakSearch) {
+            const searchPeaks = async () => {
+                setLoadingPeaks(true);
+                const peaks = await searchPeaksAlongRoute(selectedActivityId, peakSearch || undefined);
+                setNearbyPeaks(peaks);
+                setLoadingPeaks(false);
+            };
+            
+            const debounceTimer = setTimeout(searchPeaks, 300);
+            return () => clearTimeout(debounceTimer);
+        }
+    }, [isOpen, selectedActivityId, showPeakSearch, peakSearch]);
+
     // Computed summit timestamp
     const summitTimestamp = useMemo(() => {
         if (!summitDate || !summitTime) return null;
@@ -243,6 +282,11 @@ const AddManualSummitModal = () => {
     const handleSelectActivity = (activity: ActivityStart) => {
         setSelectedActivityId(activity.id);
         setShowActivitySearch(false);
+    };
+
+    const handleSelectPeak = (peak: PeakWithDistance) => {
+        setSelectedPeak(peak);
+        setShowPeakSearch(false);
     };
 
     const handleUnlinkActivity = async () => {
@@ -259,10 +303,18 @@ const AddManualSummitModal = () => {
     const handleSubmit = async () => {
         if (!data || !summitTimestamp) return;
 
+        // Use selectedPeak if available (activity-first flow), otherwise use data.peakId
+        const peakIdToSubmit = selectedPeak?.id || data.peakId;
+        
+        if (!peakIdToSubmit) {
+            // Need to select a peak first
+            return;
+        }
+
         setIsSubmitting(true);
 
         const result = await addManualPeakSummit({
-            peakId: data.peakId,
+            peakId: peakIdToSubmit,
             summitDate: summitTimestamp.toISOString(),
             notes: notes || undefined,
             timezone,
@@ -277,10 +329,13 @@ const AddManualSummitModal = () => {
 
             // Invalidate relevant queries
             queryClient.invalidateQueries({
-                queryKey: ["peakDetails", data.peakId],
+                queryKey: ["peakDetails", peakIdToSubmit],
             });
             queryClient.invalidateQueries({
                 queryKey: ["recentSummits"],
+            });
+            queryClient.invalidateQueries({
+                queryKey: ["activityDetails", selectedActivityId],
             });
 
             setTimeout(() => {
@@ -304,7 +359,7 @@ const AddManualSummitModal = () => {
             <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
                 <AnimatePresence mode="wait">
                     {showSuccess ? (
-                        <SuccessContent peakName={data?.peakName || "Summit"} />
+                        <SuccessContent peakName={selectedPeak?.name || data?.peakName || "Summit"} />
                     ) : (
                         <motion.div
                             key="form"
@@ -329,11 +384,112 @@ const AddManualSummitModal = () => {
                                     Log Summit
                                 </DialogTitle>
                                 <DialogDescription className="text-sm">
-                                    {data?.peakName || "Peak"}
+                                    {selectedPeak?.name || data?.peakName || "Select a peak"}
                                 </DialogDescription>
                             </DialogHeader>
 
                             <div className="space-y-5 py-4">
+                                {/* Peak Selection (when opened from activity page without a peak) */}
+                                {data?.preselectedActivityId && !data?.peakId && (
+                                    <div className="space-y-2">
+                                        <label className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+                                            <Mountain className="w-4 h-4" />
+                                            Select Peak
+                                        </label>
+                                        
+                                        {selectedPeak ? (
+                                            <div className="p-3 rounded-lg bg-green-500/5 border border-green-500/20">
+                                                <div className="flex items-center justify-between">
+                                                    <div className="flex items-center gap-2">
+                                                        <Mountain className="w-4 h-4 text-green-500" />
+                                                        <div>
+                                                            <p className="text-sm font-medium">
+                                                                {selectedPeak.name}
+                                                            </p>
+                                                            <p className="text-xs text-muted-foreground">
+                                                                {selectedPeak.elevation && (
+                                                                    <>{Math.round(metersToFt(selectedPeak.elevation)).toLocaleString()} ft</>
+                                                                )}
+                                                                {selectedPeak.distanceFromRoute !== undefined && (
+                                                                    <> • {(selectedPeak.distanceFromRoute / 1000).toFixed(1)} km from route</>
+                                                                )}
+                                                            </p>
+                                                        </div>
+                                                    </div>
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="sm"
+                                                        onClick={() => {
+                                                            setSelectedPeak(null);
+                                                            setShowPeakSearch(true);
+                                                        }}
+                                                        className="text-muted-foreground hover:text-foreground"
+                                                    >
+                                                        Change
+                                                    </Button>
+                                                </div>
+                                            </div>
+                                        ) : showPeakSearch ? (
+                                            <div className="space-y-2">
+                                                <div className="relative">
+                                                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                                                    <Input
+                                                        placeholder="Search peaks along route..."
+                                                        value={peakSearch}
+                                                        onChange={(e) => setPeakSearch(e.target.value)}
+                                                        className="pl-9"
+                                                    />
+                                                </div>
+                                                
+                                                <div className="max-h-[200px] overflow-y-auto rounded-lg border border-border/50">
+                                                    {loadingPeaks ? (
+                                                        <div className="flex items-center justify-center py-4">
+                                                            <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
+                                                        </div>
+                                                    ) : nearbyPeaks.length > 0 ? (
+                                                        nearbyPeaks.map((peak) => (
+                                                            <button
+                                                                key={peak.id}
+                                                                type="button"
+                                                                onClick={() => handleSelectPeak(peak)}
+                                                                className="w-full p-3 text-left hover:bg-muted/50 transition-colors border-b border-border/30 last:border-b-0"
+                                                            >
+                                                                <p className="text-sm font-medium truncate">
+                                                                    {peak.name}
+                                                                </p>
+                                                                <p className="text-xs text-muted-foreground">
+                                                                    {peak.elevation && (
+                                                                        <>{Math.round(metersToFt(peak.elevation)).toLocaleString()} ft</>
+                                                                    )}
+                                                                    {peak.distanceFromRoute !== undefined && (
+                                                                        <> • {(peak.distanceFromRoute / 1000).toFixed(1)} km from route</>
+                                                                    )}
+                                                                    {peak.state && (
+                                                                        <> • {peak.state}</>
+                                                                    )}
+                                                                </p>
+                                                            </button>
+                                                        ))
+                                                    ) : (
+                                                        <p className="text-sm text-muted-foreground text-center py-4">
+                                                            No peaks found along this route
+                                                        </p>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        ) : (
+                                            <Button
+                                                variant="outline"
+                                                onClick={() => setShowPeakSearch(true)}
+                                                className="w-full justify-start gap-2"
+                                            >
+                                                <Search className="w-4 h-4" />
+                                                Search peaks along route
+                                            </Button>
+                                        )}
+                                    </div>
+                                )}
+
                                 {/* Activity Linking */}
                                 <div className="space-y-2">
                                     <label className="text-sm font-medium text-muted-foreground flex items-center gap-2">
@@ -581,7 +737,7 @@ const AddManualSummitModal = () => {
                                 </Button>
                                 <Button
                                     onClick={handleSubmit}
-                                    disabled={isSubmitting || !summitDate || !summitTime}
+                                    disabled={isSubmitting || !summitDate || !summitTime || (!data?.peakId && !selectedPeak)}
                                     className="flex-1 bg-green-600 hover:bg-green-700"
                                 >
                                     {isSubmitting ? (

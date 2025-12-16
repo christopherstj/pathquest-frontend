@@ -1,51 +1,38 @@
 "use client";
 
-import React, { useState } from "react";
+import React from "react";
 import { motion } from "framer-motion";
 import {
     Mountain,
     Calendar,
+    Route,
+    ExternalLink,
+    TrendingUp,
+    Plus,
+    Clock,
     Cloud,
     Thermometer,
     Wind,
-    Droplets,
     FileText,
     PenLine,
     Pencil,
-    Route,
-    Clock,
-    ExternalLink,
-    TrendingUp,
     Star,
     Smile,
     Zap,
     Flame,
-    Plus,
-    Trash2,
-    Loader2,
 } from "lucide-react";
 import { useMapStore } from "@/providers/MapProvider";
 import { useSummitReportStore } from "@/providers/SummitReportProvider";
 import { useManualSummitStore } from "@/providers/ManualSummitProvider";
 import { Button } from "@/components/ui/button";
-import {
-    AlertDialog,
-    AlertDialogAction,
-    AlertDialogCancel,
-    AlertDialogContent,
-    AlertDialogDescription,
-    AlertDialogFooter,
-    AlertDialogHeader,
-    AlertDialogTitle,
-    AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
+import Link from "next/link";
 import Activity from "@/typeDefs/Activity";
 import Summit, { Difficulty, ExperienceRating } from "@/typeDefs/Summit";
 import metersToFt from "@/helpers/metersToFt";
-import deleteAscent from "@/actions/peaks/deleteAscent";
-import { useQueryClient } from "@tanstack/react-query";
+import SummitItem from "@/components/app/summits/SummitItem";
+import { extractIanaTimezone, celsiusToFahrenheit, kmhToMph, getWeatherDescription, formatTime } from "@/components/app/summits/SummitItem";
 
-// Difficulty display config
+// Difficulty display config (used by OrphanSummitCard)
 const DIFFICULTY_CONFIG: Record<Difficulty, { label: string; color: string }> = {
     easy: { label: "Easy", color: "text-emerald-500" },
     moderate: { label: "Moderate", color: "text-amber-500" },
@@ -53,54 +40,12 @@ const DIFFICULTY_CONFIG: Record<Difficulty, { label: string; color: string }> = 
     expert: { label: "Expert", color: "text-red-500" },
 };
 
-// Experience display config
+// Experience display config (used by OrphanSummitCard)
 const EXPERIENCE_CONFIG: Record<ExperienceRating, { label: string; color: string; icon: React.ReactNode }> = {
     amazing: { label: "Amazing", color: "text-yellow-500", icon: <Star className="w-3 h-3" /> },
     good: { label: "Good", color: "text-green-500", icon: <Smile className="w-3 h-3" /> },
     tough: { label: "Tough", color: "text-blue-500", icon: <Zap className="w-3 h-3" /> },
     epic: { label: "Epic", color: "text-purple-500", icon: <Flame className="w-3 h-3" /> },
-};
-
-// Weather code to description mapping (WMO codes)
-const getWeatherDescription = (code: number | undefined): string => {
-    if (code === undefined) return "";
-    const descriptions: Record<number, string> = {
-        0: "Clear sky",
-        1: "Mainly clear",
-        2: "Partly cloudy",
-        3: "Overcast",
-        45: "Foggy",
-        48: "Depositing rime fog",
-        51: "Light drizzle",
-        53: "Moderate drizzle",
-        55: "Dense drizzle",
-        61: "Slight rain",
-        63: "Moderate rain",
-        65: "Heavy rain",
-        71: "Slight snow",
-        73: "Moderate snow",
-        75: "Heavy snow",
-        77: "Snow grains",
-        80: "Slight rain showers",
-        81: "Moderate rain showers",
-        82: "Violent rain showers",
-        85: "Slight snow showers",
-        86: "Heavy snow showers",
-        95: "Thunderstorm",
-        96: "Thunderstorm with slight hail",
-        99: "Thunderstorm with heavy hail",
-    };
-    return descriptions[code] || "Unknown";
-};
-
-// Convert Celsius to Fahrenheit
-const celsiusToFahrenheit = (celsius: number): number => {
-    return (celsius * 9) / 5 + 32;
-};
-
-// Convert km/h to mph
-const kmhToMph = (kmh: number): number => {
-    return kmh * 0.621371;
 };
 
 // Convert meters to miles
@@ -110,196 +55,13 @@ const metersToMiles = (meters: number): number => {
 
 const formatDate = (timestamp: string, timezone?: string) => {
     const date = new Date(timestamp);
+    const ianaTimezone = extractIanaTimezone(timezone);
     return date.toLocaleDateString("en-US", {
         year: "numeric",
         month: "short",
         day: "numeric",
-        timeZone: timezone || undefined,
+        timeZone: ianaTimezone,
     });
-};
-
-const formatTime = (timestamp: string, timezone?: string) => {
-    const date = new Date(timestamp);
-    return date.toLocaleTimeString("en-US", {
-        hour: "numeric",
-        minute: "2-digit",
-        timeZone: timezone || undefined,
-    });
-};
-
-// Inline Summit Item (used inside activity cards)
-type SummitItemProps = {
-    summit: Summit;
-    peakId: string;
-    peakName: string;
-};
-
-const SummitItem = ({ summit, peakId, peakName }: SummitItemProps) => {
-    const openSummitReport = useSummitReportStore((state) => state.openSummitReport);
-    const queryClient = useQueryClient();
-    const [isDeleting, setIsDeleting] = useState(false);
-    
-    const hasNotes = Boolean(summit.notes && summit.notes.trim().length > 0);
-    const hasWeather =
-        summit.temperature !== undefined ||
-        summit.weather_code !== undefined ||
-        summit.wind_speed !== undefined;
-    const hasRatings = summit.difficulty || summit.experience_rating;
-    const hasReport = hasNotes || hasRatings;
-
-    const handleOpenReport = () => {
-        openSummitReport({ summit, peakId, peakName });
-    };
-
-    const handleDelete = async () => {
-        setIsDeleting(true);
-        const result = await deleteAscent(summit.id);
-        if (result.success) {
-            queryClient.invalidateQueries({ queryKey: ["peakDetails", peakId] });
-            queryClient.invalidateQueries({ queryKey: ["recentSummits"] });
-        }
-        setIsDeleting(false);
-    };
-
-    return (
-        <div className="p-3 rounded-lg bg-green-500/5 border border-green-500/20">
-            {/* Summit Time */}
-            <div className="flex items-center justify-between gap-2 mb-2">
-                <div className="flex items-center gap-2">
-                    <div className="w-6 h-6 rounded-full bg-green-500/10 flex items-center justify-center">
-                        <Mountain className="w-3 h-3 text-green-500" />
-                    </div>
-                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                        <Clock className="w-3 h-3" />
-                        <span>Summit at {formatTime(summit.timestamp, summit.timezone)}</span>
-                    </div>
-                </div>
-                <div className="flex items-center gap-1">
-                    {hasReport && (
-                        <button
-                            onClick={handleOpenReport}
-                            className="p-1.5 rounded-md text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors"
-                            aria-label="Edit summit report"
-                            tabIndex={0}
-                        >
-                            <Pencil className="w-3.5 h-3.5" />
-                        </button>
-                    )}
-                    <AlertDialog>
-                        <AlertDialogTrigger asChild>
-                            <button
-                                className="p-1.5 rounded-md text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
-                                aria-label="Delete summit"
-                                tabIndex={0}
-                                disabled={isDeleting}
-                            >
-                                {isDeleting ? (
-                                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                                ) : (
-                                    <Trash2 className="w-3.5 h-3.5" />
-                                )}
-                            </button>
-                        </AlertDialogTrigger>
-                        <AlertDialogContent>
-                            <AlertDialogHeader>
-                                <AlertDialogTitle>Delete Summit?</AlertDialogTitle>
-                                <AlertDialogDescription>
-                                    This will permanently delete this summit record. This action cannot be undone.
-                                </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                <AlertDialogAction
-                                    onClick={handleDelete}
-                                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                                >
-                                    Delete
-                                </AlertDialogAction>
-                            </AlertDialogFooter>
-                        </AlertDialogContent>
-                    </AlertDialog>
-                </div>
-            </div>
-
-            {/* Weather Conditions */}
-            {hasWeather && (
-                <div className="mb-2 flex flex-wrap gap-3 text-xs">
-                    {summit.temperature !== undefined && (
-                        <div className="flex items-center gap-1">
-                            <Thermometer className="w-3 h-3 text-orange-400" />
-                            <span className="text-foreground">
-                                {Math.round(celsiusToFahrenheit(summit.temperature))}°F
-                            </span>
-                        </div>
-                    )}
-                    {summit.weather_code !== undefined && (
-                        <div className="flex items-center gap-1">
-                            <Cloud className="w-3 h-3 text-blue-400" />
-                            <span className="text-foreground">
-                                {getWeatherDescription(summit.weather_code)}
-                            </span>
-                        </div>
-                    )}
-                    {summit.wind_speed !== undefined && (
-                        <div className="flex items-center gap-1">
-                            <Wind className="w-3 h-3 text-cyan-400" />
-                            <span className="text-foreground">
-                                {Math.round(kmhToMph(summit.wind_speed))} mph
-                            </span>
-                        </div>
-                    )}
-                    {summit.humidity !== undefined && (
-                        <div className="flex items-center gap-1">
-                            <Droplets className="w-3 h-3 text-blue-300" />
-                            <span className="text-foreground">
-                                {Math.round(summit.humidity)}%
-                            </span>
-                        </div>
-                    )}
-                </div>
-            )}
-
-            {/* Difficulty & Experience Ratings */}
-            {hasRatings && (
-                <div className="mb-2 flex flex-wrap gap-3 text-xs">
-                    {summit.difficulty && (
-                        <div className={`flex items-center gap-1 ${DIFFICULTY_CONFIG[summit.difficulty].color}`}>
-                            <Mountain className="w-3 h-3" />
-                            <span className="font-medium">{DIFFICULTY_CONFIG[summit.difficulty].label}</span>
-                        </div>
-                    )}
-                    {summit.experience_rating && (
-                        <div className={`flex items-center gap-1 ${EXPERIENCE_CONFIG[summit.experience_rating].color}`}>
-                            {EXPERIENCE_CONFIG[summit.experience_rating].icon}
-                            <span className="font-medium">{EXPERIENCE_CONFIG[summit.experience_rating].label}</span>
-                        </div>
-                    )}
-                </div>
-            )}
-
-            {/* Trip Notes or Add Trip Report CTA */}
-            {hasNotes ? (
-                <div className="p-2.5 rounded-md bg-background border border-primary/20">
-                    <div className="flex items-center gap-1.5 text-xs text-primary mb-1">
-                        <FileText className="w-3 h-3" />
-                        <span className="font-medium">Trip Notes</span>
-                    </div>
-                    <p className="text-sm text-foreground leading-relaxed">
-                        {summit.notes}
-                    </p>
-                </div>
-            ) : !hasReport ? (
-                <Button
-                    size="sm"
-                    onClick={handleOpenReport}
-                    className="w-full h-9 gap-2 bg-gradient-to-r from-primary to-primary/80 text-primary-foreground hover:from-primary/90 hover:to-primary/70 shadow-sm text-xs font-medium"
-                >
-                    <PenLine className="w-3.5 h-3.5" />
-                    Add Trip Report
-                </Button>
-            ) : null}
-        </div>
-    );
 };
 
 // Activity Card with nested summits
@@ -334,12 +96,11 @@ const ActivityWithSummits = ({ activity, summits, isHighlighted, onHighlight, pe
             }`}
         >
             {/* Activity Header */}
-            <button
+            <Link
+                href={`/activities/${activity.id}`}
                 onClick={handleHighlight}
-                className="w-full p-4 text-left hover:bg-muted/30 transition-colors"
+                className="block w-full p-4 text-left hover:bg-muted/30 transition-colors"
                 aria-label={`View activity: ${activity.title || "Activity"}`}
-                tabIndex={0}
-                onKeyDown={(e) => e.key === "Enter" && handleHighlight()}
             >
                 <div className="flex items-start justify-between gap-3">
                     <div className="flex items-start gap-3 flex-1 min-w-0">
@@ -373,7 +134,7 @@ const ActivityWithSummits = ({ activity, summits, isHighlighted, onHighlight, pe
                         </div>
                     )}
                 </div>
-            </button>
+            </Link>
 
             {/* View on Strava Button */}
             <div className="px-4 pb-3">
@@ -413,9 +174,6 @@ type OrphanSummitCardProps = {
 
 const OrphanSummitCard = ({ summit, peakId, peakName }: OrphanSummitCardProps) => {
     const openSummitReport = useSummitReportStore((state) => state.openSummitReport);
-    const queryClient = useQueryClient();
-    const [isDeleting, setIsDeleting] = useState(false);
-    
     const hasNotes = Boolean(summit.notes && summit.notes.trim().length > 0);
     const hasWeather =
         summit.temperature !== undefined ||
@@ -426,16 +184,6 @@ const OrphanSummitCard = ({ summit, peakId, peakName }: OrphanSummitCardProps) =
 
     const handleOpenReport = () => {
         openSummitReport({ summit, peakId, peakName });
-    };
-
-    const handleDelete = async () => {
-        setIsDeleting(true);
-        const result = await deleteAscent(summit.id);
-        if (result.success) {
-            queryClient.invalidateQueries({ queryKey: ["peakDetails", peakId] });
-            queryClient.invalidateQueries({ queryKey: ["recentSummits"] });
-        }
-        setIsDeleting(false);
     };
 
     return (
@@ -457,51 +205,16 @@ const OrphanSummitCard = ({ summit, peakId, peakName }: OrphanSummitCardProps) =
                         </div>
                     </div>
                 </div>
-                <div className="flex items-center gap-1">
-                    {hasReport && (
-                        <button
-                            onClick={handleOpenReport}
-                            className="p-1.5 rounded-md text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors"
-                            aria-label="Edit summit report"
-                            tabIndex={0}
-                        >
-                            <Pencil className="w-3.5 h-3.5" />
-                        </button>
-                    )}
-                    <AlertDialog>
-                        <AlertDialogTrigger asChild>
-                            <button
-                                className="p-1.5 rounded-md text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
-                                aria-label="Delete summit"
-                                tabIndex={0}
-                                disabled={isDeleting}
-                            >
-                                {isDeleting ? (
-                                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                                ) : (
-                                    <Trash2 className="w-3.5 h-3.5" />
-                                )}
-                            </button>
-                        </AlertDialogTrigger>
-                        <AlertDialogContent>
-                            <AlertDialogHeader>
-                                <AlertDialogTitle>Delete Summit?</AlertDialogTitle>
-                                <AlertDialogDescription>
-                                    This will permanently delete this summit record. This action cannot be undone.
-                                </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                <AlertDialogAction
-                                    onClick={handleDelete}
-                                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                                >
-                                    Delete
-                                </AlertDialogAction>
-                            </AlertDialogFooter>
-                        </AlertDialogContent>
-                    </AlertDialog>
-                </div>
+                {hasReport && (
+                    <button
+                        onClick={handleOpenReport}
+                        className="p-1.5 rounded-md text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors"
+                        aria-label="Edit summit report"
+                        tabIndex={0}
+                    >
+                        <Pencil className="w-3.5 h-3.5" />
+                    </button>
+                )}
             </div>
 
             {/* Weather */}

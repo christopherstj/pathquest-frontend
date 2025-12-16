@@ -3,9 +3,7 @@
 import React, { useEffect } from "react";
 import { motion } from "framer-motion";
 import {
-    X,
     Mountain,
-    MapPin,
     CheckCircle,
     Navigation,
     ChevronRight,
@@ -17,12 +15,14 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import getPeakDetails from "@/actions/peaks/getPeakDetails";
 import { useMapStore } from "@/providers/MapProvider";
 import Link from "next/link";
-import convertPeaksToGeoJSON from "@/helpers/convertPeaksToGeoJSON";
-import convertActivitiesToGeoJSON from "@/helpers/convertActivitiesToGeoJSON";
-import mapboxgl from "mapbox-gl";
 import CurrentConditions from "../app/peaks/CurrentConditions";
 import metersToFt from "@/helpers/metersToFt";
 import useRequireAuth, { useIsAuthenticated } from "@/hooks/useRequireAuth";
+import DetailPanelHeader from "@/components/ui/detail-panel-header";
+import StatsGrid from "@/components/ui/stats-grid";
+import StatCard from "@/components/ui/stat-card";
+import DetailLoadingState from "@/components/ui/detail-loading-state";
+import { usePeakMapEffects } from "@/hooks/use-peak-map-effects";
 
 interface Props {
     peakId: string;
@@ -54,6 +54,13 @@ const PeakDetailPanel = ({ peakId, onClose }: Props) => {
     const publicSummits = data?.success ? data.data?.publicSummits : null;
     const activities = data?.success ? data.data?.activities : null;
     const userSummits = peak?.summits ?? 0;
+
+    // Use shared map effects hook
+    const { flyToPeak } = usePeakMapEffects({
+        peak,
+        activities,
+        flyToOnLoad: true,
+    });
 
     // Share user's ascents and activities with the map store for DiscoveryDrawer (only for authenticated users)
     useEffect(() => {
@@ -87,136 +94,15 @@ const PeakDetailPanel = ({ peakId, onClose }: Props) => {
         };
     }, [peak, publicSummits, peakId, setSelectedPeakCommunityData]);
 
-    // Display activity GPX lines on the map
-    useEffect(() => {
-        if (!map || !activities || activities.length === 0) return;
-
-        const setActivitiesOnMap = async () => {
-            let activitiesSource = map.getSource("activities") as mapboxgl.GeoJSONSource | undefined;
-            let activityStartsSource = map.getSource("activityStarts") as mapboxgl.GeoJSONSource | undefined;
-
-            // Retry a few times if sources aren't ready yet
-            let attempts = 0;
-            const maxAttempts = 5;
-
-            while ((!activitiesSource || !activityStartsSource) && attempts < maxAttempts) {
-                attempts++;
-                await new Promise((resolve) => setTimeout(resolve, 300));
-                activitiesSource = map.getSource("activities") as mapboxgl.GeoJSONSource | undefined;
-                activityStartsSource = map.getSource("activityStarts") as mapboxgl.GeoJSONSource | undefined;
-            }
-
-            if (activitiesSource && activityStartsSource) {
-                const [lineStrings, starts] = convertActivitiesToGeoJSON(activities);
-                activitiesSource.setData(lineStrings);
-                activityStartsSource.setData(starts);
-            }
-        };
-
-        setActivitiesOnMap();
-
-        // Cleanup: clear activities when unmounting
-        return () => {
-            const activitiesSource = map.getSource("activities") as mapboxgl.GeoJSONSource | undefined;
-            const activityStartsSource = map.getSource("activityStarts") as mapboxgl.GeoJSONSource | undefined;
-
-            if (activitiesSource) {
-                activitiesSource.setData({
-                    type: "FeatureCollection",
-                    features: [],
-                });
-            }
-            if (activityStartsSource) {
-                activityStartsSource.setData({
-                    type: "FeatureCollection",
-                    features: [],
-                });
-            }
-        };
-    }, [map, activities]);
-
-    // Fly to peak location when data loads
-    useEffect(() => {
-        if (peak?.location_coords && map) {
-            map.flyTo({
-                center: peak.location_coords,
-                zoom: 13,
-                pitch: 50,
-                bearing: 20,
-                essential: true,
-            });
-        }
-    }, [peak?.location_coords, map]);
-
-    // Set selected peak on map with larger icon
-    useEffect(() => {
-        if (!map || !peak) return;
-
-        const setSelectedPeakSource = async () => {
-            let peaksSource = map.getSource("selectedPeaks") as mapboxgl.GeoJSONSource | undefined;
-
-            // Retry a few times if source isn't ready yet
-            let attempts = 0;
-            const maxAttempts = 5;
-
-            while (!peaksSource && attempts < maxAttempts) {
-                attempts++;
-                await new Promise((resolve) => setTimeout(resolve, 300));
-                peaksSource = map.getSource("selectedPeaks") as mapboxgl.GeoJSONSource | undefined;
-            }
-
-            if (peaksSource) {
-                peaksSource.setData(convertPeaksToGeoJSON([peak]));
-            }
-        };
-
-        setSelectedPeakSource();
-
-        // Cleanup: clear selected peak when unmounting
-        return () => {
-            const peaksSource = map.getSource("selectedPeaks") as mapboxgl.GeoJSONSource | undefined;
-            if (peaksSource) {
-                peaksSource.setData({
-                    type: "FeatureCollection",
-                    features: [],
-                });
-            }
-        };
-    }, [map, peak]);
-
-    const handleFlyToPeak = () => {
-        if (peak?.location_coords && map) {
-            map.flyTo({
-                center: peak.location_coords,
-                zoom: 14,
-                pitch: 60,
-                bearing: 30,
-                essential: true,
-            });
-        }
-    };
-
     const handleLogSummit = () => {
         requireAuth(() => {
             // TODO: Open manual summit logging modal
-            // For now, just show that auth is required
             console.log("Log summit for peak:", peakId);
         });
     };
 
     if (isLoading) {
-        return (
-            <motion.div 
-                initial={{ x: 100, opacity: 0 }}
-                animate={{ x: 0, opacity: 1 }}
-                exit={{ x: 100, opacity: 0 }}
-                className="fixed top-20 right-3 md:right-5 bottom-6 w-[calc(100%-1.5rem)] md:w-[340px] max-w-[340px] pointer-events-auto z-40"
-            >
-                <div className="w-full h-full rounded-2xl bg-background/85 backdrop-blur-xl border border-border shadow-xl p-6 flex items-center justify-center">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-                </div>
-            </motion.div>
-        );
+        return <DetailLoadingState color="primary" />;
     }
 
     if (!peak) return null;
@@ -232,70 +118,37 @@ const PeakDetailPanel = ({ peakId, onClose }: Props) => {
         >
             <div className="flex-1 rounded-2xl bg-background/85 backdrop-blur-xl border border-border shadow-xl overflow-hidden flex flex-col">
                 {/* Header */}
-                <div className="p-5 border-b border-border/60 bg-gradient-to-b from-accent/10 to-transparent relative">
-                    <button 
-                        onClick={onClose}
-                        className="absolute top-4 right-4 p-2 rounded-full hover:bg-white/10 text-muted-foreground hover:text-foreground transition-colors"
-                        aria-label="Close peak details"
-                        tabIndex={0}
-                    >
-                        <X className="w-4 h-4" />
-                    </button>
-                    
-                    <div className="flex items-center gap-2 mb-2 text-primary">
-                        <span className="px-2 py-1 rounded-full border border-border/70 bg-muted/60 text-[11px] font-mono uppercase tracking-[0.18em] flex items-center gap-1">
-                            <Mountain className="w-4 h-4" />
-                            Peak
-                        </span>
-                    </div>
-                    
-                    <h1 className="text-2xl md:text-3xl font-bold text-foreground" style={{ fontFamily: "var(--font-display)" }}>{peak.name}</h1>
-                    {location && (
-                        <div className="flex items-center gap-2 mt-2 text-muted-foreground">
-                            <MapPin className="w-4 h-4" />
-                            <span className="text-sm">{location}</span>
-                        </div>
-                    )}
-                </div>
+                <DetailPanelHeader
+                    badge={{ icon: Mountain, label: "Peak" }}
+                    title={peak.name || "Unknown Peak"}
+                    location={location}
+                    onClose={onClose}
+                    gradientColorClass="from-accent/10"
+                />
 
                 {/* Content */}
                 <div className="flex-1 overflow-y-auto p-6 space-y-6 custom-scrollbar">
                     {/* Stats Grid */}
-                    <div className="grid grid-cols-2 gap-3">
-                        <div className="p-4 rounded-xl bg-card border border-border/70 shadow-sm">
-                            <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">
-                                Elevation
-                            </p>
-                            <p className="text-xl font-mono text-foreground">
-                                {peak.elevation
-                                    ? Math.round(
-                                          metersToFt(peak.elevation)
-                                      ).toLocaleString()
-                                    : 0}{" "}
-                                ft
-                            </p>
-                        </div>
-                        <div className="p-4 rounded-xl bg-card border border-border/70 shadow-sm">
-                            <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">
-                                {isAuthenticated ? "Your Summits" : "Total Summits"}
-                            </p>
-                            <p className="text-xl font-mono text-foreground">
-                                {isAuthenticated ? (
+                    <StatsGrid>
+                        <StatCard
+                            label="Elevation"
+                            value={`${peak.elevation ? Math.round(metersToFt(peak.elevation)).toLocaleString() : 0} ft`}
+                        />
+                        <StatCard
+                            label={isAuthenticated ? "Your Summits" : "Total Summits"}
+                            value={
+                                isAuthenticated ? (
                                     userSummits > 0 ? (
-                                        <span className="text-green-500">
-                                            {userSummits}
-                                        </span>
+                                        <span className="text-green-500">{userSummits}</span>
                                     ) : (
                                         "0"
                                     )
                                 ) : (
-                                    peak.public_summits ||
-                                    publicSummits?.length ||
-                                    0
-                                )}
-                            </p>
-                        </div>
-                    </div>
+                                    peak.public_summits || publicSummits?.length || 0
+                                )
+                            }
+                        />
+                    </StatsGrid>
 
                     {/* User summit status */}
                     {isAuthenticated && userSummits > 0 && (
@@ -351,7 +204,7 @@ const PeakDetailPanel = ({ peakId, onClose }: Props) => {
                         )}
                         <Button
                             variant="outline"
-                            onClick={handleFlyToPeak}
+                            onClick={flyToPeak}
                             className="w-full gap-2 border-primary/20 hover:bg-primary/10 hover:text-primary"
                         >
                             <Navigation className="w-4 h-4" />
@@ -388,4 +241,3 @@ const PeakDetailPanel = ({ peakId, onClose }: Props) => {
 };
 
 export default PeakDetailPanel;
-

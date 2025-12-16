@@ -28,26 +28,22 @@ Next.js 14 App Router structure with route groups and parallel routes.
 - Global fonts configuration (Fraunces + IBM Plex Mono)
 - Parallel route slot `@overlay` for intercepted routes (peak/challenge details)
 
-#### Static Detail Pages with Intercepting Routes
+#### Static Detail Pages
 
-The peak and challenge detail pages use Next.js intercepting routes to enable:
+The peak and challenge detail pages are static ISR pages:
 - **SEO-friendly static pages** at `/peaks/[id]` and `/challenges/[id]`
-- **Overlay UX** when navigating within the app (map stays mounted)
+- **Overlay UX** handled by `UrlOverlayManager` component (map stays mounted, overlays show based on URL params)
 
 **Route Structure:**
 ```
 src/app/
-├── @overlay/                     # Parallel route slot for overlays
-│   ├── default.tsx              # Empty default
-│   ├── (.)peaks/[id]/page.tsx   # Intercepts /peaks/[id] for in-app nav
-│   └── (.)challenges/[id]/page.tsx
 ├── peaks/[id]/page.tsx          # Static ISR page (direct URL/crawlers)
 └── challenges/[id]/page.tsx     # Static ISR page (direct URL/crawlers)
 ```
 
 **How it works:**
 - Direct URL access (Google, shared links) → Full static page with ISR
-- In-app navigation → Intercepting route shows overlay, map stays mounted
+- In-app navigation → `UrlOverlayManager` reads URL params (`peakId`/`challengeId`) and shows appropriate overlay, map stays mounted
 - Both share the same URL structure (`/peaks/abc123`)
 
 **Static Generation:**
@@ -77,6 +73,22 @@ src/app/
 - Uses `ChallengeDetailContent` component for overlay display
 - Supports intercepting routes for in-app navigation
 
+##### `/activities/[id]` (Activity Detail Page - Dynamic)
+- **Not statically generated** (too many activities, privacy concerns)
+- Dynamic page with runtime data fetching
+- Privacy-aware: only accessible if user AND activity are public, or by the owner
+- Components:
+  - `ActivityDetailPanel` (desktop): Right-side panel with Details/Summits/Analytics tabs
+  - `ActivityDetailsMobile` (mobile): Bottom sheet content with same tab structure
+- Features:
+  - Activity stats (distance, elevation gain, duration, start time)
+  - GPX route displayed on map via `useActivityMapEffects` hook
+  - Interactive elevation profile with hover-to-map marker
+  - List of summitted peaks with links to peak details
+  - Analytics charts (grade analysis, cumulative elevation, climbing segments, mile splits)
+  - Strava link and share button
+  - Manual summit logging for peaks along the route
+
 ##### Legacy Routes (Removed)
 - `/login`, `/signup`, `/signup/email-form`, `/m/*` routes have been removed
 - Auth is now handled via the `AuthModal` component (modal overlay)
@@ -95,6 +107,11 @@ src/app/
 - Returns: temperature (°F), feels like, weather code/description/icon, wind speed/direction/gusts (mph), humidity (%), cloud cover, elevation
 - Implements in-memory caching (10 min TTL) to reduce API calls
 - Used by `CurrentConditions` component for live peak weather
+
+##### Dashboard (`api/dashboard/`)
+- `favorite-challenges/route.ts` - Fetches user's favorite challenges (in-progress/not-started only)
+- `recent-summits/route.ts` - Fetches user's recent summits
+- Both routes require authentication and use `getGoogleIdToken` for backend auth
 
 ### Actions (`src/actions/`)
 Server actions for data fetching and mutations. Organized by domain. Backend calls now target the `/api` prefix via `getBackendUrl()`; private endpoints include a bearer from `getGoogleIdToken`, while public reads omit the header.
@@ -155,6 +172,7 @@ Server actions for data fetching and mutations. Organized by domain. Backend cal
 
 #### Root Actions
 - `searchNearestPeaks.ts` - Searches peaks nearest to coordinates
+- `getTimezoneFromCoords.ts` - Gets IANA timezone string for given coordinates (uses geo-tz library)
 - `testApi.ts` - **UNUSED** - Test API endpoint (likely for development)
 
 ### Components (`src/components/`)
@@ -162,7 +180,6 @@ Server actions for data fetching and mutations. Organized by domain. Backend cal
 #### App Components (`components/app/`)
 
 ##### Layout (`components/app/layout/`)
-- `AppSidebar.tsx` - Main sidebar navigation (currently commented out in layout)
 - `GlobalNavigation.tsx` - Top navigation bar with logo, search omnibar, and user menu
 - `SidebarLink.tsx` - Sidebar link component
 - `UserButton.tsx` - User menu button
@@ -171,43 +188,73 @@ Server actions for data fetching and mutations. Organized by domain. Backend cal
 - `Logo.tsx` - SVG logo component with topographic contour-line mountain design. Uses currentColor for theming, supports size prop.
 
 ##### Overlays (`components/overlays/`)
-- `UrlOverlayManager.tsx` - Central overlay orchestrator. On desktop, renders DiscoveryDrawer (left panel) plus PeakDetailPanel/ChallengeDetailPanel (right panel). On mobile (< 1024px), renders DetailBottomSheet with tabbed interface.
+- `UrlOverlayManager.tsx` - Central overlay orchestrator. On desktop, renders DiscoveryDrawer (left panel) plus PeakDetailPanel/ChallengeDetailPanel/ActivityDetailPanel (right panel). On mobile (< 1024px), renders DetailBottomSheet with tabbed interface. Routes handled: `/peaks/[id]`, `/challenges/[id]`, `/activities/[id]`.
 - `DiscoveryDrawer.tsx` - Desktop left panel for discovering peaks and challenges. Supports "summit history" drill-down mode via `summitHistoryPeakId` in mapStore—when set, shows SummitHistoryPanel instead of discovery content.
-- `DetailBottomSheet.tsx` - Mobile-only bottom sheet with Details/Discover tabs. Reuses DiscoveryDrawer's drag mechanics (collapsed/halfway/expanded snap points). Switches to Details tab when peak/challenge is selected.
+- `DetailBottomSheet.tsx` - Mobile-only bottom sheet with Details/Discover tabs. Uses extracted mobile components (PeakDetailsMobile, ChallengeDetailsMobile, DiscoveryContentMobile). Manages drawer height with snap points (collapsed/halfway/expanded).
 - `SummitHistoryPanel.tsx` - Full summit history list for a peak. Shows all public summits with user names, dates, and weather conditions at summit time. Used inside DiscoveryDrawer (desktop) or DetailBottomSheet (mobile).
-- `PeakDetailPanel.tsx` - Desktop right panel for peak details. Includes CurrentConditions weather widget, summit status for authenticated users, auth-gated favorite and log summit buttons.
-- `PeakDetailContent.tsx` - Peak detail content with SSR data (used by static pages)
-- `ChallengeDetailPanel.tsx` - Desktop right panel for challenge details. Shows challenge progress for authenticated users, auth-gated favorite button, peaks list with completion status.
-- `ChallengeDetailContent.tsx` - Challenge detail content with SSR data (used by static pages)
-- `DashboardPanel.tsx` - User dashboard panel (authenticated only). Shows recent summits, favorite challenges with progress bars, and activity sync status.
-- `OverlayManager.tsx` - Legacy overlay manager (deprecated, replaced by UrlOverlayManager)
+- `PeakDetailPanel.tsx` - Desktop right panel for peak details. Uses shared components (DetailPanelHeader, StatsGrid, DetailLoadingState) and usePeakMapEffects hook. Includes CurrentConditions weather widget, summit status for authenticated users.
+- `PeakDetailContent.tsx` - Peak detail content with SSR data (used by static pages). Uses shared UI components.
+- `PeakCommunity.tsx` - Community summit history display component (shows public summits with user names and weather)
+- `PeakUserActivity.tsx` - User's activity display for a peak (shows user's ascents, activities, and allows editing). Activity cards link to `/activities/[id]` detail pages.
+- `ChallengeDetailPanel.tsx` - Desktop right panel for challenge details. Uses shared components and useChallengeMapEffects hook. Shows challenge progress for authenticated users.
+- `ChallengeDetailContent.tsx` - Challenge detail content with SSR data (used by static pages). Uses shared UI components.
+- `DashboardPanel.tsx` - User dashboard panel (authenticated only). Wrapper component that renders DashboardContent.
+- `DashboardContent.tsx` - Dashboard content component. Shows recent summits (fetched from `/api/dashboard/recent-summits`), favorite challenges with progress bars (fetched from `/api/dashboard/favorite-challenges`), and activity sync status.
+- `AddManualSummitModal.tsx` - Modal for logging manual peak summits. Supports two flows: peak-first (from peak detail) and activity-first (from activity detail with peak search along route). Triggered by ManualSummitProvider.
+- `SummitReportModal.tsx` - Modal for editing summit experiences/reports (triggered by SummitReportProvider)
+- `ActivityDetailPanel.tsx` - Desktop right panel for activity details. Shows Details/Summits/Analytics tabs, GPX route on map, elevation profile with hover interaction.
+
+##### Mobile Overlays (`components/overlays/mobile/`)
+- `peak-details-mobile.tsx` - Mobile-optimized peak detail view extracted from DetailBottomSheet
+- `challenge-details-mobile.tsx` - Mobile-optimized challenge detail view extracted from DetailBottomSheet
+- `discovery-content-mobile.tsx` - Mobile-optimized discovery content using shared discovery components
+- `activity-details-mobile.tsx` - Mobile-optimized activity detail view with Details/Summits/Analytics tabs
 
 ##### Auth (`components/auth/`)
 - `AuthModal.tsx` - Modal-based authentication flow. Two modes: login (Strava OAuth) and email collection (post-OAuth). Opens via `useRequireAuth` hook when user attempts auth-gated action.
 
-##### Login (`components/app/login/`) - LEGACY
-- `EmailForm.tsx` - Legacy email collection form (replaced by AuthModal)
-- `LoginCard.tsx` - Legacy login card (replaced by AuthModal)
-- `SignupCard.tsx` - Legacy signup card (replaced by AuthModal)
-- `StravaLoginButton.tsx` - Strava OAuth button component (still used by AuthModal)
+##### Login (`components/app/login/`)
+- `StravaLoginButton.tsx` - Strava OAuth button component (used by AuthModal)
 
-##### Map (`components/app/map/`)
-- `Map.tsx` - Main Mapbox map component
-- `SatelliteButton.tsx` - Toggle satellite map style
-- `ThreeDButton.tsx` - Toggle 3D terrain
+##### Map (`components/map/`)
+- `MapBackground.tsx` - Main Mapbox map component with persistent background. Handles map initialization, 3D terrain, satellite mode, peak/challenge data loading, and URL state synchronization.
 
 ##### Peaks (`components/app/peaks/`)
-- `BoundsToggle.tsx` - Toggle for showing/hiding bounds
-- `CenterButton.tsx` - Button to center map on peak
-- `ChallengeDetails.tsx` - Challenge information display
 - `CurrentConditions.tsx` - Live weather display for peak detail panels. Fetches from `/api/weather` route (Open-Meteo). Shows temperature, feels like, conditions, wind, humidity.
-- `PeakDetailMapInteraction.tsx` - Map interactions for peak detail page
-- `PeakPopup.tsx` - Popup displayed when clicking peak on map
-- `PeakRow.tsx` - Row component for peak list
-- `PeakSearch.tsx` - Main peak search interface component
-- `PeaksList.tsx` - List of peaks display
-- `PeaksSearchInput.tsx` - Search input for peaks
-- `PeakTitle.tsx` - Peak title and metadata display
+
+##### Activities (`components/app/activities/`)
+- `ActivityElevationProfile.tsx` - Interactive elevation profile chart using visx. Supports hover interaction that shows a marker on the GPX track at the corresponding distance point via `onHover` callback, displays summit markers on chart, shows min/max elevation labels.
+- `ActivitySummitsList.tsx` - List of individual summits during an activity (not grouped by peak). Uses shared `SummitItem` component with `showPeakHeader=true` to display peak name at top of each summit. Includes "Log Another Summit" button. Supports `onSummitHover` callback for map marker highlighting.
+
+##### Summits (`components/app/summits/`)
+- `SummitItem.tsx` - Shared summit display component used by both Journal tab (PeakUserActivity) and Activity Summits tab (ActivitySummitsList). Features:
+  - Works with both `Summit` and `SummitWithPeak` types
+  - Optional peak header for activity context (`showPeakHeader` prop)
+  - Hover callbacks (`onHoverStart`, `onHoverEnd`) for map marker highlighting
+  - Weather conditions (temperature, weather code, wind speed, humidity) with colored icons
+  - Difficulty badge (easy/moderate/hard/expert) with color-coded text
+  - Experience rating badge (amazing/good/tough/epic) with icons
+  - Trip notes in styled box
+  - Edit button for summit reports (opens SummitReportModal)
+  - "Add Trip Report" CTA when no report exists
+  - Exports helper functions: `getWeatherDescription`, `celsiusToFahrenheit`, `kmhToMph`, `formatTime`, `extractIanaTimezone`
+- `ActivityAnalytics.tsx` - Analytics charts for activity data. Includes:
+  - Grade analysis chart (positive/negative gradients)
+  - Elevation distribution histogram
+  - Mile splits table with pace comparison
+  - Summary stats (moving time, average pace)
+- `ElevationProfileSelector.tsx` - Clickable elevation profile for selecting summit time in manual summit modal. Used by AddManualSummitModal when an activity is linked.
+
+#### Discovery Components (`components/discovery/`)
+Shared discovery list components used by both desktop (DiscoveryDrawer) and mobile (DetailBottomSheet):
+- `discovery-challenges-list.tsx` - Renders visible challenges list with click handlers
+- `discovery-peaks-list.tsx` - Renders visible peaks list with click handlers
+- `empty-discovery-state.tsx` - Empty state when no peaks/challenges visible (includes zoom-in prompt)
+
+#### List Components (`components/lists/`)
+Reusable list item components:
+- `challenge-list-item.tsx` - Peak list item for challenge detail views (shows completion status)
+- `peak-list-item.tsx` - Challenge list item for peak detail views
 
 #### UI Components (`components/ui/`)
 Shadcn/ui components built on Radix UI:
@@ -221,14 +268,23 @@ Shadcn/ui components built on Radix UI:
 - `toggle.tsx` - Toggle switch
 - `tooltip.tsx` - Tooltip component
 
+Custom shared UI components:
+- `detail-panel-header.tsx` - Reusable header for detail panels with badge, title, location, and close button
+- `stats-grid.tsx` - 2-column grid layout for stat cards
+- `stat-card.tsx` - Individual stat card with label and value
+- `detail-loading-state.tsx` - Loading spinner for detail panels (supports panel and inline variants)
+- `empty-state.tsx` - Generic empty state component with icon, title, and description
+
 ### Helpers (`src/helpers/`)
 Utility functions for common operations.
 
 - `peaksSearchState.ts` - Module-level state for disabling peaks search (used when viewing challenge details to prevent general peaks from loading)
+- `getAuthHeaders.ts` - Gets authentication headers (Bearer token + x-user-* headers) for backend API calls. Used by several challenge actions.
 - `checkEmail.ts` - Email validation
 - `convertActivitiesToGeoJSON.ts` - Converts activities to GeoJSON format
 - `convertPeaksToGeoJSON.ts` - Converts peaks to GeoJSON format
 - `convertChallengesToGeoJSON.ts` - Converts challenges (with center coords) to GeoJSON
+- `convertSummitsToPeaks.ts` - Converts SummitWithPeak[] to Peak[] with nested ascents. Used by activity detail components for map effects and elevation profile.
 - `dayjs.ts` - Day.js configuration/helpers
 - `getBackendUrl.ts` - Gets API backend URL from environment
 - `getBoundsFromURL.ts` - Extracts map bounds from URL params (legacy, migrating to center/zoom)
@@ -236,6 +292,7 @@ Utility functions for common operations.
 - `getElevationString.ts` - Formats elevation strings
 - `getMapStateFromURL.ts` - Extracts map state from URL (center lat/lng, zoom, pitch, bearing, is3D, isSatellite)
 - `navigateWithMapState.ts` - Helpers for navigating while preserving map state URL params (`pushWithMapState`, `replaceWithMapState`, `buildUrlWithMapState`)
+- `getAuthHeaders.ts` - Gets authentication headers (Bearer token + x-user-* headers) for backend API calls
 - `getNewData.ts` - Data fetching helper
 - `getRoutes.tsx` - Route configuration helper
 - `getStripe.ts` - Stripe client initialization
@@ -247,20 +304,23 @@ Utility functions for common operations.
 - `updateMapStateInURL.ts` - Updates URL with map state
 - `updateMapURL.ts` - Updates map-related URL params using router.replace (soft navigation) with debouncing
 - `updateURLWithBounds.ts` - Updates URL with map bounds
-- `useIsMobile.ts` - Mobile detection hook
+- `useIsMobile.ts` - Mobile detection hook (legacy implementation using window resize, breakpoint 900px)
 - `useWindowResize.tsx` - Window resize hook
+
+**Note**: There are two `useIsMobile` implementations:
+- `hooks/use-mobile.ts` - Modern implementation using `window.matchMedia` (default breakpoint 768px, can be customized). This is the primary implementation used by components.
+- `helpers/useIsMobile.ts` - Legacy implementation using window resize (breakpoint 900px). May be deprecated.
 - `stateAbbreviations.ts` - US state abbreviation mapping and search query expansion utilities
 
 ### Libraries (`src/lib/`)
 
 #### Client Fetchers (`lib/client/`)
-- `api.ts` - Client-safe fetch helper for local Next route proxies.
-- `searchPeaksClient.ts` - Client search for peaks (supports bounds, pagination, showSummitted flag) via `/api/search/peaks`.
-- `searchChallengesClient.ts` - Client search for challenges (supports bounds, favorites, type filters) via `/api/search/challenges`.
+- `api.ts` - Client-safe fetch helper utilities (`buildUrl`, `fetchLocalJson`) for local Next route proxies
+- `searchPeaksClient.ts` - Client search for peaks (supports bounds, pagination, showSummitted flag) via `/api/search/peaks`
+- `searchChallengesClient.ts` - Client search for challenges (supports bounds, favorites, type filters) via `/api/search/challenges`
 
 #### Map (`lib/map/`)
 Mapbox integration helpers:
-- `addMapConfiguration.tsx` - Map configuration setup
 - `initiateMap.ts` - Map initialization
 - `loadMapDefaults.ts` - Default map settings
 - `renderPopup.tsx` - Popup rendering logic
@@ -280,6 +340,9 @@ React context providers:
 - `UserProvider.tsx` - User state context provider
 - `AuthModalProvider.tsx` - Auth modal state provider (login/email modal)
 - `DashboardProvider.tsx` - Dashboard panel state provider
+- `QueryProvider.tsx` - React Query (TanStack Query) provider for client-side data fetching and caching
+- `ManualSummitProvider.tsx` - Manual summit modal state provider
+- `SummitReportProvider.tsx` - Summit report/edit modal state provider
 
 ### Store (`src/store/`)
 Zustand state management stores:
@@ -289,9 +352,12 @@ Zustand state management stores:
   - `isSatellite` - Satellite mode toggle
   - `disablePeaksSearch` - Prevents peaks loading when viewing challenge details
   - `summitHistoryPeakId` - When set, DiscoveryDrawer shows SummitHistoryPanel instead of discovery content (desktop drill-down)
+  - `hoveredPeakId` - ID of peak being hovered over in summit list, used for map marker highlighting with amber accent color
 - `userStore.tsx` - User data store (vanilla Zustand)
 - `authModalStore.ts` - Auth modal state (isOpen, mode, redirectAction)
 - `dashboardStore.ts` - Dashboard panel state (isOpen, toggle)
+- `manualSummitStore.ts` - Manual summit modal state
+- `summitReportStore.ts` - Summit report/edit modal state
 
 ### Auth (`src/auth/`)
 Authentication configuration:
@@ -312,7 +378,8 @@ TypeScript type definitions:
 - `ProductDisplay.ts` - Stripe product display
 - `ServerActionResult.ts` - Server action result wrapper
 - `StravaCreds.ts` - Strava OAuth credentials
-- `Summit.ts` - Summit data structure
+- `Summit.ts` - Summit data structure with difficulty and experience rating
+- `SummitWithPeak.ts` - Individual summit entry with nested peak data. Used by activity detail API response. Includes all summit fields (notes, weather, difficulty, experience rating) plus peak info.
 - `User.ts` - User data structure
 - `UserChallengeFavorite.ts` - User challenge favorite
 
@@ -324,6 +391,14 @@ Next.js middleware for legacy route redirects:
 ### Hooks (`src/hooks/`)
 - `useRequireAuth.ts` - Hook for auth-gated actions. Opens auth modal if not logged in, otherwise executes action.
 - `useIsAuthenticated.ts` (exported from useRequireAuth) - Returns auth state and user info
+- `use-mobile.ts` - Mobile detection hook using `window.matchMedia` (default breakpoint 768px). Exports `useIsMobile` function. Used by components for responsive behavior.
+
+#### Map Hooks
+- `use-map-source.ts` - Hook to manage Mapbox GeoJSON source data with retry logic. Handles waiting for source availability and cleanup on unmount.
+- `use-peak-map-effects.ts` - Hook to handle map effects when viewing a peak detail. Sets selected peak marker, displays activity GPX lines, and provides flyTo functionality.
+- `use-challenge-map-effects.ts` - Hook to handle map effects when viewing a challenge. Disables general peaks search, shows challenge peaks on map, and fits map to challenge bounds.
+- `use-activity-map-effects.ts` - Hook to handle map effects when viewing an activity. Displays GPX line, shows peak markers for summitted peaks, handles hover marker from elevation profile chart, handles hover highlighting of peaks from summit list via mapStore.hoveredPeakId (uses Mapbox feature-state for amber accent color), and fits map to activity bounds.
+- `use-drawer-height.ts` - Hook to manage draggable drawer height with snap points (collapsed/halfway/expanded). Used by DetailBottomSheet for mobile UI.
 
 ## Authentication Flow
 
@@ -351,20 +426,19 @@ Next.js middleware for legacy route redirects:
 6. Places are filtered to outdoor-relevant POIs (parks, forests, trails, etc.).
 7. Selecting an item flies the map and updates URL params (`peakId`/`challengeId`) to open the detail overlay.
 
-### Peak Search Flow
-1. User navigates to `/m/peaks`
-2. `PeakSearch` component mounts
-3. Fetches peaks via `searchPeaks` action
-4. Converts to GeoJSON via `convertPeaksToGeoJSON`
-5. Renders on Mapbox map
-6. User interactions update URL params
-7. URL changes trigger data refetch
+### Peak Discovery Flow
+1. User browses map on home page
+2. `MapBackground` loads peaks in visible bounds via `getNewData`
+3. Peaks rendered as markers on Mapbox map
+4. User clicks peak marker → navigates to `/peaks/[id]`
+5. `UrlOverlayManager` opens `PeakDetailPanel` (desktop) or `DetailBottomSheet` (mobile)
+6. Map flies to peak location
 
 ### Peak Detail Flow
-1. User clicks peak on map or in list
-2. Navigates to `/m/peaks/[id]`
-3. Server component fetches data via `getPublicPeakDetails`
-4. Renders peak details, activities, challenges
+1. User clicks peak on map or in discovery list
+2. Navigates to `/peaks/[id]`
+3. `PeakDetailPanel`/`DetailBottomSheet` fetches data via `getPeakDetails`
+4. Renders peak details, weather, challenges, user summits
 5. Map shows peak location and associated activities
 
 ### Activity Processing Flow
@@ -377,13 +451,17 @@ Next.js middleware for legacy route redirects:
 ## State Management
 
 ### Client State
-- **Zustand Stores**: Map instance, user data
-- **React Context**: Theme, auth session, map state, user state
+- **Zustand Stores**: Map instance, user data, auth modal, dashboard, manual summit, summit report
+- **React Context**: Theme, auth session, map state, user state, query client (React Query)
 - **URL State**: Map center (`lat`, `lng`), zoom (`z`), pitch, bearing, satellite mode, 3D mode, selected peak/challenge (for shareability)
 
 ### Server/Client Data
 - Server actions for SSR/routes; REST endpoints accessed via client fetchers where interactivity is needed (e.g., Omnibar).
-- React Query used for client-side search caching (Omnibar).
+- React Query (TanStack Query) used extensively for client-side data fetching and caching:
+  - Omnibar search results
+  - Dashboard data (recent summits, favorite challenges)
+  - Peak/challenge detail panels
+  - CurrentConditions weather widget
 - Next.js handles caching and revalidation for server-side data.
 
 ## Styling
@@ -428,6 +506,13 @@ Next.js middleware for legacy route redirects:
 - 3D terrain support
 - Topo-friendly base style (`outdoors-v12`)
 
+### Map Layers (render order bottom to top)
+- `activities` - GPX track lines (orange #c9915a)
+- `activityStarts` - Activity start point markers (green #22c55e)
+- `selectedPeaks` - Peak markers for challenges/activities (muted green #4d7a57, amber accent #d66ba0 on hover via feature-state)
+- `activityHover` - Hover marker from elevation profile (created dynamically)
+- Peak markers use conditional `circle-color` based on `feature-state.hover` for interactive highlighting
+
 ### Map State
 - Stored in Zustand store (map instance) and kept mounted via root layout background
 - URL synchronization for shareability using soft navigation (router.replace) to avoid cluttering browser history
@@ -443,12 +528,21 @@ Next.js middleware for legacy route redirects:
 - Likely used during development
 
 ### `auth/getGoogleIdToken.ts`
-- **Status**: Possibly unused
-- Google ID token helper (app uses Strava OAuth, not Google)
+- **Status**: ACTIVELY USED
+- Google ID token helper for backend authentication
+- Used extensively throughout actions and API routes for Bearer token authentication
+- Returns Google ID token in production, empty string in development (where header-based auth is used)
+- Called via `getAuthHeaders` helper or directly in server actions/API routes
 
-### Commented Out Code
-- `AppSidebar` component is commented out in root layout
-- Sidebar infrastructure exists but not currently used
+### Removed Components (Cleanup December 2024)
+The following legacy components were removed as part of a codebase cleanup:
+- `OverlayManager.tsx` - Replaced by `UrlOverlayManager.tsx`
+- `AppSidebar.tsx` - Unused sidebar infrastructure
+- `EmailForm.tsx`, `LoginCard.tsx`, `SignupCard.tsx` - Replaced by `AuthModal.tsx`
+- `Map.tsx`, `SatelliteButton.tsx`, `ThreeDButton.tsx` - Replaced by `MapBackground.tsx`
+- `PeakSearch.tsx`, `PeaksList.tsx`, `PeakRow.tsx`, `PeaksSearchInput.tsx`, `BoundsToggle.tsx`, `CenterButton.tsx` - Legacy search UI (now handled by Omnibar and discovery drawer)
+- `PeakPopup.tsx`, `PeakTitle.tsx`, `PeakDetailMapInteraction.tsx`, `ChallengeDetails.tsx` - Unused components
+- `addMapConfiguration.tsx` - Map config now handled directly in `MapBackground.tsx`
 
 ## Environment Variables
 
@@ -494,4 +588,79 @@ Required environment variables:
 - Semantic HTML where possible
 - Keyboard navigation support
 - Screen reader considerations
+
+## Discrepancies Found and Fixed
+
+### Major Discrepancies Documented
+
+1. **Missing API Routes**: Added documentation for `/api/dashboard/favorite-challenges` and `/api/dashboard/recent-summits` routes
+2. **Missing Helper**: Added `getAuthHeaders.ts` to helpers documentation (used by challenge actions)
+3. **Missing Action**: Added `getTimezoneFromCoords.ts` to actions documentation
+4. **Missing Providers**: Added `QueryProvider`, `ManualSummitProvider`, and `SummitReportProvider` to providers documentation
+5. **Missing Stores**: Added `manualSummitStore` and `summitReportStore` to stores documentation
+6. **Missing Components**: Added `AddManualSummitModal`, `SummitReportModal`, `PeakCommunity`, `PeakUserActivity`, and `DashboardContent` to overlays documentation
+7. **Hook Discrepancy**: Documented that there are two `useIsMobile` implementations (one in hooks, one in helpers)
+8. **getGoogleIdToken Status**: Corrected from "Possibly unused" to "ACTIVELY USED" - used extensively throughout codebase
+9. **Intercepting Routes**: Removed incorrect documentation about `@overlay` parallel routes - the app uses URL-driven overlays via `UrlOverlayManager` instead
+10. **React Query**: Added documentation for `QueryProvider` and expanded React Query usage documentation
+11. **Client Fetchers**: Added missing `api.ts` helper to client fetchers documentation
+
+## Component Refactoring (December 2024)
+
+### Overview
+A comprehensive refactoring effort was completed to eliminate code duplication, remove unused components, and create shared abstractions for common UI patterns.
+
+### Removed Components (19 files)
+The following legacy/unused components were removed:
+- `OverlayManager.tsx` - Replaced by `UrlOverlayManager.tsx`
+- `AppSidebar.tsx` - Unused sidebar infrastructure
+- Legacy auth components (`EmailForm.tsx`, `LoginCard.tsx`, `SignupCard.tsx`) - Replaced by `AuthModal.tsx`
+- Legacy map components (`Map.tsx`, `SatelliteButton.tsx`, `ThreeDButton.tsx`) - Replaced by `MapBackground.tsx`
+- Unused peak search components (`PeakSearch.tsx`, `PeaksList.tsx`, `PeakRow.tsx`, `PeaksSearchInput.tsx`, `BoundsToggle.tsx`, `CenterButton.tsx`)
+- Other unused components (`PeakPopup.tsx`, `PeakTitle.tsx`, `PeakDetailMapInteraction.tsx`, `ChallengeDetails.tsx`)
+- Unused map library file (`addMapConfiguration.tsx`)
+
+### Created Shared Components
+
+#### UI Components (`components/ui/`)
+- `detail-panel-header.tsx` - Reusable header with badge, title, location, close button
+- `stats-grid.tsx` - 2-column grid layout for stat cards
+- `stat-card.tsx` - Individual stat card with label and value
+- `detail-loading-state.tsx` - Loading spinner for detail panels (supports panel and inline variants)
+- `empty-state.tsx` - Generic empty state component with icon, title, and description
+
+#### Discovery Components (`components/discovery/`)
+- `discovery-challenges-list.tsx` - Renders visible challenges list with click handlers
+- `discovery-peaks-list.tsx` - Renders visible peaks list with click handlers
+- `empty-discovery-state.tsx` - Empty state when no peaks/challenges visible (includes zoom-in prompt)
+
+#### List Components (`components/lists/`)
+- `challenge-list-item.tsx` - Peak list item for challenge detail views (shows completion status)
+- `peak-list-item.tsx` - Challenge list item for peak detail views
+
+#### Mobile Overlays (`components/overlays/mobile/`)
+- `peak-details-mobile.tsx` - Mobile-optimized peak detail view extracted from DetailBottomSheet
+- `challenge-details-mobile.tsx` - Mobile-optimized challenge detail view extracted from DetailBottomSheet
+- `discovery-content-mobile.tsx` - Mobile-optimized discovery content using shared discovery components
+
+### Created Map Hooks (`hooks/`)
+- `use-map-source.ts` - Manages Mapbox GeoJSON source data with retry logic. Handles waiting for source availability and cleanup on unmount.
+- `use-peak-map-effects.ts` - Handles map effects when viewing a peak detail. Sets selected peak marker, displays activity GPX lines, and provides flyTo functionality.
+- `use-challenge-map-effects.ts` - Handles map effects when viewing a challenge. Disables general peaks search, shows challenge peaks on map, and fits map to challenge bounds.
+- `use-drawer-height.ts` - Manages draggable drawer height with snap points (collapsed/halfway/expanded). Used by DetailBottomSheet for mobile UI.
+
+### Refactored Components
+- `PeakDetailPanel.tsx` - Now uses `DetailPanelHeader`, `StatsGrid`, `StatCard`, `DetailLoadingState`, and `usePeakMapEffects` hook
+- `ChallengeDetailPanel.tsx` - Now uses shared components and `useChallengeMapEffects` hook
+- `PeakDetailContent.tsx` - Uses shared UI components
+- `ChallengeDetailContent.tsx` - Uses shared UI components
+- `DetailBottomSheet.tsx` - Refactored to use extracted mobile components (`PeakDetailsMobile`, `ChallengeDetailsMobile`, `DiscoveryContentMobile`)
+
+### Benefits
+- **Reduced Bundle Size**: Removed 19 unused components (~15-20% reduction in component code)
+- **Easier Maintenance**: Single source of truth for common patterns (headers, stats grids, loading states)
+- **Consistency**: Shared components ensure UI consistency across desktop and mobile
+- **Testability**: Smaller, focused components are easier to test
+- **Readability**: Large components (DetailBottomSheet) split into manageable pieces
+- **Reusability**: Map hooks can be reused for future map interaction features
 

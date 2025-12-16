@@ -1,23 +1,23 @@
 "use client";
 
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { X, Trophy, Map as MapIcon, Heart, Mountain, ChevronRight } from "lucide-react";
+import { Trophy, Map as MapIcon, Heart, Mountain, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useQueryClient } from "@tanstack/react-query";
 import Challenge from "@/typeDefs/Challenge";
 import Peak from "@/typeDefs/Peak";
 import Activity from "@/typeDefs/Activity";
-import { useMapStore } from "@/providers/MapProvider";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import mapboxgl from "mapbox-gl";
-import { setPeaksSearchDisabled } from "@/helpers/peaksSearchState";
-import convertPeaksToGeoJSON from "@/helpers/convertPeaksToGeoJSON";
 import metersToFt from "@/helpers/metersToFt";
 import addChallengeFavorite from "@/actions/challenges/addChallengeFavorite";
 import deleteChallengeFavorite from "@/actions/challenges/deleteChallengeFavorite";
 import useRequireAuth from "@/hooks/useRequireAuth";
+import DetailPanelHeader from "@/components/ui/detail-panel-header";
+import StatsGrid from "@/components/ui/stats-grid";
+import StatCard from "@/components/ui/stat-card";
+import { useChallengeMapEffects } from "@/hooks/use-challenge-map-effects";
 
 interface Props {
     challenge: Challenge;
@@ -29,8 +29,6 @@ interface Props {
 }
 
 const ChallengeDetailContent = ({ challenge, peaks, activityCoords }: Props) => {
-    const map = useMapStore((state) => state.map);
-    const setDisablePeaksSearch = useMapStore((state) => state.setDisablePeaksSearch);
     const router = useRouter();
     const requireAuth = useRequireAuth();
     const queryClient = useQueryClient();
@@ -41,128 +39,14 @@ const ChallengeDetailContent = ({ challenge, peaks, activityCoords }: Props) => 
         setIsFavorited(challenge.is_favorited ?? false);
     }, [challenge.is_favorited]);
 
-    // Calculate bounds of all peaks to fit them on the map
-    const bounds = useMemo(() => {
-        if (!peaks || peaks.length === 0) return null;
-
-        const peakCoords = peaks
-            .filter((p) => p.location_coords)
-            .map((p) => p.location_coords as [number, number]);
-
-        if (peakCoords.length === 0) return null;
-
-        const lngLat = new mapboxgl.LngLatBounds();
-        peakCoords.forEach((coord) => {
-            lngLat.extend(coord);
-        });
-
-        return lngLat;
-    }, [peaks]);
-
-    // Disable peaks search and clear existing peaks when challenge detail opens
-    useEffect(() => {
-        // Set both the module-level flag (immediate, avoids React timing) and store flag
-        setPeaksSearchDisabled(true);
-        setDisablePeaksSearch(true);
-        
-        // Also immediately clear the peaks source to remove any already-loaded peaks
-        if (map) {
-            const peaksSource = map.getSource("peaks") as mapboxgl.GeoJSONSource | undefined;
-            if (peaksSource) {
-                peaksSource.setData({
-                    type: "FeatureCollection",
-                    features: [],
-                });
-            }
-        }
-        
-        return () => {
-            setPeaksSearchDisabled(false);
-            setDisablePeaksSearch(false);
-            
-            // Reset map padding and trigger peaks refresh when panel closes
-            if (map) {
-                // Reset any padding that was applied by fitBounds
-                // This ensures getBounds() returns the full visible area
-                map.setPadding({ top: 0, bottom: 0, left: 0, right: 0 });
-                
-                // Small delay to ensure the disabled flag and padding are updated before the fetch runs
-                setTimeout(() => {
-                    map.fire("moveend");
-                }, 50);
-            }
-        };
-    }, [setDisablePeaksSearch, map]);
-
-    // Fit map to challenge bounds on mount
-    useEffect(() => {
-        if (bounds && map) {
-            map.fitBounds(bounds, {
-                padding: { top: 100, bottom: 100, left: 50, right: 400 },
-                maxZoom: 12,
-            });
-        } else if (challenge.location_coords && map) {
-            map.flyTo({
-                center: challenge.location_coords,
-                zoom: 10,
-                essential: true,
-            });
-        }
-    }, [bounds, challenge.location_coords, map]);
-
-    // Show challenge peaks on the map
-    useEffect(() => {
-        if (!map || !peaks || peaks.length === 0) return;
-
-        const setChallengePeaksOnMap = async () => {
-            // Wait for the source to be available
-            let selectedPeaksSource = map.getSource("selectedPeaks") as mapboxgl.GeoJSONSource | undefined;
-            
-            let attempts = 0;
-            const maxAttempts = 5;
-
-            while (!selectedPeaksSource && attempts < maxAttempts) {
-                attempts++;
-                await new Promise((resolve) => setTimeout(resolve, 300));
-                selectedPeaksSource = map.getSource("selectedPeaks") as mapboxgl.GeoJSONSource | undefined;
-            }
-
-            // Set challenge peaks in the selectedPeaks source
-            if (selectedPeaksSource) {
-                selectedPeaksSource.setData(convertPeaksToGeoJSON(peaks));
-            }
-
-            // Move selectedPeaks layer to the top
-            if (map.getLayer("selectedPeaks")) {
-                map.moveLayer("selectedPeaks");
-            }
-        };
-
-        setChallengePeaksOnMap();
-
-        // Cleanup: clear selected peaks
-        return () => {
-            const selectedPeaksSource = map.getSource("selectedPeaks") as mapboxgl.GeoJSONSource | undefined;
-            if (selectedPeaksSource) {
-                selectedPeaksSource.setData({
-                    type: "FeatureCollection",
-                    features: [],
-                });
-            }
-        };
-    }, [map, peaks]);
+    // Use shared map effects hook
+    const { showOnMap } = useChallengeMapEffects({
+        challenge,
+        peaks,
+    });
 
     const handleClose = () => {
         router.back();
-    };
-
-    const handleShowOnMap = () => {
-        if (bounds && map) {
-            map.fitBounds(bounds, {
-                padding: { top: 100, bottom: 100, left: 50, right: 400 },
-                maxZoom: 12,
-            });
-        }
     };
 
     const handleToggleFavorite = () => {
@@ -207,56 +91,31 @@ const ChallengeDetailContent = ({ challenge, peaks, activityCoords }: Props) => 
         >
             <div className="flex-1 rounded-2xl bg-background/85 backdrop-blur-xl border border-border shadow-xl overflow-hidden flex flex-col">
                 {/* Header */}
-                <div className="p-5 border-b border-border/60 bg-gradient-to-b from-secondary/10 to-transparent relative">
-                    <button
-                        onClick={handleClose}
-                        className="absolute top-4 right-4 p-2 rounded-full hover:bg-white/10 text-muted-foreground hover:text-foreground transition-colors"
-                        aria-label="Close challenge details"
-                        tabIndex={0}
-                    >
-                        <X className="w-4 h-4" />
-                    </button>
-
-                    <div className="flex items-center gap-2 mb-2 text-secondary">
-                        <span className="px-2 py-1 rounded-full border border-border/70 bg-muted/60 text-[11px] font-mono uppercase tracking-[0.18em] flex items-center gap-1">
-                            <Trophy className="w-4 h-4" />
-                            Challenge
-                        </span>
-                    </div>
-
-                    <h1
-                        className="text-2xl md:text-3xl font-bold text-foreground"
-                        style={{ fontFamily: "var(--font-display)" }}
-                    >
-                        {challenge.name}
-                    </h1>
-                    {challenge.region && (
-                        <div className="mt-2 text-sm text-muted-foreground">{challenge.region}</div>
-                    )}
-                </div>
+                <DetailPanelHeader
+                    badge={{ icon: Trophy, label: "Challenge", colorClass: "text-secondary" }}
+                    title={challenge.name}
+                    subtitle={challenge.region}
+                    onClose={handleClose}
+                    gradientColorClass="from-secondary/10"
+                />
 
                 {/* Content */}
                 <div className="flex-1 overflow-y-auto p-6 space-y-6 custom-scrollbar">
                     {/* Stats Grid */}
-                    <div className="grid grid-cols-2 gap-3">
-                        <div className="p-4 rounded-xl bg-card border border-border/70 shadow-sm">
-                            <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">
-                                Total Peaks
-                            </p>
-                            <p className="text-xl font-mono text-foreground">{totalPeaks}</p>
-                        </div>
-                        <div className="p-4 rounded-xl bg-card border border-border/70 shadow-sm">
-                            <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">
-                                Summitted
-                            </p>
-                            <p className="text-xl font-mono text-foreground">
-                                {summittedPeaks}
-                                <span className="text-sm text-muted-foreground ml-1">
-                                    ({progressPercent}%)
-                                </span>
-                            </p>
-                        </div>
-                    </div>
+                    <StatsGrid>
+                        <StatCard label="Total Peaks" value={totalPeaks} />
+                        <StatCard
+                            label="Summitted"
+                            value={
+                                <>
+                                    {summittedPeaks}
+                                    <span className="text-sm text-muted-foreground ml-1">
+                                        ({progressPercent}%)
+                                    </span>
+                                </>
+                            }
+                        />
+                    </StatsGrid>
 
                     {/* Progress Bar */}
                     <div className="space-y-2">
@@ -286,17 +145,13 @@ const ChallengeDetailContent = ({ challenge, peaks, activityCoords }: Props) => 
                             variant={isFavorited ? "outline" : "default"}
                         >
                             <Heart
-                                className={`w-4 h-4 ${
-                                    isFavorited ? "fill-current" : ""
-                                }`}
+                                className={`w-4 h-4 ${isFavorited ? "fill-current" : ""}`}
                             />
-                            {isFavorited
-                                ? "Challenge Accepted"
-                                : "Accept Challenge"}
+                            {isFavorited ? "Challenge Accepted" : "Accept Challenge"}
                         </Button>
                         <Button
                             variant="outline"
-                            onClick={handleShowOnMap}
+                            onClick={showOnMap}
                             className="w-full gap-2 border-secondary/20 hover:bg-secondary/10 hover:text-secondary"
                         >
                             <MapIcon className="w-4 h-4" />
@@ -347,4 +202,3 @@ const ChallengeDetailContent = ({ challenge, peaks, activityCoords }: Props) => 
 };
 
 export default ChallengeDetailContent;
-

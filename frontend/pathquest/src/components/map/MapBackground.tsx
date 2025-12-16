@@ -251,34 +251,8 @@ const MapBackground = () => {
                 });
             }
 
-            // Selected Peaks Source (for challenge detail, peak detail - displays with larger icons)
-            if (!newMap.getSource("selectedPeaks")) {
-                newMap.addSource("selectedPeaks", {
-                    type: "geojson",
-                    data: {
-                        type: "FeatureCollection",
-                        features: []
-                    }
-                });
-            }
-
-            // Selected Peaks Layer (larger markers for highlighted peaks)
-            if (!newMap.getLayer("selectedPeaks")) {
-                newMap.addLayer({
-                    id: "selectedPeaks",
-                    type: "circle",
-                    source: "selectedPeaks",
-                    paint: {
-                        "circle-color": "#4d7a57",
-                        "circle-radius": 10,
-                        "circle-stroke-width": 3,
-                        "circle-stroke-color": "#e8dfc9",
-                        "circle-opacity": 0.95
-                    }
-                });
-            }
-
             // Activities Source (for GPX lines from user activities)
+            // Added FIRST so it renders below peak markers
             if (!newMap.getSource("activities")) {
                 newMap.addSource("activities", {
                     type: "geojson",
@@ -330,6 +304,48 @@ const MapBackground = () => {
                         "circle-stroke-width": 2,
                         "circle-stroke-color": "#ffffff",
                         "circle-opacity": 0.9
+                    }
+                });
+            }
+
+            // Selected Peaks Source (for challenge detail, peak detail, activity detail - displays with larger icons)
+            // Added AFTER activities so peaks render on top of GPX tracks
+            if (!newMap.getSource("selectedPeaks")) {
+                newMap.addSource("selectedPeaks", {
+                    type: "geojson",
+                    data: {
+                        type: "FeatureCollection",
+                        features: []
+                    },
+                    // promoteId allows setFeatureState to work with string IDs from feature properties
+                    promoteId: "id"
+                });
+            }
+
+            // Selected Peaks Layer (larger markers for highlighted peaks)
+            // Uses feature-state for hover highlighting with amber accent color
+            if (!newMap.getLayer("selectedPeaks")) {
+                newMap.addLayer({
+                    id: "selectedPeaks",
+                    type: "circle",
+                    source: "selectedPeaks",
+                    paint: {
+                        // Conditional color: amber accent (#d66ba0) when hovered, muted green (#4d7a57) default
+                        "circle-color": [
+                            "case",
+                            ["boolean", ["feature-state", "hover"], false],
+                            "#d66ba0", // Amber accent color (oklch(0.6733 0.1597 329.57) converted to hex)
+                            "#4d7a57"  // Default muted green
+                        ],
+                        "circle-radius": [
+                            "case",
+                            ["boolean", ["feature-state", "hover"], false],
+                            12, // Slightly larger when hovered
+                            10  // Default size
+                        ],
+                        "circle-stroke-width": 3,
+                        "circle-stroke-color": "#e8dfc9",
+                        "circle-opacity": 0.95
                     }
                 });
             }

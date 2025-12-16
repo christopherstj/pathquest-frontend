@@ -29,6 +29,7 @@ export type MapState = {
     isZoomedOutTooFar: boolean;
     selectedPeakUserData: SelectedPeakUserData;
     selectedPeakCommunityData: SelectedPeakCommunityData;
+    hoveredPeakId: string | null;
 };
 
 export type MapActions = {
@@ -41,6 +42,7 @@ export type MapActions = {
     setIsZoomedOutTooFar: (isZoomedOut: boolean) => void;
     setSelectedPeakUserData: (data: SelectedPeakUserData) => void;
     setSelectedPeakCommunityData: (data: SelectedPeakCommunityData) => void;
+    setHoveredPeakId: (peakId: string | null) => void;
 };
 
 export type MapStore = MapState & MapActions;
@@ -56,6 +58,7 @@ export const createMapStore = (
         isZoomedOutTooFar: false,
         selectedPeakUserData: null,
         selectedPeakCommunityData: null,
+        hoveredPeakId: null,
     }
 ) => {
     return createStore<MapStore>((set) => ({
@@ -69,5 +72,6 @@ export const createMapStore = (
         setIsZoomedOutTooFar: (isZoomedOutTooFar) => set({ isZoomedOutTooFar }),
         setSelectedPeakUserData: (selectedPeakUserData) => set({ selectedPeakUserData }),
         setSelectedPeakCommunityData: (selectedPeakCommunityData) => set({ selectedPeakCommunityData }),
+        setHoveredPeakId: (hoveredPeakId) => set({ hoveredPeakId }),
     }));
 };

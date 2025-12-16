@@ -5,6 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { AnimatePresence } from "framer-motion";
 import PeakDetailPanel from "./PeakDetailPanel";
 import ChallengeDetailPanel from "./ChallengeDetailPanel";
+import ActivityDetailPanel from "./ActivityDetailPanel";
 import DetailBottomSheet from "./DetailBottomSheet";
 import DiscoveryDrawer from "./DiscoveryDrawer";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -34,9 +35,11 @@ const UrlOverlayManagerContent = () => {
     // Parse pathname to determine what overlay to show
     const peakMatch = pathname.match(/^\/peaks\/([^\/]+)$/);
     const challengeMatch = pathname.match(/^\/challenges\/([^\/]+)$/);
+    const activityMatch = pathname.match(/^\/activities\/([^\/]+)$/);
 
     const peakId = peakMatch?.[1] ?? null;
     const challengeId = challengeMatch?.[1] ?? null;
+    const activityId = activityMatch?.[1] ?? null;
 
     // Keep router ref updated to avoid stale closure issues
     useEffect(() => {
@@ -65,6 +68,7 @@ const UrlOverlayManagerContent = () => {
             <DetailBottomSheet
                 peakId={peakId}
                 challengeId={challengeId ? parseInt(challengeId, 10) : null}
+                activityId={activityId}
                 onClose={handleClose}
             />
         );
@@ -86,6 +90,13 @@ const UrlOverlayManagerContent = () => {
                     <ChallengeDetailPanel 
                         key={`challenge-${challengeId}`} 
                         challengeId={parseInt(challengeId, 10)} 
+                        onClose={handleClose} 
+                    />
+                )}
+                {activityId && (
+                    <ActivityDetailPanel 
+                        key={`activity-${activityId}`} 
+                        activityId={activityId} 
                         onClose={handleClose} 
                     />
                 )}
