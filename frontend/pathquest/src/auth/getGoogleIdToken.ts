@@ -2,13 +2,24 @@ import { getVercelOidcToken } from "@vercel/oidc";
 import { ExternalAccountClient } from "google-auth-library";
 import jwt from "jsonwebtoken";
 
-const GCP_PROJECT_NUMBER = process.env.GCP_PROJECT_NUMBER;
-const GCP_SERVICE_ACCOUNT_EMAIL = process.env.GCP_SERVICE_ACCOUNT_EMAIL;
-const GCP_WORKLOAD_IDENTITY_POOL_ID = process.env.GCP_WORKLOAD_IDENTITY_POOL_ID;
-const GCP_WORKLOAD_IDENTITY_POOL_PROVIDER_ID =
-    process.env.GCP_WORKLOAD_IDENTITY_POOL_PROVIDER_ID;
+// In-memory cache instead of process.env (which is read-only at runtime)
+let cachedToken: string | null = null;
+let tokenExpiry: number = 0;
 
 export const getNewToken = async () => {
+    // Read env vars inside the function, not at module level
+    // This ensures they're available in Next.js 16 server contexts
+    const GCP_PROJECT_NUMBER = process.env.GCP_PROJECT_NUMBER;
+    const GCP_SERVICE_ACCOUNT_EMAIL = process.env.GCP_SERVICE_ACCOUNT_EMAIL;
+    const GCP_WORKLOAD_IDENTITY_POOL_ID = process.env.GCP_WORKLOAD_IDENTITY_POOL_ID;
+    const GCP_WORKLOAD_IDENTITY_POOL_PROVIDER_ID =
+        process.env.GCP_WORKLOAD_IDENTITY_POOL_PROVIDER_ID;
+
+    if (!GCP_PROJECT_NUMBER || !GCP_SERVICE_ACCOUNT_EMAIL || !GCP_WORKLOAD_IDENTITY_POOL_ID || !GCP_WORKLOAD_IDENTITY_POOL_PROVIDER_ID) {
+        console.error("Missing GCP environment variables for Google ID token generation");
+        return null;
+    }
+
     const authClient = ExternalAccountClient.fromJSON({
         type: "external_account",
         audience: `//iam.googleapis.com/projects/${GCP_PROJECT_NUMBER}/locations/global/workloadIdentityPools/${GCP_WORKLOAD_IDENTITY_POOL_ID}/providers/${GCP_WORKLOAD_IDENTITY_POOL_PROVIDER_ID}`,
@@ -50,34 +61,27 @@ const getGoogleIdToken = async () => {
         return "";
     }
 
-    const existingToken = process.env.GOOGLE_ID_TOKEN ?? "";
-
-    if (existingToken !== "") {
-        const decodedToken = jwt.decode(existingToken) as { exp: number };
-
-        if (decodedToken.exp * 1000 >= Date.now()) {
-            console.log("returning existing token");
-            return existingToken;
-        } else {
-            const newToken = await getNewToken();
-
-            if (newToken) {
-                process.env.GOOGLE_ID_TOKEN = newToken;
-                return newToken;
-            } else {
-                return null;
-            }
-        }
-    } else {
-        const newToken = await getNewToken();
-
-        if (newToken) {
-            process.env.GOOGLE_ID_TOKEN = newToken;
-            return newToken;
-        } else {
-            return null;
-        }
+    // Check cached token
+    if (cachedToken && tokenExpiry > Date.now()) {
+        console.log("returning cached token");
+        return cachedToken;
     }
+
+    // Get new token
+    const newToken = await getNewToken();
+
+    if (newToken) {
+        // Decode and cache with expiry
+        const decodedToken = jwt.decode(newToken) as { exp: number } | null;
+        if (decodedToken?.exp) {
+            cachedToken = newToken;
+            // Set expiry to 5 minutes before actual expiry for safety
+            tokenExpiry = decodedToken.exp * 1000 - 5 * 60 * 1000;
+        }
+        return newToken;
+    }
+
+    return null;
 };
 
 export default getGoogleIdToken;

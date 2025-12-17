@@ -5,6 +5,7 @@ import { useSession } from "next-auth/react";
 import { signOut } from "next-auth/react";
 import mapboxgl from "mapbox-gl";
 import "mapbox-gl/dist/mapbox-gl.css";
+import { getMapboxToken } from "@/lib/map/getMapboxToken";
 import {
     Settings,
     MapPin,
@@ -157,7 +158,7 @@ const UserManagementModal = () => {
 
             setIsSearching(true);
             try {
-                const token = process.env.NEXT_PUBLIC_MAPBOX_TOKEN;
+                const token = getMapboxToken();
                 const response = await fetch(
                     `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(searchQuery)}.json?` +
                     `access_token=${token}&types=place,region,country&limit=5&language=en`
@@ -272,7 +273,7 @@ const UserManagementModal = () => {
         if (!isOpen || !mapContainer.current || isLoading) return;
 
         // Set Mapbox token
-        mapboxgl.accessToken = process.env.NEXT_PUBLIC_MAPBOX_TOKEN ?? "";
+        mapboxgl.accessToken = getMapboxToken();
 
         // Only create map if it doesn't exist
         if (mapInstance.current) return;

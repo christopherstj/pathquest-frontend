@@ -10,6 +10,7 @@ import { searchChallengesClient } from "@/lib/client/searchChallengesClient";
 import { useIsMobile } from "@/hooks/use-mobile";
 import getMapStateFromURL from "@/helpers/getMapStateFromURL";
 import updateMapURL from "@/helpers/updateMapURL";
+import { getMapboxToken } from "@/lib/map/getMapboxToken";
 
 // Debounce utility function
 const debounce = <T extends (...args: any[]) => any>(
@@ -136,7 +137,7 @@ const MapBackground = () => {
             setIsSatellite(true);
         }
 
-        mapboxgl.accessToken = process.env.NEXT_PUBLIC_MAPBOX_TOKEN ?? "";
+        mapboxgl.accessToken = getMapboxToken();
         // Ensure container is empty before Mapbox initializes
         mapContainer.current.replaceChildren();
 

@@ -13,6 +13,7 @@ import { searchPeaksClient } from "@/lib/client/searchPeaksClient";
 import { searchChallengesClient } from "@/lib/client/searchChallengesClient";
 import { expandSearchQuery, extractStateFromQuery } from "@/helpers/stateAbbreviations";
 import metersToFt from "@/helpers/metersToFt";
+import { getMapboxToken } from "@/lib/map/getMapboxToken";
 
 interface SearchResult {
     id: string;
@@ -106,7 +107,7 @@ const Omnibar = () => {
                 }),
                 // Places - include region (states) and poi (national parks, forests, etc.)
                 fetch(
-                    `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(primarySearch)}.json?access_token=${process.env.NEXT_PUBLIC_MAPBOX_TOKEN}&types=region,place,poi,locality&country=us`
+                    `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(primarySearch)}.json?access_token=${getMapboxToken()}&types=region,place,poi,locality&country=us`
                 ).then(res => res.json()),
             ];
 

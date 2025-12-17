@@ -1,4 +1,5 @@
 import mapboxgl from "mapbox-gl";
+import { getMapboxToken } from "./getMapboxToken";
 
 const initiateMap = (
     mapContainerRef: React.MutableRefObject<any>,
@@ -9,7 +10,7 @@ const initiateMap = (
     bounds: mapboxgl.LngLatBoundsLike | null = null,
     addMarkers?: (map: mapboxgl.Map) => void
 ) => {
-    mapboxgl.accessToken = process.env.NEXT_PUBLIC_MAPBOX_TOKEN ?? "";
+    mapboxgl.accessToken = getMapboxToken();
     mapRef.current = new mapboxgl.Map({
         style: isSatellite
             ? "mapbox://styles/mapbox/standard-satellite"
