@@ -4,7 +4,7 @@ import Challenge from "@/typeDefs/Challenge";
 
 const backendUrl = getBackendUrl();
 
-const getAllChallengeIds = async (): Promise<{ id: number }[]> => {
+const getAllChallengeIds = async (): Promise<{ id: string }[]> => {
     // Get all challenges (public endpoint)
     const apiRes = await fetch(`${backendUrl}/challenges?perPage=1000`, {
         method: "GET",
