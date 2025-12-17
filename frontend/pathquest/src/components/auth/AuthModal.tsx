@@ -23,7 +23,7 @@ const AuthModal = () => {
     const isOpen = useAuthModalStore((state) => state.isOpen);
     const mode = useAuthModalStore((state) => state.mode);
     const closeModal = useAuthModalStore((state) => state.closeModal);
-    const setMode = useAuthModalStore((state) => state.setMode);
+    const openEmailModal = useAuthModalStore((state) => state.openEmailModal);
     const executeRedirectAction = useAuthModalStore(
         (state) => state.executeRedirectAction
     );
@@ -32,12 +32,12 @@ const AuthModal = () => {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
-    // Check if user is logged in but missing email - switch to email mode
+    // Check if user is logged in but missing email - open email collection modal
     useEffect(() => {
         if (status === "authenticated" && session?.user && !session.user.email) {
-            setMode("email");
+            openEmailModal();
         }
-    }, [status, session, setMode]);
+    }, [status, session, openEmailModal]);
 
     // If user completes auth (has email), close modal and execute redirect
     useEffect(() => {

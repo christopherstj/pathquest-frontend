@@ -1,22 +1,22 @@
 "use server";
-import getGoogleIdToken from "@/auth/getGoogleIdToken";
-import { useAuth } from "@/auth/useAuth";
+import getAuthHeaders from "@/helpers/getAuthHeaders";
 import getBackendUrl from "@/helpers/getBackendUrl";
 
 const backendUrl = getBackendUrl();
 
 const deleteUser = async () => {
-    const session = await useAuth();
+    const { headers, session } = await getAuthHeaders();
 
+    // @ts-expect-error - id is added in session callback
     const id = session?.user?.id;
 
-    const idToken = await getGoogleIdToken();
+    if (!id) {
+        return false;
+    }
 
     const response = await fetch(`${backendUrl}/users/${id}`, {
         method: "DELETE",
-        headers: {
-            Authorization: `Bearer ${idToken}`,
-        },
+        headers,
     });
 
     if (!response.ok) {

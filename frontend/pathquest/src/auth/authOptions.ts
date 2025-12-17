@@ -31,7 +31,11 @@ export const authOptions: AuthOptions = {
                 provider_account_id: account?.providerAccountId,
                 expires_at: account?.expires_at,
             };
-            await createUserIfNotExists(user, stravaCreds);
+            const result = await createUserIfNotExists(user, stravaCreds);
+            if (!result.success) {
+                console.error("Failed to create user:", result.error);
+                return false;
+            }
             return true;
         },
         async jwt({ token, user, trigger }) {
