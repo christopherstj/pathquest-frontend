@@ -15,21 +15,10 @@ const getAuthHeaders = async (): Promise<{
     headers: Record<string, string>;
     session: Awaited<ReturnType<typeof useAuth>>;
 }> => {
-    // Try to get session, but don't fail during static generation (cookies/headers not available)
-    // During static generation, getServerSession() will throw DYNAMIC_SERVER_USAGE
-    // We catch it and return null, allowing static pages to be generated without user context
-    let session = null;
-    try {
-        session = await useAuth();
-    } catch (error: any) {
-        // During static generation, useAuth() throws DYNAMIC_SERVER_USAGE - that's expected
-        // We'll just use public data without user headers
-        if (error?.digest !== "DYNAMIC_SERVER_USAGE") {
-            // Only log if it's not the expected static generation error
-            console.warn("[getAuthHeaders] Failed to get session:", error);
-        }
-        session = null;
-    }
+    // Get session for user identity headers
+    // NOTE: This function should only be called at runtime, NOT during static generation
+    // For static pages (ISR), use the "Public" variants of actions instead
+    const session = await useAuth();
     // Always generate token for Google IAM authentication (required at infrastructure level)
     // User identity is passed via x-user-* headers for application-level auth
     const token = await getGoogleIdToken().catch((err) => {

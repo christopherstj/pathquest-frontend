@@ -10,6 +10,13 @@ import Summit from "@/typeDefs/Summit";
 
 const backendUrl = getBackendUrl();
 
+/**
+ * Gets peak details with user-specific data (authenticated).
+ * 
+ * NOTE: This function uses useAuth() which accesses cookies/headers.
+ * Do NOT use this during static generation (ISR) - use getPeakDetailsPublic() instead.
+ * This is for runtime use in overlays and client components.
+ */
 const getPeakDetails = async (
     peakId: string
 ): Promise<
@@ -20,21 +27,8 @@ const getPeakDetails = async (
         activities?: Activity[];
     }>
 > => {
-    // Try to get session, but don't fail during static generation (cookies/headers not available)
-    // During static generation, getServerSession() will throw DYNAMIC_SERVER_USAGE
-    // We catch it and return null, allowing static pages to be generated without user context
-    let session = null;
-    try {
-        session = await useAuth();
-    } catch (error: any) {
-        // During static generation, useAuth() throws DYNAMIC_SERVER_USAGE - that's expected
-        // We'll just use public data without user headers
-        if (error?.digest !== "DYNAMIC_SERVER_USAGE") {
-            // Only log if it's not the expected static generation error
-            console.warn("[getPeakDetails] Failed to get session:", error);
-        }
-        session = null;
-    }
+    // Get session for user-specific data (activities, favorites, etc.)
+    const session = await useAuth();
     // Always generate token for Google IAM authentication (required at infrastructure level)
     const token = await getGoogleIdToken().catch(() => null);
 

@@ -1,5 +1,5 @@
 import getTopPeaks from "@/actions/peaks/getTopPeaks";
-import getPeakDetails from "@/actions/peaks/getPeakDetails";
+import getPeakDetailsPublic from "@/actions/peaks/getPeakDetailsPublic";
 import { Metadata } from "next";
 import { notFound } from "next/navigation";
 import metersToFt from "@/helpers/metersToFt";
@@ -25,7 +25,7 @@ type Props = {
 // Generate dynamic metadata for SEO
 export const generateMetadata = async ({ params }: Props): Promise<Metadata> => {
     const { id } = await params;
-    const result = await getPeakDetails(id);
+    const result = await getPeakDetailsPublic(id);
 
     if (!result.success || !result.data?.peak) {
         return {
@@ -74,7 +74,7 @@ export const generateMetadata = async ({ params }: Props): Promise<Metadata> => 
  */
 const PeakPage = async ({ params }: Props) => {
     const { id } = await params;
-    const result = await getPeakDetails(id);
+    const result = await getPeakDetailsPublic(id);
 
     if (!result.success || !result.data?.peak) {
         notFound();
