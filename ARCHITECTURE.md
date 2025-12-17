@@ -130,7 +130,8 @@ src/app/
 ##### Dashboard (`api/dashboard/`)
 - `favorite-challenges/route.ts` - Fetches user's favorite challenges (in-progress/not-started only)
 - `recent-summits/route.ts` - Fetches user's recent summits
-- Both routes require authentication and use `getGoogleIdToken` for backend auth
+- `queue-status/route.ts` - Fetches count of activities waiting to be processed from event queue
+- All routes require authentication and use `getGoogleIdToken` for backend auth
 
 ### Actions (`src/actions/`)
 Server actions for data fetching and mutations. Organized by domain. Backend calls now target the `/api` prefix via `getBackendUrl()`; private endpoints include a bearer from `getGoogleIdToken`, while public reads omit the header.
@@ -226,7 +227,10 @@ Server actions for data fetching and mutations. Organized by domain. Backend cal
 - `ChallengeDetailPanel.tsx` - Desktop right panel for challenge details. Uses shared components and useChallengeMapEffects hook. Shows challenge progress for authenticated users. Peaks list is displayed in DiscoveryDrawer (left pane) instead of this panel. Shares challenge data with mapStore via `selectedChallengeData`.
 - `ChallengeDetailContent.tsx` - Challenge detail content with SSR data (used by static pages). Uses shared UI components.
 - `DashboardPanel.tsx` - User dashboard panel (authenticated only). Wrapper component that renders DashboardContent.
-- `DashboardContent.tsx` - Dashboard content component. Shows recent summits (fetched from `/api/dashboard/recent-summits`), favorite challenges with progress bars (fetched from `/api/dashboard/favorite-challenges`), and activity sync status.
+- `DashboardContent.tsx` - Dashboard content component. Shows:
+  - Queue status indicator (when activities are processing) - polls `/api/dashboard/queue-status` every 10s when items in queue
+  - Recent summits (fetched from `/api/dashboard/recent-summits`)
+  - Favorite challenges with progress bars (fetched from `/api/dashboard/favorite-challenges`)
 - `AddManualSummitModal.tsx` - Modal for logging manual peak summits. Supports two flows: peak-first (from peak detail) and activity-first (from activity detail with peak search along route). Triggered by ManualSummitProvider.
 - `SummitReportModal.tsx` - Modal for editing summit experiences/reports (triggered by SummitReportProvider)
 - `UserManagementModal.tsx` - Modal for account settings. Features:

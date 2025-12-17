@@ -8,6 +8,7 @@ import {
     MapPin,
     ChevronRight,
     PenLine,
+    RefreshCw,
 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
@@ -43,6 +44,18 @@ const fetchFavoriteChallenges = async (): Promise<ChallengeProgress[]> => {
     return res.json();
 };
 
+// Fetch queue status (activities waiting to be processed)
+const fetchQueueStatus = async (): Promise<{ numProcessing: number }> => {
+    const res = await fetch("/api/dashboard/queue-status", {
+        credentials: "include",
+    });
+    if (!res.ok) {
+        console.error("Failed to fetch queue status:", res.status);
+        return { numProcessing: 0 };
+    }
+    return res.json();
+};
+
 type DashboardContentProps = {
     isActive?: boolean;
     showHeader?: boolean;
@@ -66,6 +79,19 @@ const DashboardContent = ({ isActive = true, showHeader = false }: DashboardCont
         queryFn: fetchFavoriteChallenges,
         enabled: shouldFetch,
         staleTime: 30000,
+    });
+
+    // Queue status with polling - refetch every 10 seconds when there are items processing
+    const { data: queueStatus } = useQuery({
+        queryKey: ["queueStatus"],
+        queryFn: fetchQueueStatus,
+        enabled: shouldFetch,
+        staleTime: 5000,
+        refetchInterval: (query) => {
+            // Poll every 10 seconds if there are activities processing
+            const numProcessing = query.state.data?.numProcessing ?? 0;
+            return numProcessing > 0 ? 10000 : 30000;
+        },
     });
 
     // Show loading state while auth is loading
@@ -110,6 +136,11 @@ const DashboardContent = ({ isActive = true, showHeader = false }: DashboardCont
                         </p>
                     </div>
                 </div>
+            )}
+
+            {/* Queue Status Indicator */}
+            {queueStatus && queueStatus.numProcessing > 0 && (
+                <QueueStatusIndicator count={queueStatus.numProcessing} />
             )}
 
             {/* Recent Summits */}
@@ -322,6 +353,28 @@ const ChallengeProgressSection = ({
                     </p>
                 </div>
             )}
+        </div>
+    );
+};
+
+type QueueStatusIndicatorProps = {
+    count: number;
+};
+
+const QueueStatusIndicator = ({ count }: QueueStatusIndicatorProps) => {
+    return (
+        <div className="flex items-center gap-3 p-3 rounded-lg bg-primary/5 border border-primary/20">
+            <div className="flex items-center justify-center w-8 h-8 rounded-full bg-primary/10">
+                <RefreshCw className="w-4 h-4 text-primary animate-spin" style={{ animationDuration: '3s' }} />
+            </div>
+            <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-foreground">
+                    Processing activities
+                </p>
+                <p className="text-xs text-muted-foreground">
+                    {count} {count === 1 ? 'activity' : 'activities'} in queue
+                </p>
+            </div>
         </div>
     );
 };
