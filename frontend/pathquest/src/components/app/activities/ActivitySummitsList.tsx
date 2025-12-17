@@ -11,9 +11,11 @@ interface ActivitySummitsListProps {
     summits: SummitWithPeak[];
     activityId: string;
     onSummitHover?: (peakId: string | null) => void;
+    isOwner?: boolean;
+    onSummitDeleted?: () => void;
 }
 
-const ActivitySummitsList = ({ summits, activityId, onSummitHover }: ActivitySummitsListProps) => {
+const ActivitySummitsList = ({ summits, activityId, onSummitHover, isOwner = false, onSummitDeleted }: ActivitySummitsListProps) => {
     const openManualSummit = useManualSummitStore((state) => state.openManualSummit);
 
     if (summits.length === 0) {
@@ -26,22 +28,24 @@ const ActivitySummitsList = ({ summits, activityId, onSummitHover }: ActivitySum
                 <p className="text-xs text-muted-foreground mb-4">
                     This activity didn&apos;t pass near any cataloged peaks.
                 </p>
-                <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
-                        openManualSummit({
-                            peakId: "",
-                            peakName: "",
-                            peakCoords: [0, 0],
-                            preselectedActivityId: activityId,
-                        });
-                    }}
-                    className="gap-2"
-                >
-                    <Plus className="w-4 h-4" />
-                    Add Manual Summit
-                </Button>
+                {isOwner && (
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                            openManualSummit({
+                                peakId: "",
+                                peakName: "",
+                                peakCoords: [0, 0],
+                                preselectedActivityId: activityId,
+                            });
+                        }}
+                        className="gap-2"
+                    >
+                        <Plus className="w-4 h-4" />
+                        Add Manual Summit
+                    </Button>
+                )}
             </div>
         );
     }
@@ -65,27 +69,31 @@ const ActivitySummitsList = ({ summits, activityId, onSummitHover }: ActivitySum
                         showPeakHeader={true}
                         onHoverStart={onSummitHover ? (peakId) => onSummitHover(peakId) : undefined}
                         onHoverEnd={onSummitHover ? () => onSummitHover(null) : undefined}
+                        isOwner={isOwner}
+                        onDeleted={onSummitDeleted}
                     />
                 ))}
             </div>
 
-            {/* Add Manual Summit Button */}
-            <Button
-                variant="outline"
-                size="sm"
-                onClick={() => {
-                    openManualSummit({
-                        peakId: "",
-                        peakName: "",
-                        peakCoords: [0, 0],
-                        preselectedActivityId: activityId,
-                    });
-                }}
-                className="w-full gap-2"
-            >
-                <Plus className="w-4 h-4" />
-                Log Another Summit
-            </Button>
+            {/* Add Manual Summit Button - only shown for activity owner */}
+            {isOwner && (
+                <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                        openManualSummit({
+                            peakId: "",
+                            peakName: "",
+                            peakCoords: [0, 0],
+                            preselectedActivityId: activityId,
+                        });
+                    }}
+                    className="w-full gap-2"
+                >
+                    <Plus className="w-4 h-4" />
+                    Log Another Summit
+                </Button>
+            )}
         </div>
     );
 };

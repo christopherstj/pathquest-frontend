@@ -80,6 +80,7 @@ const DiscoveryDrawer = () => {
     });
 
     const activitySummits = activityData?.summits ?? [];
+    const isActivityOwner = activityData?.isOwner ?? false;
 
     // Keep router ref updated to avoid stale closure issues
     useEffect(() => {
@@ -514,6 +515,7 @@ const DiscoveryDrawer = () => {
                                         summits={activitySummits}
                                         activityId={activityId}
                                         onSummitHover={setHoveredPeakId}
+                                        isOwner={isActivityOwner}
                                     />
                                 </motion.div>
                             ) : desktopActiveTab === "myActivity" && showMyActivityTab ? (

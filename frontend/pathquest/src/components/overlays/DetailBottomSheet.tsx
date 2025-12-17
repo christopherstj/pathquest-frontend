@@ -161,6 +161,7 @@ const DetailBottomSheet = ({ peakId, challengeId, activityId, userId, onClose }:
 
     const activity = activityData?.activity ?? null;
     const activitySummits = activityData?.summits ?? [];
+    const isActivityOwner = activityData?.isOwner ?? false;
     const activityPeakSummits = useMemo(() => convertSummitsToPeaks(activitySummits), [activitySummits]);
     const [activityHoverCoords, setActivityHoverCoords] = useState<[number, number] | null>(null);
 
@@ -923,6 +924,7 @@ const DetailBottomSheet = ({ peakId, challengeId, activityId, userId, onClose }:
                                     summits={activitySummits}
                                     activityId={activityId}
                                     onSummitHover={setHoveredPeakId}
+                                    isOwner={isActivityOwner}
                                 />
                             </motion.div>
                         ) : activeTab === "analytics" && activityId && activity ? (

@@ -267,14 +267,15 @@ const ElevationChart = ({
                         {summitMarkers.map((marker, i) => (
                             <g key={i} transform={`translate(${marker.x}, ${marker.y})`}>
                                 <circle
-                                    r={8}
-                                    fill="hsl(var(--primary))"
+                                    r={7}
+                                    fill="hsl(var(--summited))"
                                     stroke="hsl(var(--background))"
                                     strokeWidth={2}
                                 />
-                                <g transform="translate(-6, -6)">
-                                    <Mountain className="w-3 h-3 text-primary-foreground" />
-                                </g>
+                                {/* Center the 8px icon (w-2 h-2) in the 14px diameter circle */}
+                                <foreignObject x={-4} y={-4} width={8} height={8}>
+                                    <Mountain className="w-2 h-2 text-white" />
+                                </foreignObject>
                             </g>
                         ))}
                     </Group>

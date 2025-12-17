@@ -12,6 +12,7 @@ const getActivityDetails = async (
 ): Promise<{
     activity: Activity;
     summits: SummitWithPeak[];
+    isOwner: boolean;
 } | null> => {
     const session = await useAuth();
     // Always generate token for Google IAM authentication (required at infrastructure level)
@@ -38,7 +39,13 @@ const getActivityDetails = async (
 
     const data = await res.json();
 
-    return data;
+    // Determine if current user is the owner of this activity
+    const isOwner = Boolean(userId && data.activity?.user_id === userId);
+
+    return {
+        ...data,
+        isOwner,
+    };
 };
 
 export default getActivityDetails;
