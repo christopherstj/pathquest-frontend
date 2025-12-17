@@ -2,7 +2,7 @@
 
 import React, { useEffect } from "react";
 import { motion } from "framer-motion";
-import { Mountain, Navigation, ChevronRight, Plus } from "lucide-react";
+import { Mountain, Navigation, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Peak from "@/typeDefs/Peak";
 import Summit from "@/typeDefs/Summit";
@@ -10,11 +10,12 @@ import Challenge from "@/typeDefs/Challenge";
 import Activity from "@/typeDefs/Activity";
 import { useMapStore } from "@/providers/MapProvider";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
 import useRequireAuth, { useIsAuthenticated } from "@/hooks/useRequireAuth";
 import DetailPanelHeader from "@/components/ui/detail-panel-header";
 import StatsGrid from "@/components/ui/stats-grid";
 import StatCard from "@/components/ui/stat-card";
+import DiscoveryChallengesList from "@/components/discovery/discovery-challenges-list";
+import ChallengeProgress from "@/typeDefs/ChallengeProgress";
 
 interface Props {
     peak: Peak;
@@ -28,6 +29,20 @@ const PeakDetailContent = ({ peak, publicSummits, challenges, activities }: Prop
     const router = useRouter();
     const { isAuthenticated } = useIsAuthenticated();
     const requireAuth = useRequireAuth();
+
+    // Convert Challenge[] to ChallengeProgress[] for DiscoveryChallengesList
+    // The API returns num_completed for logged-in users, but it's not in the Challenge type
+    const challengesWithProgress: ChallengeProgress[] = challenges
+        ? challenges.map((challenge) => ({
+              ...challenge,
+              total: challenge.num_peaks || 0,
+              completed: (challenge as any).num_completed || 0,
+          }))
+        : [];
+
+    const handleChallengeClick = (id: string) => {
+        router.push(`/challenges/${id}`);
+    };
 
     // Fly to peak on mount
     useEffect(() => {
@@ -114,25 +129,11 @@ const PeakDetailContent = ({ peak, publicSummits, challenges, activities }: Prop
 
                     {/* Challenges Section */}
                     {challenges && challenges.length > 0 && (
-                        <div className="space-y-3">
-                            <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
-                                Part of {challenges.length} Challenge{challenges.length !== 1 ? "s" : ""}
-                            </h3>
-                            <div className="space-y-2">
-                                {challenges.slice(0, 3).map((challenge) => (
-                                    <Link
-                                        key={challenge.id}
-                                        href={`/challenges/${challenge.id}`}
-                                        className="flex items-center justify-between p-3 rounded-lg bg-card border border-border/70 hover:bg-card/80 transition-colors group"
-                                    >
-                                        <span className="text-sm font-medium text-foreground">
-                                            {challenge.name}
-                                        </span>
-                                        <ChevronRight className="w-4 h-4 text-muted-foreground group-hover:text-foreground transition-colors" />
-                                    </Link>
-                                ))}
-                            </div>
-                        </div>
+                        <DiscoveryChallengesList
+                            challenges={challengesWithProgress}
+                            onChallengeClick={handleChallengeClick}
+                            title={`Part of ${challenges.length} Challenge${challenges.length !== 1 ? "s" : ""}`}
+                        />
                     )}
 
                     {/* Recent Summits */}

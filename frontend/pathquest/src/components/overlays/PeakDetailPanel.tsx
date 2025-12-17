@@ -6,7 +6,6 @@ import {
     Mountain,
     CheckCircle,
     Navigation,
-    ChevronRight,
     LogIn,
     Plus,
 } from "lucide-react";
@@ -14,7 +13,6 @@ import { Button } from "@/components/ui/button";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import getPeakDetails from "@/actions/peaks/getPeakDetails";
 import { useMapStore } from "@/providers/MapProvider";
-import Link from "next/link";
 import CurrentConditions from "../app/peaks/CurrentConditions";
 import metersToFt from "@/helpers/metersToFt";
 import useRequireAuth, { useIsAuthenticated } from "@/hooks/useRequireAuth";
@@ -23,6 +21,9 @@ import StatsGrid from "@/components/ui/stats-grid";
 import StatCard from "@/components/ui/stat-card";
 import DetailLoadingState from "@/components/ui/detail-loading-state";
 import { usePeakMapEffects } from "@/hooks/use-peak-map-effects";
+import DiscoveryChallengesList from "@/components/discovery/discovery-challenges-list";
+import ChallengeProgress from "@/typeDefs/ChallengeProgress";
+import { useRouter } from "next/navigation";
 
 interface Props {
     peakId: string;
@@ -31,6 +32,7 @@ interface Props {
 
 const PeakDetailPanel = ({ peakId, onClose }: Props) => {
     const map = useMapStore((state) => state.map);
+    const router = useRouter();
     const setSelectedPeakUserData = useMapStore(
         (state) => state.setSelectedPeakUserData
     );
@@ -54,6 +56,20 @@ const PeakDetailPanel = ({ peakId, onClose }: Props) => {
     const publicSummits = data?.success ? data.data?.publicSummits : null;
     const activities = data?.success ? data.data?.activities : null;
     const userSummits = peak?.summits ?? 0;
+
+    // Convert Challenge[] to ChallengeProgress[] for DiscoveryChallengesList
+    // The API returns num_completed for logged-in users, but it's not in the Challenge type
+    const challengesWithProgress: ChallengeProgress[] = challenges
+        ? challenges.map((challenge) => ({
+              ...challenge,
+              total: challenge.num_peaks || 0,
+              completed: (challenge as any).num_completed || 0,
+          }))
+        : [];
+
+    const handleChallengeClick = (id: string) => {
+        router.push(`/challenges/${id}`);
+    };
 
     // Use shared map effects hook
     const { flyToPeak } = usePeakMapEffects({
@@ -214,25 +230,11 @@ const PeakDetailPanel = ({ peakId, onClose }: Props) => {
 
                     {/* Challenges Section */}
                     {challenges && challenges.length > 0 && (
-                        <div className="space-y-3">
-                            <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
-                                Part of {challenges.length} Challenge{challenges.length !== 1 ? "s" : ""}
-                            </h3>
-                            <div className="space-y-2">
-                                {challenges.slice(0, 3).map((challenge) => (
-                                    <Link
-                                        key={challenge.id}
-                                        href={`/challenges/${challenge.id}`}
-                                        className="flex items-center justify-between p-3 rounded-lg bg-card border border-border/70 hover:bg-card/80 transition-colors group"
-                                    >
-                                        <span className="text-sm font-medium text-foreground">
-                                            {challenge.name}
-                                        </span>
-                                        <ChevronRight className="w-4 h-4 text-muted-foreground group-hover:text-foreground transition-colors" />
-                                    </Link>
-                                ))}
-                            </div>
-                        </div>
+                        <DiscoveryChallengesList
+                            challenges={challengesWithProgress}
+                            onChallengeClick={handleChallengeClick}
+                            title={`Part of ${challenges.length} Challenge${challenges.length !== 1 ? "s" : ""}`}
+                        />
                     )}
                 </div>
             </div>

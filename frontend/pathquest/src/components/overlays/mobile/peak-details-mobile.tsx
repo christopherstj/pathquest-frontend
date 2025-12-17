@@ -1,14 +1,16 @@
 "use client";
 
 import React from "react";
-import { Mountain, CheckCircle, Navigation, ChevronRight, MapPin, X } from "lucide-react";
+import { Mountain, CheckCircle, Navigation, MapPin, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import Link from "next/link";
 import metersToFt from "@/helpers/metersToFt";
 import Peak from "@/typeDefs/Peak";
 import Challenge from "@/typeDefs/Challenge";
 import Summit from "@/typeDefs/Summit";
 import CurrentConditions from "../../app/peaks/CurrentConditions";
+import DiscoveryChallengesList from "@/components/discovery/discovery-challenges-list";
+import ChallengeProgress from "@/typeDefs/ChallengeProgress";
+import { useRouter } from "next/navigation";
 
 interface PeakDetailsMobileProps {
     peak: Peak;
@@ -25,7 +27,22 @@ const PeakDetailsMobile = ({
     onClose,
     onFlyToPeak,
 }: PeakDetailsMobileProps) => {
+    const router = useRouter();
     const location = [peak.county, peak.state, peak.country].filter(Boolean).join(", ");
+
+    // Convert Challenge[] to ChallengeProgress[] for DiscoveryChallengesList
+    // The API returns num_completed for logged-in users, but it's not in the Challenge type
+    const challengesWithProgress: ChallengeProgress[] = challenges
+        ? challenges.map((challenge) => ({
+              ...challenge,
+              total: challenge.num_peaks || 0,
+              completed: (challenge as any).num_completed || 0,
+          }))
+        : [];
+
+    const handleChallengeClick = (id: string) => {
+        router.push(`/challenges/${id}`);
+    };
 
     return (
         <div className="space-y-5">
@@ -110,25 +127,12 @@ const PeakDetailsMobile = ({
 
             {/* Challenges */}
             {challenges && challenges.length > 0 && (
-                <div className="space-y-2">
-                    <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                        Part of {challenges.length} Challenge{challenges.length !== 1 ? "s" : ""}
-                    </h3>
-                    <div className="space-y-1.5">
-                        {challenges.slice(0, 3).map((ch) => (
-                            <Link
-                                key={ch.id}
-                                href={`/challenges/${ch.id}`}
-                                className="flex items-center justify-between p-2.5 rounded-lg bg-card border border-border/70 hover:bg-card/80 transition-colors group"
-                            >
-                                <span className="text-sm font-medium text-foreground">
-                                    {ch.name}
-                                </span>
-                                <ChevronRight className="w-4 h-4 text-muted-foreground group-hover:text-foreground transition-colors" />
-                            </Link>
-                        ))}
-                    </div>
-                </div>
+                <DiscoveryChallengesList
+                    challenges={challengesWithProgress}
+                    onChallengeClick={handleChallengeClick}
+                    title={`Part of ${challenges.length} Challenge${challenges.length !== 1 ? "s" : ""}`}
+                    compact
+                />
             )}
         </div>
     );

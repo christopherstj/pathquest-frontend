@@ -30,7 +30,7 @@ const DEFAULT_PITCH = 45;
 const DEFAULT_BEARING = 0;
 
 // Minimum zoom level for searching peaks/challenges
-const MIN_SEARCH_ZOOM = 8;
+const MIN_SEARCH_ZOOM = 7;
 
 const MapBackground = () => {
     const mapContainer = useRef<HTMLDivElement>(null);

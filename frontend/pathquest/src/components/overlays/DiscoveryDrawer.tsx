@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import { motion, useAnimation, PanInfo, AnimatePresence } from "framer-motion";
-import { ArrowRight, Trophy, TrendingUp, Compass, LayoutDashboard, ZoomIn, Route, Users, BookOpen, Mountain } from "lucide-react";
+import { Trophy, TrendingUp, Compass, LayoutDashboard, ZoomIn, Route, Users, BookOpen, Mountain } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useMapStore } from "@/providers/MapProvider";
 import { useRouter, usePathname } from "next/navigation";
@@ -16,6 +16,7 @@ import ProfileSummitsList from "./ProfileSummitsList";
 import ProfileJournal from "./ProfileJournal";
 import ProfileChallenges from "./ProfileChallenges";
 import PeakRow from "@/components/lists/peak-row";
+import DiscoveryChallengesList from "@/components/discovery/discovery-challenges-list";
 import getActivityDetails from "@/actions/activities/getActivityDetails";
 import { useIsAuthenticated } from "@/hooks/useRequireAuth";
 import { usePeakHoverMapEffects } from "@/hooks/use-peak-hover-map-effects";
@@ -258,6 +259,21 @@ const DiscoveryDrawer = () => {
         const showProfileChallengesTab = hasProfileSelected;
         const showChallengePeaksTab = hasChallengeSelected;
         const showTabs = hasPeakSelected || hasActivitySelected || hasProfileSelected || hasChallengeSelected;
+        
+        // Count visible tabs to determine if we should show the tab navigation
+        const visibleTabCount = [
+            showMyActivityTab,
+            showCommunityTab,
+            showSummitsTab,
+            showProfilePeaksTab,
+            showProfileJournalTab,
+            showProfileChallengesTab,
+            showChallengePeaksTab,
+        ].filter(Boolean).length;
+        const hasExploreTab = !hasProfileSelected && !hasChallengeSelected;
+        const totalTabs = visibleTabCount + (hasExploreTab ? 1 : 0);
+        // Hide tab navigation when only challenge peaks tab is showing
+        const shouldShowTabNavigation = showTabs && !(hasChallengeSelected && totalTabs === 1);
 
         return (
             <motion.div
@@ -268,7 +284,7 @@ const DiscoveryDrawer = () => {
             >
                 <div className="flex-1 bg-background/85 backdrop-blur-xl border border-border shadow-xl overflow-hidden flex flex-col rounded-2xl">
                     {/* Tab Header - show when a peak, activity, profile, or challenge is selected */}
-                    {showTabs && (
+                    {shouldShowTabNavigation && (
                         <div className="px-3 py-2 border-b border-border/60 shrink-0">
                             <div className="flex gap-1 bg-muted/50 p-1 rounded-lg">
                                 {!hasProfileSelected && !hasChallengeSelected && (
@@ -521,36 +537,10 @@ const DiscoveryDrawer = () => {
                                     className="space-y-6"
                                 >
                                     {/* Featured Challenges */}
-                                    {visibleChallenges.length > 0 && (
-                                        <section>
-                                            <div className="flex items-center gap-2 mb-4">
-                                                <Trophy className="w-4 h-4 text-secondary" />
-                                                <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">Visible Challenges</h2>
-                                            </div>
-                                            <div className="space-y-2.5">
-                                                {visibleChallenges.map((challenge) => (
-                                                    <div 
-                                                        key={challenge.id} 
-                                                        onClick={() => handleChallengeClick(challenge.id)}
-                                                        onKeyDown={(e) => e.key === "Enter" && handleChallengeClick(challenge.id)}
-                                                        tabIndex={0}
-                                                        role="button"
-                                                        aria-label={`View challenge: ${challenge.name}`}
-                                                        className="group relative overflow-hidden rounded-xl bg-card border border-border/70 p-4 hover:border-primary/50 transition-colors cursor-pointer"
-                                                    >
-                                                        <div className="flex justify-between items-start">
-                                                            <div>
-                                                                <h3 className="font-medium group-hover:text-primary transition-colors">{challenge.name}</h3>
-                                                                <p className="text-xs text-muted-foreground mt-1">{challenge.num_peaks} Peaks</p>
-                                                            </div>
-                                                            <ArrowRight className="w-4 h-4 text-muted-foreground opacity-0 group-hover:opacity-100 -translate-x-2 group-hover:translate-x-0 transition-all" />
-                                                        </div>
-                                                        <div className={cn("absolute bottom-0 left-0 h-0.5 w-full opacity-50 bg-primary")} />
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        </section>
-                                    )}
+                                    <DiscoveryChallengesList 
+                                        challenges={visibleChallenges} 
+                                        onChallengeClick={handleChallengeClick} 
+                                    />
 
                                     {/* Trending Peaks */}
                                     {visiblePeaks.length > 0 && (
@@ -686,36 +676,10 @@ const DiscoveryDrawer = () => {
                                 className="space-y-6"
                             >
                                 {/* Featured Challenges */}
-                                {visibleChallenges.length > 0 && (
-                                    <section>
-                                        <div className="flex items-center gap-2 mb-4">
-                                            <Trophy className="w-4 h-4 text-secondary" />
-                                            <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">Visible Challenges</h2>
-                                        </div>
-                                        <div className="space-y-2.5">
-                                            {visibleChallenges.map((challenge) => (
-                                                <div 
-                                                    key={challenge.id} 
-                                                    onClick={() => handleChallengeClick(challenge.id)}
-                                                    onKeyDown={(e) => e.key === "Enter" && handleChallengeClick(challenge.id)}
-                                                    tabIndex={0}
-                                                    role="button"
-                                                    aria-label={`View challenge: ${challenge.name}`}
-                                                    className="group relative overflow-hidden rounded-xl bg-card border border-border/70 p-4 hover:border-primary/50 transition-colors cursor-pointer"
-                                                >
-                                                    <div className="flex justify-between items-start">
-                                                        <div>
-                                                            <h3 className="font-medium group-hover:text-primary transition-colors">{challenge.name}</h3>
-                                                            <p className="text-xs text-muted-foreground mt-1">{challenge.num_peaks} Peaks</p>
-                                                        </div>
-                                                        <ArrowRight className="w-4 h-4 text-muted-foreground opacity-0 group-hover:opacity-100 -translate-x-2 group-hover:translate-x-0 transition-all" />
-                                                    </div>
-                                                    <div className={cn("absolute bottom-0 left-0 h-0.5 w-full opacity-50 bg-primary")} />
-                                                </div>
-                                            ))}
-                                        </div>
-                                    </section>
-                                )}
+                                <DiscoveryChallengesList 
+                                    challenges={visibleChallenges} 
+                                    onChallengeClick={handleChallengeClick} 
+                                />
 
                                 {/* Trending Peaks */}
                                 {visiblePeaks.length > 0 && (

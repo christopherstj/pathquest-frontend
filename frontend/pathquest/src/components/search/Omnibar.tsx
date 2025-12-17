@@ -1,7 +1,8 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
-import { Search, X, MapPin, Mountain, Trophy, Loader2 } from "lucide-react";
+import { Search, X, MapPin, Mountain, Trophy, Loader2, Users, User } from "lucide-react";
+import { useIsAuthenticated } from "@/hooks/useRequireAuth";
 import { cn } from "@/lib/utils";
 import { useMapStore } from "@/providers/MapProvider";
 import { useQuery } from "@tanstack/react-query";
@@ -38,6 +39,7 @@ const Omnibar = () => {
     const map = useMapStore((state) => state.map);
     const router = useRouter();
     const pathname = usePathname();
+    const { isAuthenticated } = useIsAuthenticated();
     
     // Use ref to avoid stale closure issues with router
     const routerRef = useRef(router);
@@ -55,7 +57,7 @@ const Omnibar = () => {
     }, [query]);
 
     const { data: results, isLoading } = useQuery({
-        queryKey: ["search", debouncedQuery],
+        queryKey: ["search", debouncedQuery, isAuthenticated],
         queryFn: async (): Promise<SearchResult[]> => {
             if (debouncedQuery.length < 2) return [];
 
@@ -248,8 +250,9 @@ const Omnibar = () => {
     };
 
     const handleSelect = (result: SearchResult) => {
-        setQuery(result.title);
+        setQuery("");
         setIsOpen(false);
+        inputRef.current?.blur();
         
         // Navigate to peak/challenge detail pages
         // Use requestAnimationFrame to defer navigation to next frame,
@@ -352,31 +355,65 @@ const Omnibar = () => {
             {isOpen && results && results.length > 0 && (
                 <div className="absolute top-full mt-2 w-full bg-card/95 backdrop-blur-xl border border-border rounded-xl shadow-xl overflow-hidden z-50 animate-in fade-in slide-in-from-top-2 duration-200">
                     <div className="py-2">
-                        {results.map((result) => (
-                            <button
-                                key={result.id}
-                                onClick={() => handleSelect(result)}
-                                onKeyDown={(e) => e.key === 'Enter' && handleSelect(result)}
-                                className="w-full px-4 py-3 flex items-center gap-3 hover:bg-primary/10 transition-colors group text-left"
-                                tabIndex={0}
-                                aria-label={`${result.type}: ${result.title}`}
-                            >
-                                <div className={cn(
-                                    "p-2 rounded-lg bg-muted/50 group-hover:bg-primary/20 transition-colors",
-                                    result.type === 'peak' ? "text-primary" : result.type === 'challenge' ? "text-secondary" : "text-muted-foreground"
-                                )}>
-                                    {result.type === 'peak' && <Mountain className="w-4 h-4" />}
-                                    {result.type === 'challenge' && <Trophy className="w-4 h-4" />}
-                                    {result.type === 'place' && <MapPin className="w-4 h-4" />}
-                                </div>
-                                <div className="flex-1 min-w-0">
-                                    <div className="font-medium text-foreground text-sm truncate">{result.title}</div>
-                                    {result.subtitle && (
-                                        <div className="text-xs text-muted-foreground font-mono mt-0.5 truncate">{result.subtitle}</div>
-                                    )}
-                                </div>
-                            </button>
-                        ))}
+                        {results.map((result) => {
+                            // Check summit status for peaks
+                            const peak = result.type === 'peak' ? result.data as Peak : null;
+                            const hasSummited = peak && isAuthenticated && (peak.summits ?? 0) > 0;
+                            const hasPublicSummits = peak && (peak.public_summits ?? 0) > 0;
+                            
+                            return (
+                                <button
+                                    key={result.id}
+                                    onClick={() => handleSelect(result)}
+                                    onKeyDown={(e) => e.key === 'Enter' && handleSelect(result)}
+                                    className="w-full px-4 py-3 flex items-center gap-3 hover:bg-primary/10 transition-colors group text-left"
+                                    tabIndex={0}
+                                    aria-label={`${result.type}: ${result.title}`}
+                                >
+                                    <div className={cn(
+                                        "p-2 rounded-lg transition-colors",
+                                        result.type === 'peak' 
+                                            ? hasSummited 
+                                                ? "bg-summited/20 text-summited" 
+                                                : "bg-primary/10 text-primary group-hover:bg-primary/20"
+                                            : result.type === 'challenge' 
+                                                ? "bg-muted/50 text-secondary group-hover:bg-primary/20" 
+                                                : "bg-muted/50 text-muted-foreground group-hover:bg-primary/20"
+                                    )}>
+                                        {result.type === 'peak' && <Mountain className="w-4 h-4" />}
+                                        {result.type === 'challenge' && <Trophy className="w-4 h-4" />}
+                                        {result.type === 'place' && <MapPin className="w-4 h-4" />}
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                        <div className="font-medium text-foreground text-sm truncate">{result.title}</div>
+                                        {result.subtitle && (
+                                            <div className="text-xs text-muted-foreground font-mono mt-0.5 truncate">{result.subtitle}</div>
+                                        )}
+                                        {/* Summit info for peaks */}
+                                        {result.type === 'peak' && (hasPublicSummits || hasSummited) && (
+                                            <div className="flex items-center gap-3 mt-0.5">
+                                                {hasPublicSummits && (
+                                                    <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                                                        <Users className="w-3 h-3" />
+                                                        <span>
+                                                            {peak?.public_summits} {peak?.public_summits === 1 ? "summit" : "summits"}
+                                                        </span>
+                                                    </div>
+                                                )}
+                                                {hasSummited && (
+                                                    <div className="flex items-center gap-1 text-xs text-summited font-medium">
+                                                        <User className="w-3 h-3" />
+                                                        <span>
+                                                            {peak?.summits} {peak?.summits === 1 ? "summit" : "summits"}
+                                                        </span>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        )}
+                                    </div>
+                                </button>
+                            );
+                        })}
                     </div>
                 </div>
             )}

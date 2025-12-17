@@ -473,7 +473,8 @@ Next.js middleware for legacy route redirects:
 4. Mapbox geocoding searches for regions (states), places (cities), POIs (national parks/forests), and localities.
 5. Results are prioritized: Challenges first (max 4), then Peaks (max 3), then Places (max 3).
 6. Places are filtered to outdoor-relevant POIs (parks, forests, trails, etc.).
-7. Selecting an item flies the map and updates URL params (`peakId`/`challengeId`) to open the detail overlay.
+7. Peak results display public summit counts and user summit counts (with summited styling when authenticated).
+8. Selecting an item clears the search, blurs the input, and navigates to the detail page or flies the map.
 
 ### Peak Discovery Flow
 1. User browses map on home page

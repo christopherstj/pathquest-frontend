@@ -45,8 +45,8 @@ const getNewData = async (
     const zoom = map.getZoom();
 
     // Don't search when zoomed out too far (prevents massive result sets)
-    // Zoom 8 roughly covers a county/metro area
-    if (zoom < 8) {
+    // Zoom 7 roughly covers a larger region/state area
+    if (zoom < 7) {
         setPeaks([]);
         clearPeaksSource(map);
         return { status: "zoomedOut", count: 0 };

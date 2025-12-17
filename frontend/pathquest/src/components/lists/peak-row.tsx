@@ -94,17 +94,14 @@ const PeakRow = ({
                     </p>
 
                     {/* Elevation and location */}
-                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                        <span className="font-mono">
-                            {peak.elevation
-                                ? `${Math.round(metersToFt(peak.elevation)).toLocaleString()} ft`
-                                : ""}
-                        </span>
+                    <div className="flex flex-col gap-0.5 text-xs text-muted-foreground">
+                        {peak.elevation && (
+                            <span className="font-mono">
+                                {Math.round(metersToFt(peak.elevation)).toLocaleString()} ft
+                            </span>
+                        )}
                         {location && (
-                            <>
-                                <span className="text-muted-foreground/50">•</span>
-                                <span className="truncate">{location}</span>
-                            </>
+                            <span className="truncate">{location}</span>
                         )}
                     </div>
 

@@ -14,6 +14,7 @@ export const fetchLocalJson = async <T>(
     const res = await fetch(url, {
         method: "GET",
         cache: "no-store",
+        credentials: "include", // Include cookies for authentication
     });
 
     if (!res.ok) {

@@ -1,9 +1,14 @@
+import { authOptions } from "@/auth/authOptions";
 import getGoogleIdToken from "@/auth/getGoogleIdToken";
 import getBackendUrl from "@/helpers/getBackendUrl";
+import { getServerSession } from "next-auth";
 import { NextRequest, NextResponse } from "next/server";
 
 export const GET = async (req: NextRequest) => {
     const backendUrl = getBackendUrl();
+    
+    // Get session to pass user identity to backend
+    const session = await getServerSession(authOptions);
     const token = await getGoogleIdToken().catch(() => null);
 
     const url = new URL(
@@ -16,6 +21,10 @@ export const GET = async (req: NextRequest) => {
     const res = await fetch(url.toString(), {
         headers: {
             ...(token ? { Authorization: `Bearer ${token}` } : {}),
+            // Pass user identity via headers
+            ...(session?.user?.id ? { "x-user-id": session.user.id } : {}),
+            ...(session?.user?.email ? { "x-user-email": session.user.email } : {}),
+            ...(session?.user?.name ? { "x-user-name": session.user.name } : {}),
         },
     }).catch((err) =>
         NextResponse.json({ message: err?.message ?? "Upstream error" }, { status: 502 })

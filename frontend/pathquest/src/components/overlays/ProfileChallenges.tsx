@@ -21,7 +21,15 @@ const ProfileChallenges = ({ userId }: ProfileChallengesProps) => {
     });
 
     const profile = data?.success ? data.data : null;
-    const acceptedChallenges = profile?.acceptedChallenges ?? [];
+    const acceptedChallenges = React.useMemo(() => {
+        const challenges = profile?.acceptedChallenges ?? [];
+        // Sort by percent complete descending
+        return [...challenges].sort((a, b) => {
+            const progressA = a.total > 0 ? (a.completed / a.total) * 100 : 0;
+            const progressB = b.total > 0 ? (b.completed / b.total) * 100 : 0;
+            return progressB - progressA; // Descending order
+        });
+    }, [profile?.acceptedChallenges]);
 
     if (isLoading) {
         return (
