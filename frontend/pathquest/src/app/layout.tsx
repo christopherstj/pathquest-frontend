@@ -44,6 +44,7 @@ import DashboardPanel from "@/components/overlays/DashboardPanel";
 import SummitReportModal from "@/components/overlays/SummitReportModal";
 import AddManualSummitModal from "@/components/overlays/AddManualSummitModal";
 import UserManagementModal from "@/components/overlays/UserManagementModal";
+import { Suspense } from "react";
 
 const layout = ({ children }: Props) => {
     return (
@@ -71,7 +72,9 @@ const layout = ({ children }: Props) => {
                                             <ManualSummitProvider>
                                                 <UserManagementProvider>
                                                     <main className="relative w-full h-screen overflow-hidden">
-                                                        <MapBackground />
+                                                        <Suspense fallback={<div className="absolute inset-0 bg-background" />}>
+                                                            <MapBackground />
+                                                        </Suspense>
                                                         <GlobalNavigation />
                                                         {/* URL-driven overlay manager - renders discovery drawer (desktop) or bottom sheet (mobile) and detail panels */}
                                                         <UrlOverlayManager />

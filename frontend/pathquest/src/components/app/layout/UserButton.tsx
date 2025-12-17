@@ -11,9 +11,9 @@ import { signIn, signOut, useSession } from "next-auth/react";
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import { User, LogOut, ChevronDown } from "lucide-react";
-import React from "react";
+import React, { Suspense } from "react";
 
-const UserButton = () => {
+const UserButtonContent = () => {
     const { data: session } = useSession();
 
     const pathname = usePathname();
@@ -96,6 +96,19 @@ const UserButton = () => {
                 </DropdownMenuItem>
             </DropdownMenuContent>
         </DropdownMenu>
+    );
+};
+
+const UserButton = () => {
+    return (
+        <Suspense fallback={
+            <div className="flex flex-col gap-1">
+                <div className="h-9 w-20 bg-muted animate-pulse rounded-md" />
+                <div className="h-8 w-20 bg-muted animate-pulse rounded-md" />
+            </div>
+        }>
+            <UserButtonContent />
+        </Suspense>
     );
 };
 
