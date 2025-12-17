@@ -8,12 +8,28 @@ import getGoogleIdToken from "@/auth/getGoogleIdToken";
  * Always includes both header-based auth (x-user-* headers) and Bearer token.
  * The backend will use whichever is available - headers take priority.
  * This ensures auth works in both development (headers) and production (token).
+ * 
+ * Safe for static generation - will return null session during build time.
  */
 const getAuthHeaders = async (): Promise<{
     headers: Record<string, string>;
     session: Awaited<ReturnType<typeof useAuth>>;
 }> => {
-    const session = await useAuth();
+    // Try to get session, but don't fail during static generation (cookies/headers not available)
+    // During static generation, getServerSession() will throw DYNAMIC_SERVER_USAGE
+    // We catch it and return null, allowing static pages to be generated without user context
+    let session = null;
+    try {
+        session = await useAuth();
+    } catch (error: any) {
+        // During static generation, useAuth() throws DYNAMIC_SERVER_USAGE - that's expected
+        // We'll just use public data without user headers
+        if (error?.digest !== "DYNAMIC_SERVER_USAGE") {
+            // Only log if it's not the expected static generation error
+            console.warn("[getAuthHeaders] Failed to get session:", error);
+        }
+        session = null;
+    }
     // Always generate token for Google IAM authentication (required at infrastructure level)
     // User identity is passed via x-user-* headers for application-level auth
     const token = await getGoogleIdToken().catch((err) => {
