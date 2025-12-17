@@ -1,10 +1,8 @@
 "use client";
 
 import React from "react";
-import { Trophy, Heart, Map as MapIcon, Mountain, ChevronRight, X } from "lucide-react";
+import { Trophy, Heart, Map as MapIcon, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import Link from "next/link";
-import metersToFt from "@/helpers/metersToFt";
 import Challenge from "@/typeDefs/Challenge";
 import Peak from "@/typeDefs/Peak";
 
@@ -122,48 +120,6 @@ const ChallengeDetailsMobile = ({
                     Show on Map
                 </Button>
             </div>
-
-            {/* Peaks List */}
-            {peaks && peaks.length > 0 && (
-                <div className="space-y-2">
-                    <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                        Peaks in Challenge
-                    </h3>
-                    <div className="space-y-1.5 max-h-[200px] overflow-y-auto custom-scrollbar">
-                        {[...peaks]
-                            .sort((a, b) => (b.elevation || 0) - (a.elevation || 0))
-                            .map((pk) => (
-                                <Link
-                                    key={pk.id}
-                                    href={`/peaks/${pk.id}`}
-                                    className="flex items-center justify-between p-2.5 rounded-lg bg-card border border-border/70 hover:bg-card/80 transition-colors group"
-                                >
-                                    <div className="flex items-center gap-2.5">
-                                        <Mountain
-                                            className={`w-3.5 h-3.5 ${
-                                                pk.summits && pk.summits > 0
-                                                    ? "text-green-500"
-                                                    : "text-muted-foreground"
-                                            }`}
-                                        />
-                                        <div>
-                                            <span className="text-sm font-medium text-foreground block">
-                                                {pk.name}
-                                            </span>
-                                            <span className="text-xs text-muted-foreground">
-                                                {pk.elevation
-                                                    ? Math.round(metersToFt(pk.elevation)).toLocaleString()
-                                                    : 0}{" "}
-                                                ft
-                                            </span>
-                                        </div>
-                                    </div>
-                                    <ChevronRight className="w-4 h-4 text-muted-foreground group-hover:text-foreground transition-colors" />
-                                </Link>
-                            ))}
-                    </div>
-                </div>
-            )}
         </div>
     );
 };

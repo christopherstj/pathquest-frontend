@@ -369,7 +369,7 @@ const AddManualSummitModal = () => {
                         >
                             <DialogHeader className="text-center items-center">
                                 <motion.div
-                                    className="w-14 h-14 rounded-full bg-green-500/10 flex items-center justify-center mb-2"
+                                    className="w-14 h-14 rounded-full bg-summited/10 flex items-center justify-center mb-2"
                                     initial={{ scale: 0 }}
                                     animate={{ scale: 1 }}
                                     transition={{
@@ -378,7 +378,7 @@ const AddManualSummitModal = () => {
                                         damping: 15,
                                     }}
                                 >
-                                    <Mountain className="w-7 h-7 text-green-500" />
+                                    <Mountain className="w-7 h-7 text-summited" />
                                 </motion.div>
                                 <DialogTitle className="text-xl font-display">
                                     Log Summit
@@ -398,10 +398,10 @@ const AddManualSummitModal = () => {
                                         </label>
                                         
                                         {selectedPeak ? (
-                                            <div className="p-3 rounded-lg bg-green-500/5 border border-green-500/20">
+                                            <div className="p-3 rounded-lg bg-summited/5 border border-summited/20">
                                                 <div className="flex items-center justify-between">
                                                     <div className="flex items-center gap-2">
-                                                        <Mountain className="w-4 h-4 text-green-500" />
+                                                        <Mountain className="w-4 h-4 text-summited" />
                                                         <div>
                                                             <p className="text-sm font-medium">
                                                                 {selectedPeak.name}
@@ -811,7 +811,7 @@ const SuccessContent = ({ peakName }: SuccessContentProps) => {
             className="py-8 text-center"
         >
             <motion.div
-                className="w-16 h-16 rounded-full bg-green-500/10 flex items-center justify-center mx-auto mb-4"
+                className="w-16 h-16 rounded-full bg-summited/10 flex items-center justify-center mx-auto mb-4"
                 initial={{ scale: 0 }}
                 animate={{ scale: 1 }}
                 transition={{
@@ -821,7 +821,7 @@ const SuccessContent = ({ peakName }: SuccessContentProps) => {
                     delay: 0.1,
                 }}
             >
-                <Check className="w-8 h-8 text-green-500" />
+                <Check className="w-8 h-8 text-summited" />
             </motion.div>
             <motion.h3
                 className="text-xl font-display font-semibold mb-1"

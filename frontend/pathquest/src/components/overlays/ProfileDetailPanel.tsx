@@ -192,7 +192,7 @@ const ProfileDetailPanel = ({ userId, onClose }: Props) => {
                             <p className="text-xs text-muted-foreground">completed</p>
                         </div>
                         <div className="p-3 rounded-lg bg-card border border-border/70">
-                            <div className="flex items-center gap-2 text-green-500 mb-1">
+                            <div className="flex items-center gap-2 text-summited mb-1">
                                 <TrendingUp className="w-4 h-4" />
                                 <span className="text-xs uppercase tracking-wider">Elevation</span>
                             </div>

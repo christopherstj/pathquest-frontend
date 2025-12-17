@@ -145,8 +145,8 @@ const OrphanSummitCard = ({
                     className="flex items-center justify-between mb-3 pb-3 border-b border-border/50 hover:bg-muted/30 -m-4 p-4 rounded-t-xl transition-colors"
                 >
                     <div className="flex items-center gap-2">
-                        <div className="w-7 h-7 rounded-full bg-green-500/10 flex items-center justify-center">
-                            <Mountain className="w-3.5 h-3.5 text-green-500" />
+                        <div className="w-7 h-7 rounded-full bg-summited/10 flex items-center justify-center">
+                            <Mountain className="w-3.5 h-3.5 text-summited" />
                         </div>
                         <span className="text-sm font-semibold text-foreground">
                             {summit.peak.name}
@@ -159,8 +159,8 @@ const OrphanSummitCard = ({
             {/* Date Header */}
             <div className="flex items-center justify-between gap-2 mb-3">
                 <div className="flex items-center gap-2">
-                    <div className="w-8 h-8 rounded-full bg-green-500/10 flex items-center justify-center">
-                        <Mountain className="w-4 h-4 text-green-500" />
+                    <div className="w-8 h-8 rounded-full bg-summited/10 flex items-center justify-center">
+                        <Mountain className="w-4 h-4 text-summited" />
                     </div>
                     <div>
                         <div className="flex items-center gap-1 text-sm font-medium text-foreground">

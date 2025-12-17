@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import { motion, useAnimation, PanInfo, AnimatePresence } from "framer-motion";
-import { ArrowRight, Trophy, TrendingUp, Mountain, Compass, LayoutDashboard, ZoomIn, Route, Users, BookOpen } from "lucide-react";
+import { ArrowRight, Trophy, TrendingUp, Compass, LayoutDashboard, ZoomIn, Route, Users, BookOpen, Mountain } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useMapStore } from "@/providers/MapProvider";
 import { useRouter, usePathname } from "next/navigation";
@@ -14,13 +14,14 @@ import PeakCommunity from "./PeakCommunity";
 import ActivitySummitsList from "@/components/app/activities/ActivitySummitsList";
 import ProfileSummitsList from "./ProfileSummitsList";
 import ProfileJournal from "./ProfileJournal";
+import PeakRow from "@/components/lists/peak-row";
 import getActivityDetails from "@/actions/activities/getActivityDetails";
-import metersToFt from "@/helpers/metersToFt";
 import { useIsAuthenticated } from "@/hooks/useRequireAuth";
+import { usePeakHoverMapEffects } from "@/hooks/use-peak-hover-map-effects";
 
 type DrawerHeight = "collapsed" | "halfway" | "expanded";
 type MobileTab = "discover" | "dashboard";
-type DesktopTab = "discover" | "myActivity" | "community" | "summits" | "profilePeaks" | "profileJournal";
+type DesktopTab = "discover" | "myActivity" | "community" | "summits" | "profilePeaks" | "profileJournal" | "challengePeaks";
 
 // Height values in pixels for mobile drawer snap points
 const DRAWER_HEIGHTS = {
@@ -36,6 +37,7 @@ const DiscoveryDrawer = () => {
     const isZoomedOutTooFar = useMapStore((state) => state.isZoomedOutTooFar);
     const selectedPeakUserData = useMapStore((state) => state.selectedPeakUserData);
     const selectedPeakCommunityData = useMapStore((state) => state.selectedPeakCommunityData);
+    const selectedChallengeData = useMapStore((state) => state.selectedChallengeData);
     const setHoveredPeakId = useMapStore((state) => state.setHoveredPeakId);
     const router = useRouter();
     const pathname = usePathname();
@@ -50,6 +52,10 @@ const DiscoveryDrawer = () => {
     const [desktopActiveTab, setDesktopActiveTab] = useState<DesktopTab>("discover");
     const [hasInitializedTab, setHasInitializedTab] = useState(false);
     const [highlightedActivityId, setHighlightedActivityId] = useState<string | null>(null);
+    const [hoveredPeakCoords, setHoveredPeakCoords] = useState<[number, number] | null>(null);
+
+    // Hook to handle peak hover map effects (show dot on map when hovering)
+    usePeakHoverMapEffects({ hoverCoords: hoveredPeakCoords });
 
     // Detect activity from URL
     const activityMatch = pathname.match(/^\/activities\/([^\/]+)$/);
@@ -82,6 +88,8 @@ const DiscoveryDrawer = () => {
     const hasPeakSelected = Boolean(selectedPeakCommunityData);
     // Check if user has activity data (only for authenticated users)
     const hasUserActivityData = Boolean(selectedPeakUserData);
+    // Check if a challenge is selected
+    const hasChallengeSelected = Boolean(selectedChallengeData);
 
     // Set default tab to dashboard if user is authenticated (only once on mount)
     useEffect(() => {
@@ -93,27 +101,30 @@ const DiscoveryDrawer = () => {
         }
     }, [isAuthenticated, authLoading, hasInitializedTab]);
 
-    // Auto-switch to appropriate tab when a peak, activity, or profile is selected
+    // Auto-switch to appropriate tab when a peak, activity, profile, or challenge is selected
     // - Profile selected: open Profile Peaks tab
     // - Peak selected + authenticated: open My Activity tab
     // - Peak selected + not authenticated: open Community tab
     // - Activity selected: open Summits tab
+    // - Challenge selected: open Challenge Peaks tab
     useEffect(() => {
         if (hasProfileSelected && !isMobile) {
             setDesktopActiveTab("profilePeaks");
         } else if (hasActivitySelected && !isMobile) {
             setDesktopActiveTab("summits");
+        } else if (hasChallengeSelected && !isMobile) {
+            setDesktopActiveTab("challengePeaks");
         } else if (hasPeakSelected && !isMobile) {
             if (isAuthenticated) {
                 setDesktopActiveTab("myActivity");
             } else {
                 setDesktopActiveTab("community");
             }
-        } else if (!hasPeakSelected && !hasActivitySelected && !hasProfileSelected && !isMobile) {
+        } else if (!hasPeakSelected && !hasActivitySelected && !hasProfileSelected && !hasChallengeSelected && !isMobile) {
             setDesktopActiveTab("discover");
             setHighlightedActivityId(null);
         }
-    }, [hasPeakSelected, hasActivitySelected, hasProfileSelected, isAuthenticated, isMobile]);
+    }, [hasPeakSelected, hasActivitySelected, hasProfileSelected, hasChallengeSelected, isAuthenticated, isMobile]);
 
     // Update heights on window resize
     useEffect(() => {
@@ -151,6 +162,14 @@ const DiscoveryDrawer = () => {
 
     const handleChallengeClick = (id: string) => {
         routerRef.current.push(`/challenges/${id}`);
+    };
+
+    const handlePeakHoverStart = (peakId: string, coords: [number, number]) => {
+        setHoveredPeakCoords(coords);
+    };
+
+    const handlePeakHoverEnd = () => {
+        setHoveredPeakCoords(null);
     };
 
     const handleDragEnd = (_event: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
@@ -224,17 +243,19 @@ const DiscoveryDrawer = () => {
 
     // Desktop version with tabs
     if (!isMobile) {
-        // Show tabs when a peak, activity, or profile is selected
+        // Show tabs when a peak, activity, profile, or challenge is selected
         // My Activity tab: only for authenticated users when peak selected
         // Community tab: for all users when peak selected
         // Summits tab: when activity is selected
         // Profile tabs: when profile is selected
+        // Challenge Peaks tab: when challenge is selected
         const showMyActivityTab = hasPeakSelected && isAuthenticated;
         const showCommunityTab = hasPeakSelected;
         const showSummitsTab = hasActivitySelected;
         const showProfilePeaksTab = hasProfileSelected;
         const showProfileJournalTab = hasProfileSelected;
-        const showTabs = hasPeakSelected || hasActivitySelected || hasProfileSelected;
+        const showChallengePeaksTab = hasChallengeSelected;
+        const showTabs = hasPeakSelected || hasActivitySelected || hasProfileSelected || hasChallengeSelected;
 
         return (
             <motion.div
@@ -244,11 +265,11 @@ const DiscoveryDrawer = () => {
                 className="fixed pointer-events-auto flex flex-col gap-3 z-40 top-20 left-5 bottom-6 w-full max-w-[320px] h-auto"
             >
                 <div className="flex-1 bg-background/85 backdrop-blur-xl border border-border shadow-xl overflow-hidden flex flex-col rounded-2xl">
-                    {/* Tab Header - show when a peak or activity is selected */}
+                    {/* Tab Header - show when a peak, activity, profile, or challenge is selected */}
                     {showTabs && (
                         <div className="px-3 py-2 border-b border-border/60 shrink-0">
                             <div className="flex gap-1 bg-muted/50 p-1 rounded-lg">
-                                {!hasProfileSelected && (
+                                {!hasProfileSelected && !hasChallengeSelected && (
                                     <button
                                         onClick={() => handleDesktopTabChange("discover")}
                                         onKeyDown={(e) => e.key === "Enter" && handleDesktopTabChange("discover")}
@@ -265,6 +286,25 @@ const DiscoveryDrawer = () => {
                                     >
                                         <Compass className="w-4 h-4" />
                                         Explore
+                                    </button>
+                                )}
+                                {showChallengePeaksTab && (
+                                    <button
+                                        onClick={() => handleDesktopTabChange("challengePeaks")}
+                                        onKeyDown={(e) => e.key === "Enter" && handleDesktopTabChange("challengePeaks")}
+                                        tabIndex={0}
+                                        aria-label="Challenge Peaks tab"
+                                        aria-selected={desktopActiveTab === "challengePeaks"}
+                                        role="tab"
+                                        className={cn(
+                                            "flex flex-col items-center gap-0.5 px-2 py-1.5 rounded-md text-[10px] font-medium transition-all flex-1 justify-center",
+                                            desktopActiveTab === "challengePeaks"
+                                                ? "bg-background text-foreground shadow-sm"
+                                                : "text-muted-foreground hover:text-foreground"
+                                        )}
+                                    >
+                                        <Mountain className="w-4 h-4" />
+                                        Peaks
                                     </button>
                                 )}
                                 {showMyActivityTab && (
@@ -368,7 +408,35 @@ const DiscoveryDrawer = () => {
 
                     <div className="flex-1 overflow-y-auto p-5 space-y-6 custom-scrollbar">
                         <AnimatePresence mode="wait">
-                            {desktopActiveTab === "profilePeaks" && showProfilePeaksTab && profileUserId ? (
+                            {desktopActiveTab === "challengePeaks" && showChallengePeaksTab && selectedChallengeData ? (
+                                <motion.div
+                                    key="challenge-peaks"
+                                    initial={{ opacity: 0, x: -20 }}
+                                    animate={{ opacity: 1, x: 0 }}
+                                    exit={{ opacity: 0, x: -20 }}
+                                    className="space-y-4"
+                                >
+                                    <div className="flex items-center gap-2">
+                                        <Trophy className="w-4 h-4 text-secondary" />
+                                        <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+                                            {selectedChallengeData.peaks.length} Peaks
+                                        </h2>
+                                    </div>
+                                    <div className="space-y-1">
+                                        {[...selectedChallengeData.peaks]
+                                            .sort((a, b) => (b.elevation || 0) - (a.elevation || 0))
+                                            .map((peak) => (
+                                                <PeakRow
+                                                    key={peak.id}
+                                                    peak={peak}
+                                                    onPeakClick={handlePeakClick}
+                                                    onHoverStart={handlePeakHoverStart}
+                                                    onHoverEnd={handlePeakHoverEnd}
+                                                />
+                                            ))}
+                                    </div>
+                                </motion.div>
+                            ) : desktopActiveTab === "profilePeaks" && showProfilePeaksTab && profileUserId ? (
                                 <motion.div
                                     key="profile-peaks"
                                     initial={{ opacity: 0, x: -20 }}
@@ -456,27 +524,15 @@ const DiscoveryDrawer = () => {
                                                 <TrendingUp className="w-4 h-4 text-primary" />
                                                 <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">Visible Peaks</h2>
                                             </div>
-                                            <div className="space-y-2.5">
+                                            <div className="space-y-1">
                                                 {visiblePeaks.map((peak) => (
-                                                    <div 
-                                                        key={peak.id} 
-                                                        onClick={() => handlePeakClick(peak.id, peak.location_coords)}
-                                                        onKeyDown={(e) => e.key === "Enter" && handlePeakClick(peak.id, peak.location_coords)}
-                                                        tabIndex={0}
-                                                        role="button"
-                                                        aria-label={`View peak: ${peak.name}`}
-                                                        className="flex items-center justify-between p-3 rounded-lg hover:bg-muted/60 transition-colors cursor-pointer group"
-                                                    >
-                                                        <div className="flex items-center gap-3">
-                                                            <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary">
-                                                                <Mountain className="w-4 h-4" />
-                                                            </div>
-                                                            <div>
-                                                                <p className="font-medium text-sm group-hover:text-primary-foreground transition-colors">{peak.name}</p>
-                                                                <p className="text-xs font-mono text-muted-foreground">{peak.elevation ? `${Math.round(metersToFt(peak.elevation)).toLocaleString()} ft` : ''}</p>
-                                                            </div>
-                                                        </div>
-                                                    </div>
+                                                    <PeakRow
+                                                        key={peak.id}
+                                                        peak={peak}
+                                                        onPeakClick={handlePeakClick}
+                                                        onHoverStart={handlePeakHoverStart}
+                                                        onHoverEnd={handlePeakHoverEnd}
+                                                    />
                                                 ))}
                                             </div>
                                         </section>
@@ -633,27 +689,15 @@ const DiscoveryDrawer = () => {
                                             <TrendingUp className="w-4 h-4 text-primary" />
                                             <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">Visible Peaks</h2>
                                         </div>
-                                        <div className="space-y-2.5">
+                                        <div className="space-y-1">
                                             {visiblePeaks.map((peak) => (
-                                                <div 
-                                                    key={peak.id} 
-                                                    onClick={() => handlePeakClick(peak.id, peak.location_coords)}
-                                                    onKeyDown={(e) => e.key === "Enter" && handlePeakClick(peak.id, peak.location_coords)}
-                                                    tabIndex={0}
-                                                    role="button"
-                                                    aria-label={`View peak: ${peak.name}`}
-                                                    className="flex items-center justify-between p-3 rounded-lg hover:bg-muted/60 transition-colors cursor-pointer group"
-                                                >
-                                                    <div className="flex items-center gap-3">
-                                                        <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary">
-                                                            <Mountain className="w-4 h-4" />
-                                                        </div>
-                                                        <div>
-                                                            <p className="font-medium text-sm group-hover:text-primary-foreground transition-colors">{peak.name}</p>
-                                                            <p className="text-xs font-mono text-muted-foreground">{peak.elevation ? `${Math.round(metersToFt(peak.elevation)).toLocaleString()} ft` : ''}</p>
-                                                        </div>
-                                                    </div>
-                                                </div>
+                                                <PeakRow
+                                                    key={peak.id}
+                                                    peak={peak}
+                                                    onPeakClick={handlePeakClick}
+                                                    onHoverStart={handlePeakHoverStart}
+                                                    onHoverEnd={handlePeakHoverEnd}
+                                                />
                                             ))}
                                         </div>
                                     </section>

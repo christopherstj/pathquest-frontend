@@ -157,7 +157,7 @@ const PeakUserActivity = ({ highlightedActivityId, onHighlightActivity }: PeakUs
             {sortedOrphanSummits.length > 0 && (
                 <section>
                     <div className="flex items-center gap-2 mb-3">
-                        <Mountain className="w-4 h-4 text-green-500" />
+                        <Mountain className="w-4 h-4 text-summited" />
                         <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
                             Manual Summits
                         </h3>

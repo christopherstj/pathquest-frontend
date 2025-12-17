@@ -32,9 +32,11 @@ import { convertSummitsToPeaks } from "@/helpers/convertSummitsToPeaks";
 import ActivityAnalytics from "@/components/app/activities/ActivityAnalytics";
 import ProfileDetailsMobile from "./mobile/profile-details-mobile";
 import ProfileSummitsList from "./ProfileSummitsList";
+import PeakRow from "@/components/lists/peak-row";
+import { usePeakHoverMapEffects } from "@/hooks/use-peak-hover-map-effects";
 
 type DrawerHeight = "collapsed" | "halfway" | "expanded";
-type TabMode = "details" | "discover" | "dashboard" | "myActivity" | "community" | "analytics" | "profilePeaks";
+type TabMode = "details" | "discover" | "dashboard" | "myActivity" | "community" | "analytics" | "profilePeaks" | "challengePeaks";
 
 const DRAWER_HEIGHTS = {
     collapsed: 60,
@@ -69,11 +71,20 @@ const DetailBottomSheet = ({ peakId, challengeId, activityId, userId, onClose }:
     const hasPeakSelected = Boolean(peakId);
     const hasActivitySelected = Boolean(activityId);
     const hasProfileSelected = Boolean(userId);
+    const hasChallengeSelected = Boolean(challengeId);
     const [activeTab, setActiveTab] = useState<TabMode>("discover");
+    const [hoveredPeakCoords, setHoveredPeakCoords] = useState<[number, number] | null>(null);
+
+    // Hook to handle peak hover map effects (show dot on map when hovering)
+    usePeakHoverMapEffects({ hoverCoords: hoveredPeakCoords });
     const [drawerHeight, setDrawerHeight] = useState<DrawerHeight>("halfway");
     const [heights, setHeights] = useState(DRAWER_HEIGHTS);
     const [hasInitializedTab, setHasInitializedTab] = useState(false);
     const [highlightedActivityId, setHighlightedActivityId] = useState<string | null>(null);
+    
+    // Track if we've already performed the initial fitBounds for challenge
+    const hasChallengeFitBoundsRef = useRef(false);
+    const lastChallengeIdRef = useRef<number | null>(null);
 
     // Keep router ref updated to avoid stale closure issues
     useEffect(() => {
@@ -376,6 +387,12 @@ const DetailBottomSheet = ({ peakId, challengeId, activityId, userId, onClose }:
     useEffect(() => {
         if (!map || !challengePeaks || challengePeaks.length === 0) return;
 
+        // Reset fitBounds flag when viewing a different challenge
+        if (challengeId !== lastChallengeIdRef.current) {
+            hasChallengeFitBoundsRef.current = false;
+            lastChallengeIdRef.current = challengeId ?? null;
+        }
+
         const setChallengePeaksOnMap = async () => {
             let selectedPeaksSource = map.getSource("selectedPeaks") as mapboxgl.GeoJSONSource | undefined;
             let attempts = 0;
@@ -398,18 +415,21 @@ const DetailBottomSheet = ({ peakId, challengeId, activityId, userId, onClose }:
 
         setChallengePeaksOnMap();
 
-        // Fit map to challenge bounds
-        const peakCoords = challengePeaks
-            .filter((p) => p.location_coords)
-            .map((p) => p.location_coords as [number, number]);
+        // Fit map to challenge bounds (only once per challenge)
+        if (!hasChallengeFitBoundsRef.current) {
+            const peakCoords = challengePeaks
+                .filter((p) => p.location_coords)
+                .map((p) => p.location_coords as [number, number]);
 
-        if (peakCoords.length > 0) {
-            const bounds = new mapboxgl.LngLatBounds();
-            peakCoords.forEach((coord) => bounds.extend(coord));
-            map.fitBounds(bounds, {
-                padding: { top: 100, bottom: heights.halfway + 20, left: 50, right: 50 },
-                maxZoom: 12,
-            });
+            if (peakCoords.length > 0) {
+                hasChallengeFitBoundsRef.current = true;
+                const bounds = new mapboxgl.LngLatBounds();
+                peakCoords.forEach((coord) => bounds.extend(coord));
+                map.fitBounds(bounds, {
+                    padding: { top: 100, bottom: heights.halfway + 20, left: 50, right: 50 },
+                    maxZoom: 12,
+                });
+            }
         }
 
         return () => {
@@ -424,7 +444,7 @@ const DetailBottomSheet = ({ peakId, challengeId, activityId, userId, onClose }:
                 console.debug("Failed to cleanup selectedPeaks map source:", error);
             }
         };
-    }, [map, challengePeaks, heights.halfway]);
+    }, [map, challengePeaks, challengeId, heights.halfway]);
 
     const handlePeakClick = (id: string, coords?: [number, number]) => {
         routerRef.current.push(`/peaks/${id}`);
@@ -441,6 +461,14 @@ const DetailBottomSheet = ({ peakId, challengeId, activityId, userId, onClose }:
 
     const handleChallengeClick = (id: string) => {
         routerRef.current.push(`/challenges/${id}`);
+    };
+
+    const handlePeakHoverStart = (peakId: string, coords: [number, number]) => {
+        setHoveredPeakCoords(coords);
+    };
+
+    const handlePeakHoverEnd = () => {
+        setHoveredPeakCoords(null);
     };
 
     const handleDragEnd = (_event: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
@@ -654,23 +682,44 @@ const DetailBottomSheet = ({ peakId, challengeId, activityId, userId, onClose }:
                                     Peaks
                                 </button>
                             )}
-                            <button
-                                onClick={() => handleTabChange("discover")}
-                                onKeyDown={(e) => e.key === "Enter" && handleTabChange("discover")}
-                                tabIndex={0}
-                                aria-label="Explore tab"
-                                aria-selected={activeTab === "discover"}
-                                role="tab"
-                                className={cn(
-                                    "flex flex-col items-center gap-0.5 px-2 py-1.5 rounded-md text-[10px] font-medium transition-all flex-1 justify-center min-w-0",
-                                    activeTab === "discover"
-                                        ? "bg-background text-foreground shadow-sm"
-                                        : "text-muted-foreground hover:text-foreground"
-                                )}
-                            >
-                                <Compass className="w-4 h-4" />
-                                Explore
-                            </button>
+                            {hasChallengeSelected && (
+                                <button
+                                    onClick={() => handleTabChange("challengePeaks")}
+                                    onKeyDown={(e) => e.key === "Enter" && handleTabChange("challengePeaks")}
+                                    tabIndex={0}
+                                    aria-label="Challenge Peaks tab"
+                                    aria-selected={activeTab === "challengePeaks"}
+                                    role="tab"
+                                    className={cn(
+                                        "flex flex-col items-center gap-0.5 px-2 py-1.5 rounded-md text-[10px] font-medium transition-all flex-1 justify-center min-w-0",
+                                        activeTab === "challengePeaks"
+                                            ? "bg-background text-foreground shadow-sm"
+                                            : "text-muted-foreground hover:text-foreground"
+                                    )}
+                                >
+                                    <Mountain className="w-4 h-4" />
+                                    Peaks
+                                </button>
+                            )}
+                            {!hasChallengeSelected && (
+                                <button
+                                    onClick={() => handleTabChange("discover")}
+                                    onKeyDown={(e) => e.key === "Enter" && handleTabChange("discover")}
+                                    tabIndex={0}
+                                    aria-label="Explore tab"
+                                    aria-selected={activeTab === "discover"}
+                                    role="tab"
+                                    className={cn(
+                                        "flex flex-col items-center gap-0.5 px-2 py-1.5 rounded-md text-[10px] font-medium transition-all flex-1 justify-center min-w-0",
+                                        activeTab === "discover"
+                                            ? "bg-background text-foreground shadow-sm"
+                                            : "text-muted-foreground hover:text-foreground"
+                                    )}
+                                >
+                                    <Compass className="w-4 h-4" />
+                                    Explore
+                                </button>
+                            )}
                             <button
                                 onClick={() => handleTabChange("dashboard")}
                                 onKeyDown={(e) => e.key === "Enter" && handleTabChange("dashboard")}
@@ -819,6 +868,35 @@ const DetailBottomSheet = ({ peakId, challengeId, activityId, userId, onClose }:
                                 transition={{ duration: 0.15 }}
                             >
                                 <ProfileSummitsList userId={userId} compact />
+                            </motion.div>
+                        ) : activeTab === "challengePeaks" && challengeId && challengePeaks ? (
+                            <motion.div
+                                key="challengePeaks"
+                                initial={{ opacity: 0, x: -10 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                exit={{ opacity: 0, x: -10 }}
+                                transition={{ duration: 0.15 }}
+                                className="space-y-4"
+                            >
+                                <div className="flex items-center gap-2">
+                                    <Mountain className="w-4 h-4 text-secondary" />
+                                    <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+                                        {challengePeaks.length} Peaks
+                                    </h2>
+                                </div>
+                                <div className="space-y-1">
+                                    {[...challengePeaks]
+                                        .sort((a, b) => (b.elevation || 0) - (a.elevation || 0))
+                                        .map((peak) => (
+                                            <PeakRow
+                                                key={peak.id}
+                                                peak={peak}
+                                                onPeakClick={handlePeakClick}
+                                                onHoverStart={handlePeakHoverStart}
+                                                onHoverEnd={handlePeakHoverEnd}
+                                            />
+                                        ))}
+                                </div>
                             </motion.div>
                         ) : (
                             <motion.div

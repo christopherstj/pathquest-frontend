@@ -132,8 +132,8 @@ const ProfileSummitsList = ({ userId, compact = false }: ProfileSummitsListProps
                                     onMouseLeave={handlePeakHoverEnd}
                                 >
                                     <div className="flex items-center gap-3">
-                                        <div className="w-8 h-8 rounded-full bg-green-500/10 flex items-center justify-center">
-                                            <Mountain className="w-4 h-4 text-green-500" />
+                                        <div className="w-8 h-8 rounded-full bg-summited/10 flex items-center justify-center">
+                                            <Mountain className="w-4 h-4 text-summited" />
                                         </div>
                                         <div>
                                             <span className="text-sm font-medium text-foreground block">

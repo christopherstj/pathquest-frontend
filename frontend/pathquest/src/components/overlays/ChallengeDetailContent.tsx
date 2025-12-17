@@ -176,7 +176,7 @@ const ChallengeDetailContent = ({ challenge, peaks, activityCoords }: Props) => 
                                             <Mountain
                                                 className={`w-4 h-4 ${
                                                     peak.summits && peak.summits > 0
-                                                        ? "text-green-500"
+                                                        ? "text-summited"
                                                         : "text-muted-foreground"
                                                 }`}
                                             />

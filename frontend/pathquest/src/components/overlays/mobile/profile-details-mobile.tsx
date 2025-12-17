@@ -150,7 +150,7 @@ const ProfileDetailsMobile = ({
                     <p className="text-[10px] text-muted-foreground">completed</p>
                 </div>
                 <div className="p-2.5 rounded-lg bg-card border border-border/70">
-                    <div className="flex items-center gap-1.5 text-green-500 mb-1">
+                    <div className="flex items-center gap-1.5 text-summited mb-1">
                         <TrendingUp className="w-3 h-3" />
                         <span className="text-[10px] uppercase tracking-wider">Elevation</span>
                     </div>

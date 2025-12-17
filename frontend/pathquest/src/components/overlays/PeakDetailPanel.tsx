@@ -139,7 +139,7 @@ const PeakDetailPanel = ({ peakId, onClose }: Props) => {
                             value={
                                 isAuthenticated ? (
                                     userSummits > 0 ? (
-                                        <span className="text-green-500">{userSummits}</span>
+                                        <span className="text-summited">{userSummits}</span>
                                     ) : (
                                         "0"
                                     )
@@ -152,8 +152,8 @@ const PeakDetailPanel = ({ peakId, onClose }: Props) => {
 
                     {/* User summit status */}
                     {isAuthenticated && userSummits > 0 && (
-                        <div className="p-3 rounded-xl bg-green-500/10 border border-green-500/30 flex items-center gap-3">
-                            <CheckCircle className="w-5 h-5 text-green-500" />
+                        <div className="p-3 rounded-xl bg-summited/10 border border-summited/30 flex items-center gap-3">
+                            <CheckCircle className="w-5 h-5 text-summited" />
                             <div>
                                 <p className="text-sm font-medium text-foreground">
                                     You&apos;ve summited this peak!

@@ -147,7 +147,7 @@ const ActivityWithSummits = ({
             {summitCount > 0 && (
                 <div className="px-4 pb-4 space-y-2">
                     <div className="flex items-center gap-1.5 text-xs text-muted-foreground mb-2">
-                        <Mountain className="w-3 h-3 text-green-500" />
+                        <Mountain className="w-3 h-3 text-summited" />
                         <span>
                             {summitCount} summit{summitCount !== 1 ? "s" : ""} on this activity
                         </span>

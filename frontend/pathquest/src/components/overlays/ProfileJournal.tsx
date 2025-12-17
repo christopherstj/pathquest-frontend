@@ -189,7 +189,7 @@ const ProfileJournal = ({ userId }: ProfileJournalProps) => {
                         {sortedOrphanSummits.length > 0 && (
                             <section className="space-y-3">
                                 <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                                    <Mountain className="w-3.5 h-3.5 text-green-500" />
+                                    <Mountain className="w-3.5 h-3.5 text-summited" />
                                     <span className="font-medium uppercase tracking-wider">
                                         Manual Summits ({sortedOrphanSummits.length})
                                     </span>

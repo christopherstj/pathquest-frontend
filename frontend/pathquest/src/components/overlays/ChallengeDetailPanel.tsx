@@ -1,13 +1,11 @@
 "use client";
 
-import React from "react";
+import React, { useEffect } from "react";
 import { motion } from "framer-motion";
 import {
     Trophy,
     Map as MapIcon,
     Heart,
-    Mountain,
-    ChevronRight,
     LogIn,
     CheckCircle,
 } from "lucide-react";
@@ -16,14 +14,13 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import getPublicChallengeDetails from "@/actions/challenges/getPublicChallengeDetails";
 import addChallengeFavorite from "@/actions/challenges/addChallengeFavorite";
 import deleteChallengeFavorite from "@/actions/challenges/deleteChallengeFavorite";
-import Link from "next/link";
-import metersToFt from "@/helpers/metersToFt";
 import useRequireAuth, { useIsAuthenticated } from "@/hooks/useRequireAuth";
 import DetailPanelHeader from "@/components/ui/detail-panel-header";
 import StatsGrid from "@/components/ui/stats-grid";
 import StatCard from "@/components/ui/stat-card";
 import DetailLoadingState from "@/components/ui/detail-loading-state";
 import { useChallengeMapEffects } from "@/hooks/use-challenge-map-effects";
+import { useMapStore } from "@/providers/MapProvider";
 
 interface Props {
     challengeId: number;
@@ -34,6 +31,7 @@ const ChallengeDetailPanel = ({ challengeId, onClose }: Props) => {
     const { isAuthenticated } = useIsAuthenticated();
     const requireAuth = useRequireAuth();
     const queryClient = useQueryClient();
+    const setSelectedChallengeData = useMapStore((state) => state.setSelectedChallengeData);
 
     const { data, isLoading } = useQuery({
         queryKey: ["challengeDetails", challengeId],
@@ -52,6 +50,21 @@ const ChallengeDetailPanel = ({ challengeId, onClose }: Props) => {
         challenge,
         peaks,
     });
+
+    // Share challenge data with mapStore for DiscoveryDrawer
+    useEffect(() => {
+        if (challenge && peaks) {
+            setSelectedChallengeData({
+                challengeId: challengeId,
+                challengeName: challenge.name,
+                peaks: peaks,
+            });
+        }
+
+        return () => {
+            setSelectedChallengeData(null);
+        };
+    }, [challenge, peaks, challengeId, setSelectedChallengeData]);
 
     const handleToggleFavorite = () => {
         requireAuth(async () => {
@@ -138,7 +151,7 @@ const ChallengeDetailPanel = ({ challengeId, onClose }: Props) => {
                                 />
                             </div>
                             {progressPercent === 100 && (
-                                <div className="flex items-center gap-2 text-sm text-green-500">
+                                <div className="flex items-center gap-2 text-sm text-summited">
                                     <CheckCircle className="w-4 h-4" />
                                     <span>Challenge completed!</span>
                                 </div>
@@ -186,43 +199,6 @@ const ChallengeDetailPanel = ({ challengeId, onClose }: Props) => {
                             Show on Map
                         </Button>
                     </div>
-
-                    {/* Peaks List */}
-                    {peaks && peaks.length > 0 && (
-                        <div className="space-y-3">
-                            <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
-                                Peaks in Challenge
-                            </h3>
-                            <div className="space-y-2 max-h-[300px] overflow-y-auto custom-scrollbar">
-                                {[...peaks].sort((a, b) => (b.elevation || 0) - (a.elevation || 0)).map((peak) => (
-                                    <Link
-                                        key={peak.id}
-                                        href={`/peaks/${peak.id}`}
-                                        className="flex items-center justify-between p-3 rounded-lg bg-card border border-border/70 hover:bg-card/80 transition-colors group"
-                                    >
-                                        <div className="flex items-center gap-3">
-                                            <Mountain
-                                                className={`w-4 h-4 ${
-                                                    peak.summits && peak.summits > 0
-                                                        ? "text-green-500"
-                                                        : "text-muted-foreground"
-                                                }`}
-                                            />
-                                            <div>
-                                                <span className="text-sm font-medium text-foreground block">
-                                                    {peak.name}
-                                                </span>
-                                                <span className="text-xs text-muted-foreground">
-                                                    {peak.elevation ? Math.round(metersToFt(peak.elevation)).toLocaleString() : 0} ft
-                                                </span>
-                                            </div>
-                                        </div>
-                                        <ChevronRight className="w-4 h-4 text-muted-foreground group-hover:text-foreground transition-colors" />
-                                    </Link>
-                                ))}
-                            </div>
-                        </div>
-                    )}
                 </div>
             </div>
         </motion.div>

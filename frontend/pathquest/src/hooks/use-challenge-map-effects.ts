@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useCallback } from "react";
+import { useEffect, useMemo, useCallback, useRef } from "react";
 import { useMapStore } from "@/providers/MapProvider";
 import { setPeaksSearchDisabled } from "@/helpers/peaksSearchState";
 import convertPeaksToGeoJSON from "@/helpers/convertPeaksToGeoJSON";
@@ -17,19 +17,27 @@ interface UseChallengeMapEffectsOptions {
 const MAX_ATTEMPTS = 10;
 const RETRY_DELAY = 300;
 
+// Default padding values (stable reference to avoid re-renders)
+const DEFAULT_PADDING = { top: 100, bottom: 100, left: 50, right: 400 };
+
 /**
  * Hook to handle map effects when viewing a challenge detail.
  * - Disables general peaks search
  * - Shows challenge peaks on the map
- * - Fits map to challenge bounds
+ * - Fits map to challenge bounds (only once on initial load)
  */
 export function useChallengeMapEffects({
     challenge,
     peaks,
-    padding = { top: 100, bottom: 100, left: 50, right: 400 },
+    padding = DEFAULT_PADDING,
 }: UseChallengeMapEffectsOptions) {
     const map = useMapStore((state) => state.map);
     const setDisablePeaksSearch = useMapStore((state) => state.setDisablePeaksSearch);
+    
+    // Track if we've already performed the initial fitBounds
+    const hasFitBoundsRef = useRef(false);
+    // Track the challenge ID to reset fitBounds when viewing a different challenge
+    const lastChallengeIdRef = useRef<number | null>(null);
 
     // Calculate bounds of all peaks
     const bounds = useMemo(() => {
@@ -82,21 +90,32 @@ export function useChallengeMapEffects({
         };
     }, [challenge, setDisablePeaksSearch, map]);
 
-    // Fit map to challenge bounds
+    // Fit map to challenge bounds (only once on initial load, not on every zoom/pan)
     useEffect(() => {
+        // Reset fitBounds flag when viewing a different challenge
+        if (challenge?.id !== lastChallengeIdRef.current) {
+            hasFitBoundsRef.current = false;
+            lastChallengeIdRef.current = challenge?.id ?? null;
+        }
+
+        // Only fit bounds once per challenge
+        if (hasFitBoundsRef.current) return;
+        
         if (bounds && map) {
+            hasFitBoundsRef.current = true;
             map.fitBounds(bounds, {
                 padding,
                 maxZoom: 12,
             });
         } else if (challenge?.location_coords && map) {
+            hasFitBoundsRef.current = true;
             map.flyTo({
                 center: challenge.location_coords,
                 zoom: 10,
                 essential: true,
             });
         }
-    }, [bounds, challenge?.location_coords, map, padding]);
+    }, [bounds, challenge?.id, challenge?.location_coords, map, padding]);
 
     // Show challenge peaks on the map
     useEffect(() => {

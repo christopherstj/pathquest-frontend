@@ -27,7 +27,7 @@ const ChallengeListItem = ({ peak, showCompletionStatus = true }: ChallengeListI
                 {showCompletionStatus && (
                     <Mountain
                         className={`w-4 h-4 ${
-                            isCompleted ? "text-green-500" : "text-muted-foreground"
+                            isCompleted ? "text-summited" : "text-muted-foreground"
                         }`}
                     />
                 )}

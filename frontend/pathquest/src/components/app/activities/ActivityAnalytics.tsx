@@ -316,7 +316,7 @@ const ActivityAnalytics = ({ activity }: ActivityAnalyticsProps) => {
             {stats.cumulativeElevation.length > 0 && (
                 <div className="space-y-2">
                     <div className="flex items-center gap-2">
-                        <ArrowUp className="w-4 h-4 text-green-500" />
+                        <ArrowUp className="w-4 h-4 text-summited" />
                         <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                             Cumulative Elevation
                         </h3>
@@ -595,7 +595,7 @@ const ClimbingSegments = ({ segments }: ClimbingSegmentsProps) => {
                     <div className="grid grid-cols-3 gap-2 text-xs">
                         <div>
                             <p className="text-muted-foreground mb-0.5">Gain</p>
-                            <p className="font-mono text-green-500">
+                            <p className="font-mono text-summited">
                                 +{Math.round(metersToFt(segment.elevationGain)).toLocaleString()} ft
                             </p>
                         </div>

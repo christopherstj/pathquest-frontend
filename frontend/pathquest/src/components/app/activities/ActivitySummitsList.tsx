@@ -50,7 +50,7 @@ const ActivitySummitsList = ({ summits, activityId, onSummitHover }: ActivitySum
         <div className="space-y-4">
             <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                    <Mountain className="w-4 h-4 text-green-500" />
+                    <Mountain className="w-4 h-4 text-summited" />
                     <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
                         Summits ({summits.length})
                     </h3>

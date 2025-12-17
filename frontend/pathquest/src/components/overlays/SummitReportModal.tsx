@@ -419,7 +419,7 @@ const SuccessContent = ({ peakName }: SuccessContentProps) => {
             className="py-8 text-center"
         >
             <motion.div
-                className="w-16 h-16 rounded-full bg-green-500/10 flex items-center justify-center mx-auto mb-4"
+                className="w-16 h-16 rounded-full bg-summited/10 flex items-center justify-center mx-auto mb-4"
                 initial={{ scale: 0 }}
                 animate={{ scale: 1 }}
                 transition={{
@@ -429,7 +429,7 @@ const SuccessContent = ({ peakName }: SuccessContentProps) => {
                     delay: 0.1,
                 }}
             >
-                <Check className="w-8 h-8 text-green-500" />
+                <Check className="w-8 h-8 text-summited" />
             </motion.div>
             <motion.h3
                 className="text-xl font-display font-semibold mb-1"

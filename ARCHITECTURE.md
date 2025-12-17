@@ -216,13 +216,14 @@ Server actions for data fetching and mutations. Organized by domain. Backend cal
   - Peak selected: My Activity, Community tabs (summit history drill-down mode via `summitHistoryPeakId` in mapStore—when set, shows SummitHistoryPanel)
   - Activity selected: Summits tab showing activity summits
   - Profile selected: Peaks and Journal tabs (hides Explore tab)
-- `DetailBottomSheet.tsx` - Mobile-only bottom sheet with Details/Discover tabs. Uses extracted mobile components (PeakDetailsMobile, ChallengeDetailsMobile, DiscoveryContentMobile). Manages drawer height with snap points (collapsed/halfway/expanded).
+  - Challenge selected: Peaks tab showing challenge peaks list with PeakRow components (hides Explore tab)
+- `DetailBottomSheet.tsx` - Mobile-only bottom sheet with tabbed interface. Uses extracted mobile components (PeakDetailsMobile, ChallengeDetailsMobile, DiscoveryContentMobile). Manages drawer height with snap points (collapsed/halfway/expanded). Supports Challenge Peaks tab when challenge is selected (hides Explore tab similar to profile).
 - `SummitHistoryPanel.tsx` - Full summit history list for a peak. Shows all public summits with user names, dates, and weather conditions at summit time. Used inside DiscoveryDrawer (desktop) or DetailBottomSheet (mobile).
 - `PeakDetailPanel.tsx` - Desktop right panel for peak details. Uses shared components (DetailPanelHeader, StatsGrid, DetailLoadingState) and usePeakMapEffects hook. Includes CurrentConditions weather widget, summit status for authenticated users.
 - `PeakDetailContent.tsx` - Peak detail content with SSR data (used by static pages). Uses shared UI components.
 - `PeakCommunity.tsx` - Community summit history display component (shows public summits with user names and weather)
 - `PeakUserActivity.tsx` - User's activity display for a peak (shows user's ascents, activities, and allows editing). Activity cards link to `/activities/[id]` detail pages. Uses shared `ActivityWithSummits` and `OrphanSummitCard` components.
-- `ChallengeDetailPanel.tsx` - Desktop right panel for challenge details. Uses shared components and useChallengeMapEffects hook. Shows challenge progress for authenticated users.
+- `ChallengeDetailPanel.tsx` - Desktop right panel for challenge details. Uses shared components and useChallengeMapEffects hook. Shows challenge progress for authenticated users. Peaks list is displayed in DiscoveryDrawer (left pane) instead of this panel. Shares challenge data with mapStore via `selectedChallengeData`.
 - `ChallengeDetailContent.tsx` - Challenge detail content with SSR data (used by static pages). Uses shared UI components.
 - `DashboardPanel.tsx` - User dashboard panel (authenticated only). Wrapper component that renders DashboardContent.
 - `DashboardContent.tsx` - Dashboard content component. Shows recent summits (fetched from `/api/dashboard/recent-summits`), favorite challenges with progress bars (fetched from `/api/dashboard/favorite-challenges`), and activity sync status.
@@ -236,7 +237,7 @@ Server actions for data fetching and mutations. Organized by domain. Backend cal
 
 ##### Mobile Overlays (`components/overlays/mobile/`)
 - `peak-details-mobile.tsx` - Mobile-optimized peak detail view extracted from DetailBottomSheet
-- `challenge-details-mobile.tsx` - Mobile-optimized challenge detail view extracted from DetailBottomSheet
+- `challenge-details-mobile.tsx` - Mobile-optimized challenge detail view. Shows stats, progress bar, and action buttons. Peaks list is shown in separate Challenge Peaks tab.
 - `discovery-content-mobile.tsx` - Mobile-optimized discovery content using shared discovery components
 - `activity-details-mobile.tsx` - Mobile-optimized activity detail view with Details/Summits/Analytics tabs
 - `profile-details-mobile.tsx` - Mobile-optimized profile detail view with stats, highest peak, and accepted challenges
@@ -284,13 +285,20 @@ Server actions for data fetching and mutations. Organized by domain. Backend cal
 #### Discovery Components (`components/discovery/`)
 Shared discovery list components used by both desktop (DiscoveryDrawer) and mobile (DetailBottomSheet):
 - `discovery-challenges-list.tsx` - Renders visible challenges list with click handlers
-- `discovery-peaks-list.tsx` - Renders visible peaks list with click handlers
+- `discovery-peaks-list.tsx` - Renders visible peaks list using `PeakRow` component. Supports `onHoverStart` and `onHoverEnd` props for map hover dot interaction.
 - `empty-discovery-state.tsx` - Empty state when no peaks/challenges visible (includes zoom-in prompt)
 
 #### List Components (`components/lists/`)
 Reusable list item components:
 - `challenge-list-item.tsx` - Peak list item for challenge detail views (shows completion status)
 - `peak-list-item.tsx` - Challenge list item for peak detail views
+- `peak-row.tsx` - Reusable peak row component for discovery lists and challenges. Displays:
+  - Peak name and elevation
+  - Location (country, state, county)
+  - Public summit count (if any)
+  - User's summit count (if authenticated and summited, with sky blue icon using `--summited` theme color)
+  - Challenge badge indicator (if peak is part of any challenges)
+  - Supports hover handlers for map dot display via `onHoverStart`/`onHoverEnd` props
 
 #### UI Components (`components/ui/`)
 Shadcn/ui components built on Radix UI:
@@ -388,6 +396,7 @@ Zustand state management stores:
   - `isSatellite` - Satellite mode toggle
   - `disablePeaksSearch` - Prevents peaks loading when viewing challenge details
   - `summitHistoryPeakId` - When set, DiscoveryDrawer shows SummitHistoryPanel instead of discovery content (desktop drill-down)
+  - `selectedChallengeData` - Challenge peaks data shared between ChallengeDetailPanel and DiscoveryDrawer (challengeId, challengeName, peaks)
   - `hoveredPeakId` - ID of peak being hovered over in summit list, used for map marker highlighting with amber accent color
 - `userStore.tsx` - User data store (vanilla Zustand)
 - `authModalStore.ts` - Auth modal state (isOpen, mode, redirectAction)
@@ -434,8 +443,9 @@ Next.js middleware for legacy route redirects:
 #### Map Hooks
 - `use-map-source.ts` - Hook to manage Mapbox GeoJSON source data with retry logic. Handles waiting for source availability and cleanup on unmount.
 - `use-peak-map-effects.ts` - Hook to handle map effects when viewing a peak detail. Sets selected peak marker, displays activity GPX lines, and provides flyTo functionality.
-- `use-challenge-map-effects.ts` - Hook to handle map effects when viewing a challenge. Disables general peaks search, shows challenge peaks on map, and fits map to challenge bounds.
+- `use-challenge-map-effects.ts` - Hook to handle map effects when viewing a challenge. Disables general peaks search, shows challenge peaks on map (with conditional styling for summited peaks), and fits map to challenge bounds (only once on initial load to prevent zoom/pan issues).
 - `use-activity-map-effects.ts` - Hook to handle map effects when viewing an activity. Displays GPX line, shows peak markers for summitted peaks, handles hover marker from elevation profile chart, handles hover highlighting of peaks from summit list via mapStore.hoveredPeakId (uses Mapbox feature-state for amber accent color), and fits map to activity bounds.
+- `use-peak-hover-map-effects.ts` - Hook to handle map hover effects when hovering over peak rows in discovery lists. Creates/updates a `peakHover` map source and layer to show a bright green dot marker at peak coordinates. Used by DiscoveryDrawer to show a visual indicator on the map when hovering over peak rows.
 - `use-drawer-height.ts` - Hook to manage draggable drawer height with snap points (collapsed/halfway/expanded). Used by DetailBottomSheet for mobile UI.
 
 ## Authentication Flow
@@ -509,6 +519,8 @@ Next.js middleware for legacy route redirects:
 - Paper grain/contour background overlays baked into `globals.css`.
 - Responsive design with mobile-first approach.
 - Custom utilities for spacing, typography, and glass/grain accents.
+- Custom `--summited` CSS variable (sky blue) for summit indicators throughout the app.
+- Green color reserved exclusively for call-to-action buttons (Log Summit, Add Summit, etc.).
 
 ### Component Styling
 - Shadcn/ui components with TailwindCSS
@@ -547,9 +559,13 @@ Next.js middleware for legacy route redirects:
 ### Map Layers (render order bottom to top)
 - `activities` - GPX track lines (orange #c9915a)
 - `activityStarts` - Activity start point markers (green #22c55e)
-- `selectedPeaks` - Peak markers for challenges/activities (muted green #4d7a57, amber accent #d66ba0 on hover via feature-state)
+- `selectedPeaks` - Peak markers for challenges/activities with conditional styling:
+  - Default: muted green (#4d7a57), 7px radius (matches normal exploration)
+  - Summited (summits > 0): sky blue (#5b9bd5), 9px radius (slightly bigger)
+  - Hover: pink/amber accent (#d66ba0), 8px radius (via feature-state)
 - `activityHover` - Hover marker from elevation profile (created dynamically)
-- Peak markers use conditional `circle-color` based on `feature-state.hover` for interactive highlighting
+- `peakHover` - Hover marker for peak rows in discovery list (bright green #22c55e, created dynamically by `usePeakHoverMapEffects`)
+- Peak markers use conditional `circle-color` based on `feature-state.hover` and `properties.summits` for interactive highlighting
 
 ### Map State
 - Stored in Zustand store (map instance) and kept mounted via root layout background

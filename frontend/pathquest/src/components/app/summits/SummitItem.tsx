@@ -200,8 +200,8 @@ const SummitItem = ({ summit, peakId, peakName, showPeakHeader = false, onHoverS
             {/* Peak Header (optional - for Activity Summits tab) */}
             {showPeakHeader && isSummitWithPeak(summit) && (
                 <div className="flex items-center gap-2 mb-3 pb-2 border-b border-border/50">
-                    <div className="w-6 h-6 rounded-full bg-green-500/10 flex items-center justify-center">
-                        <Mountain className="w-3 h-3 text-green-500" />
+                    <div className="w-6 h-6 rounded-full bg-summited/10 flex items-center justify-center">
+                        <Mountain className="w-3 h-3 text-summited" />
                     </div>
                     <span className="text-sm font-semibold text-foreground">
                         {summit.peak.name}
@@ -213,8 +213,8 @@ const SummitItem = ({ summit, peakId, peakName, showPeakHeader = false, onHoverS
             <div className="flex items-center justify-between gap-2 mb-2">
                 <div className="flex items-center gap-2">
                     {!showPeakHeader && (
-                        <div className="w-6 h-6 rounded-full bg-green-500/10 flex items-center justify-center">
-                            <Mountain className="w-3 h-3 text-green-500" />
+                        <div className="w-6 h-6 rounded-full bg-summited/10 flex items-center justify-center">
+                            <Mountain className="w-3 h-3 text-summited" />
                         </div>
                     )}
                     <div className="flex items-center gap-2 text-xs text-muted-foreground">

@@ -323,25 +323,36 @@ const MapBackground = () => {
             }
 
             // Selected Peaks Layer (larger markers for highlighted peaks)
-            // Uses feature-state for hover highlighting with amber accent color
+            // Uses feature-state for hover highlighting and properties.summits for summit status
             if (!newMap.getLayer("selectedPeaks")) {
                 newMap.addLayer({
                     id: "selectedPeaks",
                     type: "circle",
                     source: "selectedPeaks",
                     paint: {
-                        // Conditional color: amber accent (#d66ba0) when hovered, muted green (#4d7a57) default
+                        // Conditional color: 
+                        // - Pink/amber (#d66ba0) when hovered
+                        // - Sky blue (#5b9bd5) when summited
+                        // - Muted green (#4d7a57) default
                         "circle-color": [
                             "case",
                             ["boolean", ["feature-state", "hover"], false],
-                            "#d66ba0", // Amber accent color (oklch(0.6733 0.1597 329.57) converted to hex)
-                            "#4d7a57"  // Default muted green
+                            "#d66ba0", // Hover: pink/amber accent
+                            [">", ["coalesce", ["get", "summits"], 0], 0],
+                            "#5b9bd5", // Summited: sky blue
+                            "#4d7a57"  // Default: muted green
                         ],
+                        // Conditional radius:
+                        // - 8px when hovered (slightly larger than default)
+                        // - 9px when summited (just a bit bigger, like selected peak)
+                        // - 7px default (match normal peaks exploration)
                         "circle-radius": [
                             "case",
                             ["boolean", ["feature-state", "hover"], false],
-                            12, // Slightly larger when hovered
-                            10  // Default size
+                            8, // Hover: slightly larger
+                            [">", ["coalesce", ["get", "summits"], 0], 0],
+                            9, // Summited: just a bit bigger (like selected peak)
+                            7  // Default: match normal peaks exploration
                         ],
                         "circle-stroke-width": 3,
                         "circle-stroke-color": "#e8dfc9",

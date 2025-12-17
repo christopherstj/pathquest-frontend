@@ -4,6 +4,7 @@ import Peak from "@/typeDefs/Peak";
 import ChallengeProgress from "@/typeDefs/ChallengeProgress";
 import Summit from "@/typeDefs/Summit";
 import Activity from "@/typeDefs/Activity";
+import Challenge from "@/typeDefs/Challenge";
 
 export type SelectedPeakUserData = {
     peakId: string;
@@ -19,6 +20,12 @@ export type SelectedPeakCommunityData = {
     publicSummits: Summit[];
 } | null;
 
+export type SelectedChallengeData = {
+    challengeId: number;
+    challengeName: string;
+    peaks: Peak[];
+} | null;
+
 export type MapState = {
     map: Map | null;
     visiblePeaks: Peak[];
@@ -29,6 +36,7 @@ export type MapState = {
     isZoomedOutTooFar: boolean;
     selectedPeakUserData: SelectedPeakUserData;
     selectedPeakCommunityData: SelectedPeakCommunityData;
+    selectedChallengeData: SelectedChallengeData;
     hoveredPeakId: string | null;
 };
 
@@ -42,6 +50,7 @@ export type MapActions = {
     setIsZoomedOutTooFar: (isZoomedOut: boolean) => void;
     setSelectedPeakUserData: (data: SelectedPeakUserData) => void;
     setSelectedPeakCommunityData: (data: SelectedPeakCommunityData) => void;
+    setSelectedChallengeData: (data: SelectedChallengeData) => void;
     setHoveredPeakId: (peakId: string | null) => void;
 };
 
@@ -58,6 +67,7 @@ export const createMapStore = (
         isZoomedOutTooFar: false,
         selectedPeakUserData: null,
         selectedPeakCommunityData: null,
+        selectedChallengeData: null,
         hoveredPeakId: null,
     }
 ) => {
@@ -72,6 +82,7 @@ export const createMapStore = (
         setIsZoomedOutTooFar: (isZoomedOutTooFar) => set({ isZoomedOutTooFar }),
         setSelectedPeakUserData: (selectedPeakUserData) => set({ selectedPeakUserData }),
         setSelectedPeakCommunityData: (selectedPeakCommunityData) => set({ selectedPeakCommunityData }),
+        setSelectedChallengeData: (selectedChallengeData) => set({ selectedChallengeData }),
         setHoveredPeakId: (hoveredPeakId) => set({ hoveredPeakId }),
     }));
 };
