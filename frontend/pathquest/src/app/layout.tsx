@@ -53,7 +53,6 @@ const layout = ({ children }: Props) => {
                     name="viewport"
                     content="width=device-width, initial-scale=1.0"
                 />
-                <link rel="icon" href="/favicon.ico" />
             </head>
             <body
                 className={`${fraunces.variable} ${plexMono.variable} antialiased bg-background text-foreground overflow-hidden`}
