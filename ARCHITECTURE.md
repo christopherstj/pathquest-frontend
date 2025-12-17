@@ -604,11 +604,12 @@ Next.js middleware for legacy route redirects:
 
 ### `auth/getGoogleIdToken.ts`
 - **Status**: ACTIVELY USED
+- **Directive**: `"use server"` - ensures code runs server-side (required for `getVercelOidcToken`)
 - Google ID token helper for backend authentication via Vercel OIDC → Google Workload Identity Federation
 - Used extensively throughout actions and API routes for Bearer token authentication
 - Returns Google ID token in production, empty string in development (where header-based auth is used)
 - Called via `getAuthHeaders` helper or directly in server actions/API routes
-- Includes comprehensive error logging for debugging token generation failures
+- Includes comprehensive error logging for debugging token generation failures (including wrapped `getVercelOidcToken` logging)
 - Uses in-memory caching to avoid regenerating tokens on every request
 - Environment variables required: `GCP_PROJECT_NUMBER`, `GCP_SERVICE_ACCOUNT_EMAIL`, `GCP_WORKLOAD_IDENTITY_POOL_ID`, `GCP_WORKLOAD_IDENTITY_POOL_PROVIDER_ID`
 

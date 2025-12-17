@@ -1,3 +1,5 @@
+"use server";
+
 import { getVercelOidcToken } from "@vercel/oidc";
 import { ExternalAccountClient } from "google-auth-library";
 import jwt from "jsonwebtoken";
@@ -36,6 +38,23 @@ export const getNewToken = async (): Promise<string | null> => {
 
         console.log("[getNewToken] All GCP env vars present, creating auth client...");
 
+        // Wrap getVercelOidcToken to add logging
+        const wrappedGetVercelOidcToken = async () => {
+            console.log("[getNewToken] Calling getVercelOidcToken...");
+            try {
+                const oidcToken = await getVercelOidcToken();
+                if (!oidcToken) {
+                    console.error("[getNewToken] getVercelOidcToken returned null/undefined/empty");
+                } else {
+                    console.log(`[getNewToken] getVercelOidcToken returned token (length: ${oidcToken.length})`);
+                }
+                return oidcToken;
+            } catch (oidcError) {
+                console.error("[getNewToken] getVercelOidcToken threw an error:", oidcError);
+                throw oidcError;
+            }
+        };
+
         const authClient = ExternalAccountClient.fromJSON({
             type: "external_account",
             audience: `//iam.googleapis.com/projects/${GCP_PROJECT_NUMBER}/locations/global/workloadIdentityPools/${GCP_WORKLOAD_IDENTITY_POOL_ID}/providers/${GCP_WORKLOAD_IDENTITY_POOL_PROVIDER_ID}`,
@@ -43,7 +62,7 @@ export const getNewToken = async (): Promise<string | null> => {
             token_url: "https://sts.googleapis.com/v1/token",
             service_account_impersonation_url: `https://iamcredentials.googleapis.com/v1/projects/-/serviceAccounts/${GCP_SERVICE_ACCOUNT_EMAIL}:generateAccessToken`,
             subject_token_supplier: {
-                getSubjectToken: getVercelOidcToken,
+                getSubjectToken: wrappedGetVercelOidcToken,
             },
         });
 
