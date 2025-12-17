@@ -22,7 +22,8 @@ const getUserProfile = async (
     userId: string
 ): Promise<ServerActionResult<ProfileData>> => {
     const session = await useAuth();
-    const token = session ? await getGoogleIdToken() : null;
+    // Always generate token for Google IAM authentication (required at infrastructure level)
+    const token = await getGoogleIdToken().catch(() => null);
 
     const apiRes = await fetch(`${backendUrl}/users/${userId}/profile`, {
         method: "GET",

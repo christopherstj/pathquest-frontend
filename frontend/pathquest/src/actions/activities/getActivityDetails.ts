@@ -14,7 +14,8 @@ const getActivityDetails = async (
     summits: SummitWithPeak[];
 } | null> => {
     const session = await useAuth();
-    const token = session ? await getGoogleIdToken().catch(() => null) : null;
+    // Always generate token for Google IAM authentication (required at infrastructure level)
+    const token = await getGoogleIdToken().catch(() => null);
     const userId = session?.user?.id;
 
     const url = `${backendUrl}/activities/${activityId}`;

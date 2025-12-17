@@ -9,7 +9,16 @@ export const GET = async (req: NextRequest) => {
     
     // Get session to pass user identity to backend
     const session = await getServerSession(authOptions);
-    const token = await getGoogleIdToken().catch(() => null);
+    // Always generate token for Google IAM authentication (required at infrastructure level)
+    // User identity is passed via x-user-* headers for application-level auth
+    const token = await getGoogleIdToken().catch((err) => {
+        console.error("[peaks/search] Failed to get Google ID token:", err);
+        return null;
+    });
+    
+    if (!token) {
+        console.warn("[peaks/search] No token available - request may fail Google IAM auth");
+    }
 
     const url = new URL(
         `${backendUrl.replace(/\/$/, "")}/peaks/search`

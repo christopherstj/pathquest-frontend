@@ -17,7 +17,12 @@ const searchPeaks = async (
     showSummittedPeaks?: string
 ): Promise<Peak[]> => {
     const session = await useAuth();
-    const token = session ? await getGoogleIdToken() : null;
+    // Always generate token for Google IAM authentication (required at infrastructure level)
+    // User identity is passed via x-user-* headers for application-level auth
+    const token = await getGoogleIdToken().catch((err) => {
+        console.error("[searchPeaks] Failed to get Google ID token:", err);
+        return null;
+    });
 
     const url = new URL(`${backendUrl}/peaks/search`);
 

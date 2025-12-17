@@ -19,7 +19,8 @@ const searchUserPeaks = async (
     pageSize: number = 50
 ): Promise<ServerActionResult<SearchUserPeaksResult>> => {
     const session = await useAuth();
-    const token = session ? await getGoogleIdToken() : null;
+    // Always generate token for Google IAM authentication (required at infrastructure level)
+    const token = await getGoogleIdToken().catch(() => null);
 
     const params = new URLSearchParams();
     if (search) params.set("search", search);

@@ -40,7 +40,8 @@ const searchChallenges = async (
         return [];
     }
 
-    const token = session ? await getGoogleIdToken() : null;
+    // Always generate token for Google IAM authentication (required at infrastructure level)
+    const token = await getGoogleIdToken().catch(() => null);
 
     const url = new URL(`${backendUrl}/challenges/search`);
     url.searchParams.append("type", types.join(","));

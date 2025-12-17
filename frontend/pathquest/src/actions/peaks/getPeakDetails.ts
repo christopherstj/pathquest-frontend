@@ -21,7 +21,8 @@ const getPeakDetails = async (
     }>
 > => {
     const session = await useAuth();
-    const token = session ? await getGoogleIdToken().catch(() => null) : null;
+    // Always generate token for Google IAM authentication (required at infrastructure level)
+    const token = await getGoogleIdToken().catch(() => null);
 
     const apiRes = await fetch(`${backendUrl}/peaks/${peakId}`, {
         method: "GET",

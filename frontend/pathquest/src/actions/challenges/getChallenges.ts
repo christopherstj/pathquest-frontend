@@ -13,7 +13,8 @@ const getChallenges = async (
     const backendUrl = getBackendUrl();
 
     const session = await useAuth();
-    const token = session ? await getGoogleIdToken() : null;
+    // Always generate token for Google IAM authentication (required at infrastructure level)
+    const token = await getGoogleIdToken().catch(() => null);
 
     const url = search
         ? `${backendUrl}/challenges?page=${page}&perPage=${perPage}&search=${search}`
