@@ -37,7 +37,8 @@ const getAuthHeaders = async (): Promise<{
             headers["x-user-email"] = session.user.email;
         }
         if (session.user.name) {
-            headers["x-user-name"] = session.user.name;
+            // URL-encode name to handle emojis and non-ASCII characters (HTTP headers must be ASCII)
+            headers["x-user-name"] = encodeURIComponent(session.user.name);
         }
     }
 

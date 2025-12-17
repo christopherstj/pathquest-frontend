@@ -33,7 +33,7 @@ export const GET = async (req: NextRequest) => {
             // Pass user identity via headers for summit data
             ...(session?.user?.id ? { "x-user-id": session.user.id } : {}),
             ...(session?.user?.email ? { "x-user-email": session.user.email } : {}),
-            ...(session?.user?.name ? { "x-user-name": session.user.name } : {}),
+            ...(session?.user?.name ? { "x-user-name": encodeURIComponent(session.user.name) } : {}),
         },
     }).catch((err) =>
         NextResponse.json({ message: err?.message ?? "Upstream error" }, { status: 502 })

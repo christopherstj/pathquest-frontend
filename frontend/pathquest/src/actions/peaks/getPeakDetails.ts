@@ -39,7 +39,7 @@ const getPeakDetails = async (
             // Pass user info via headers for backend auth (especially in dev)
             ...(session?.user?.id ? { "x-user-id": session.user.id } : {}),
             ...(session?.user?.email ? { "x-user-email": session.user.email } : {}),
-            ...(session?.user?.name ? { "x-user-name": session.user.name } : {}),
+            ...(session?.user?.name ? { "x-user-name": encodeURIComponent(session.user.name) } : {}),
         },
     });
 

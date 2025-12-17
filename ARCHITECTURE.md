@@ -136,6 +136,12 @@ src/app/
 ### Actions (`src/actions/`)
 Server actions for data fetching and mutations. Organized by domain. Backend calls now target the `/api` prefix via `getBackendUrl()`; private endpoints include a bearer from `getGoogleIdToken`, while public reads omit the header.
 
+**Static vs Dynamic Actions:**
+- **Public actions** (e.g., `getPeakDetailsPublic`, `getPublicChallengeDetails`, `getTopPeaks`, `getAllChallengeIds`) - Safe for static generation (ISR). Do NOT use `useAuth()` or access cookies/headers. Only use `getGoogleIdToken()` for Google IAM.
+- **Authenticated actions** (e.g., `getPeakDetails`, `getChallengeDetails`) - For runtime use only. Use `useAuth()` to get session and pass user headers. Will trigger `DYNAMIC_SERVER_USAGE` if called during static generation.
+
+For static ISR pages (`/peaks/[id]`, `/challenges/[id]`), always use the "Public" variants. The overlay components (runtime) use the authenticated variants for user-specific data.
+
 #### Activities (`actions/activities/`)
 - `deleteActivity.ts` - Deletes an activity
 - `getActivityCoords.ts` - Fetches activity coordinate data
@@ -153,9 +159,9 @@ Server actions for data fetching and mutations. Organized by domain. Backend cal
 - `addChallengeFavorite.ts` - Adds challenge to favorites
 - `deleteChallengeFavorite.ts` - Removes challenge from favorites
 - `getAllChallenges.ts` - Fetches all challenges with filters
-- `getAllChallengeIds.ts` - Fetches all challenge IDs for static generation
-- `getChallengeDetails.ts` - Gets detailed challenge information (requires auth)
-- `getPublicChallengeDetails.ts` - Gets challenge details (public, optional auth)
+- `getAllChallengeIds.ts` - Fetches all challenge IDs for static generation (no auth)
+- `getChallengeDetails.ts` - Gets detailed challenge information (authenticated, runtime only)
+- `getPublicChallengeDetails.ts` - Gets challenge details for static generation (public, no auth)
 - `getChallenges.ts` - Gets paginated challenges list
 - `searchChallenges.ts` - Searches challenges with optional bounds, search, favorites-only, and type filters
 - `getFavoriteChallenges.ts` - Gets user's favorite challenges
@@ -165,11 +171,12 @@ Server actions for data fetching and mutations. Organized by domain. Backend cal
 #### Peaks (`actions/peaks/`)
 - `addManualPeakSummit.ts` - Adds manual peak summit entry
 - `deleteAscent.ts` - Deletes an ascent
-- `getTopPeaks.ts` - Fetches top peaks by summit count (for static generation)
+- `getTopPeaks.ts` - Fetches top peaks by summit count (for static generation, no auth)
 - `getAscentDetails.ts` - Gets detailed ascent information
 - `getFavoritePeaks.ts` - Gets user's favorite peaks
 - `getIsPeakFavorited.ts` - Checks if peak is favorited
-- `getPeakDetails.ts` - Gets detailed peak information
+- `getPeakDetails.ts` - Gets detailed peak information (authenticated, runtime only)
+- `getPeakDetailsPublic.ts` - Gets peak details for static generation (public, no auth)
 - `getPeaks.ts` - Gets paginated peaks list
 - `getPeakSummits.ts` - Gets peaks summitted by user
 - `getRecentSummits.ts` - Gets recent summits for user
