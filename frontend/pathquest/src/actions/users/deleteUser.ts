@@ -7,7 +7,6 @@ const backendUrl = getBackendUrl();
 const deleteUser = async () => {
     const { headers, session } = await getAuthHeaders();
 
-    // @ts-expect-error - id is added in session callback
     const id = session?.user?.id;
 
     if (!id) {
