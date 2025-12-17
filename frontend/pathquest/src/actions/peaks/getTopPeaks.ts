@@ -1,5 +1,6 @@
 "use server";
 import getBackendUrl from "@/helpers/getBackendUrl";
+import getGoogleIdToken from "@/auth/getGoogleIdToken";
 
 interface TopPeak {
     id: string;
@@ -9,8 +10,20 @@ interface TopPeak {
 const backendUrl = getBackendUrl();
 
 const getTopPeaks = async (limit: number = 1000): Promise<TopPeak[]> => {
+    // Get Google ID token for authentication (works during build via Vercel OIDC)
+    const token = await getGoogleIdToken();
+    
+    const headers: Record<string, string> = {
+        "Content-Type": "application/json",
+    };
+    
+    if (token) {
+        headers["Authorization"] = `Bearer ${token}`;
+    }
+
     const apiRes = await fetch(`${backendUrl}/peaks/top?limit=${limit}`, {
         method: "GET",
+        headers,
         next: { revalidate: 86400 }, // Cache for 24 hours
     });
 
