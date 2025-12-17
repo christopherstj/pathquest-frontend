@@ -1,18 +1,26 @@
 "use server";
-import getGoogleIdToken from "@/auth/getGoogleIdToken";
-import { useAuth } from "@/auth/useAuth";
+import getAuthHeaders from "@/helpers/getAuthHeaders";
 import getBackendUrl from "@/helpers/getBackendUrl";
 import ServerActionResult from "@/typeDefs/ServerActionResult";
 
 const backendUrl = getBackendUrl();
 
-const updateUser = async (updateData: {
+interface UpdateUserData {
     name?: string;
     email?: string;
     pic?: string;
-}): Promise<ServerActionResult> => {
-    const session = await useAuth();
+    city?: string;
+    state?: string;
+    country?: string;
+    location_coords?: [number, number] | null;
+    update_description?: boolean;
+    is_public?: boolean;
+}
 
+const updateUser = async (updateData: UpdateUserData): Promise<ServerActionResult> => {
+    const { headers, session } = await getAuthHeaders();
+
+    // @ts-expect-error - id is added in session callback
     const id = session?.user?.id;
 
     if (!id) {
@@ -22,14 +30,12 @@ const updateUser = async (updateData: {
         };
     }
 
-    const token = await getGoogleIdToken();
-
     const apiRes = await fetch(`${backendUrl}/users/${id}`, {
         method: "PUT",
         cache: "no-cache",
         headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
+            ...headers,
         },
         body: JSON.stringify(updateData),
     });

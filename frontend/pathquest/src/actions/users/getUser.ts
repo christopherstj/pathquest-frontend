@@ -1,6 +1,5 @@
 "use server";
-import getGoogleIdToken from "@/auth/getGoogleIdToken";
-import { useAuth } from "@/auth/useAuth";
+import getAuthHeaders from "@/helpers/getAuthHeaders";
 import getBackendUrl from "@/helpers/getBackendUrl";
 import User from "@/typeDefs/User";
 
@@ -13,8 +12,9 @@ const getUser = async (
     user?: User;
     error?: string;
 }> => {
-    const session = await useAuth();
+    const { headers, session } = await getAuthHeaders();
 
+    // @ts-expect-error - id is added in session callback
     const id = session?.user?.id;
 
     const requestedUserId = userId || id;
@@ -26,14 +26,12 @@ const getUser = async (
         };
     }
 
-    const token = session ? await getGoogleIdToken() : null;
-
     const apiRes = await fetch(`${backendUrl}/users/${requestedUserId}`, {
         method: "GET",
         cache: "no-cache",
         headers: {
             "Content-Type": "application/json",
-            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+            ...headers,
         },
     });
 
@@ -45,8 +43,6 @@ const getUser = async (
         };
     } else {
         const user: User = await apiRes.json();
-
-        console.log("Fetched user:", user);
 
         return {
             userFound: true,

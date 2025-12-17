@@ -13,4 +13,5 @@ export default interface User {
     is_lifetime_free: boolean;
     historical_data_processed: boolean;
     processing_activity_count?: number;
+    is_public?: boolean;
 }

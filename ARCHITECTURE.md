@@ -190,7 +190,7 @@ Server actions for data fetching and mutations. Organized by domain. Backend cal
 - `processHistoricalData.ts` - Initiates historical data processing
 - `searchUserPeaks.ts` - Searches user's summited peaks with counts and pagination
 - `searchUserSummits.ts` - Searches user's individual summit entries with pagination
-- `updateUser.ts` - Updates user profile
+- `updateUser.ts` - Updates user profile. Supports: `name`, `email`, `pic`, `city`, `state`, `country`, `location_coords`, `update_description`, `is_public`
 
 #### Root Actions
 - `searchNearestPeaks.ts` - Searches peaks nearest to coordinates
@@ -202,9 +202,9 @@ Server actions for data fetching and mutations. Organized by domain. Backend cal
 #### App Components (`components/app/`)
 
 ##### Layout (`components/app/layout/`)
-- `GlobalNavigation.tsx` - Top navigation bar with logo, search omnibar, and user menu
+- `GlobalNavigation.tsx` - Top navigation bar with logo, search omnibar, and user menu. User dropdown includes Profile, Settings (opens UserManagementModal), and Logout options.
 - `SidebarLink.tsx` - Sidebar link component
-- `UserButton.tsx` - User menu button
+- `UserButton.tsx` - User menu button (legacy, not currently used)
 
 ##### Brand (`components/brand/`)
 - `Logo.tsx` - SVG logo component with topographic contour-line mountain design. Uses currentColor for theming, supports size prop.
@@ -229,6 +229,15 @@ Server actions for data fetching and mutations. Organized by domain. Backend cal
 - `DashboardContent.tsx` - Dashboard content component. Shows recent summits (fetched from `/api/dashboard/recent-summits`), favorite challenges with progress bars (fetched from `/api/dashboard/favorite-challenges`), and activity sync status.
 - `AddManualSummitModal.tsx` - Modal for logging manual peak summits. Supports two flows: peak-first (from peak detail) and activity-first (from activity detail with peak search along route). Triggered by ManualSummitProvider.
 - `SummitReportModal.tsx` - Modal for editing summit experiences/reports (triggered by SummitReportProvider)
+- `UserManagementModal.tsx` - Modal for account settings. Features:
+  - Location search using Mapbox Search Box (`@mapbox/search-js-react`) configured for places/regions
+  - Small Mapbox GL map preview (300x200px) showing user's location with marker
+  - Email input field
+  - Toggle for "Update Strava Descriptions" (update_description)
+  - Toggle for "Public Profile" (is_public)
+  - Delete account button with AlertDialog confirmation
+  - Cancel and Save buttons
+  - Triggered by UserManagementProvider
 - `ActivityDetailPanel.tsx` - Desktop right panel for activity details. Shows Details/Summits/Analytics tabs, GPX route on map, elevation profile with hover interaction.
 - `ProfileDetailPanel.tsx` - Desktop right panel for user profile details. Shows profile stats and action buttons. Accepted challenges are displayed in the Challenges tab of the left pane (DiscoveryDrawer). Uses useProfileMapEffects hook.
 - `ProfileDetailContent.tsx` - Profile detail content with SSR data (used by static pages). Uses shared UI components.
@@ -303,14 +312,18 @@ Reusable list item components:
 
 #### UI Components (`components/ui/`)
 Shadcn/ui components built on Radix UI:
+- `alert-dialog.tsx` - Alert dialog for confirmations (used for delete confirmations)
 - `badge.tsx` - Badge component
 - `button.tsx` - Button component
+- `dialog.tsx` - Dialog/modal component
+- `dropdown-menu.tsx` - Dropdown menu component
 - `input.tsx` - Input component
 - `separator.tsx` - Separator component
 - `sheet.tsx` - Sheet/sidebar component
 - `skeleton.tsx` - Loading skeleton
 - `sidebar.tsx` - Sidebar component
-- `toggle.tsx` - Toggle switch
+- `switch.tsx` - Toggle switch with on/off states (custom implementation)
+- `toggle.tsx` - Toggle button
 - `tooltip.tsx` - Tooltip component
 
 Custom shared UI components:
@@ -388,6 +401,7 @@ React context providers:
 - `QueryProvider.tsx` - React Query (TanStack Query) provider for client-side data fetching and caching
 - `ManualSummitProvider.tsx` - Manual summit modal state provider
 - `SummitReportProvider.tsx` - Summit report/edit modal state provider
+- `UserManagementProvider.tsx` - User management modal state provider (isOpen, openModal, closeModal)
 
 ### Store (`src/store/`)
 Zustand state management stores:
@@ -404,6 +418,7 @@ Zustand state management stores:
 - `dashboardStore.ts` - Dashboard panel state (isOpen, toggle)
 - `manualSummitStore.ts` - Manual summit modal state
 - `summitReportStore.ts` - Summit report/edit modal state
+- `userManagementStore.ts` - User management modal state (isOpen, openModal, closeModal)
 
 ### Auth (`src/auth/`)
 Authentication configuration:

@@ -2,12 +2,13 @@
 
 import React, { Suspense } from "react";
 import Omnibar from "@/components/search/Omnibar";
-import { User, LayoutDashboard, LogIn, LogOut } from "lucide-react";
+import { User, LayoutDashboard, LogIn, LogOut, Settings } from "lucide-react";
 import Link from "next/link";
 import Logo from "@/components/brand/Logo";
 import { useIsAuthenticated } from "@/hooks/useRequireAuth";
 import { useAuthModalStore } from "@/providers/AuthModalProvider";
 import { useDashboardStore } from "@/providers/DashboardProvider";
+import { useUserManagementStore } from "@/providers/UserManagementProvider";
 import {
     Tooltip,
     TooltipContent,
@@ -27,6 +28,7 @@ const GlobalNavigation = () => {
     const openLoginModal = useAuthModalStore((state) => state.openLoginModal);
     const toggleDashboard = useDashboardStore((state) => state.toggleDashboard);
     const isDashboardOpen = useDashboardStore((state) => state.isOpen);
+    const openUserManagement = useUserManagementStore((state) => state.openModal);
 
     const handleLoginClick = () => {
         openLoginModal();
@@ -34,6 +36,10 @@ const GlobalNavigation = () => {
 
     const handleDashboardClick = () => {
         toggleDashboard();
+    };
+
+    const handleSettingsClick = () => {
+        openUserManagement();
     };
 
     return (
@@ -125,6 +131,13 @@ const GlobalNavigation = () => {
                                         <User className="w-4 h-4" />
                                         <span>Profile</span>
                                     </Link>
+                                </DropdownMenuItem>
+                                <DropdownMenuItem
+                                    onClick={handleSettingsClick}
+                                    className="flex items-center gap-2 cursor-pointer"
+                                >
+                                    <Settings className="w-4 h-4" />
+                                    <span>Settings</span>
                                 </DropdownMenuItem>
                                 <DropdownMenuSeparator />
                                 <DropdownMenuItem
