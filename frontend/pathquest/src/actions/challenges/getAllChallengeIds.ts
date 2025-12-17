@@ -6,8 +6,12 @@ import getGoogleIdToken from "@/auth/getGoogleIdToken";
 const backendUrl = getBackendUrl();
 
 const getAllChallengeIds = async (): Promise<{ id: string }[]> => {
-    // Get Google ID token for authentication (works during build via Vercel OIDC)
-    const token = await getGoogleIdToken();
+    // Always generate token for Google IAM authentication (required at infrastructure level)
+    // Works during build via Vercel OIDC
+    const token = await getGoogleIdToken().catch((err) => {
+        console.error("[getAllChallengeIds] Failed to get Google ID token:", err);
+        return null;
+    });
     
     const headers: Record<string, string> = {
         "Content-Type": "application/json",

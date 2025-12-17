@@ -17,12 +17,23 @@ const getActivitiesProcessing = async (): Promise<
         return { success: false, error: "User not authenticated" };
     }
 
-    const idToken = await getGoogleIdToken();
+    // Always generate token for Google IAM authentication (required at infrastructure level)
+    const idToken = await getGoogleIdToken().catch((err) => {
+        console.error("[getActivitiesProcessing] Failed to get Google ID token:", err);
+        return null;
+    });
+
+    if (!idToken && process.env.NODE_ENV !== "development") {
+        return {
+            success: false,
+            error: "Authentication token not available",
+        };
+    }
 
     const res = await fetch(`${backendUrl}/users/${id}/activities-processing`, {
         method: "GET",
         headers: {
-            Authorization: `Bearer ${idToken}`,
+            ...(idToken ? { Authorization: `Bearer ${idToken}` } : {}),
         },
     });
 

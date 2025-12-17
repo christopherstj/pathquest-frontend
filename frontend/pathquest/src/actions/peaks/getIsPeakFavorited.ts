@@ -12,12 +12,21 @@ const getIsFavorited = async (peakId: string): Promise<boolean> => {
         return false;
     }
 
-    const idToken = await getGoogleIdToken();
+    // Always generate token for Google IAM authentication (required at infrastructure level)
+    const idToken = await getGoogleIdToken().catch((err) => {
+        console.error("[getIsPeakFavorited] Failed to get Google ID token:", err);
+        return null;
+    });
+
+    if (!idToken && process.env.NODE_ENV !== "development") {
+        console.error("[getIsPeakFavorited] No token available - cannot make authenticated request");
+        return false;
+    }
 
     const response = await fetch(`${backendUrl}/peaks/favorite?peakId=${peakId}`, {
         method: "GET",
         headers: {
-            Authorization: `Bearer ${idToken}`,
+            ...(idToken ? { Authorization: `Bearer ${idToken}` } : {}),
         },
     });
 

@@ -125,7 +125,8 @@ export const getNewToken = async (): Promise<string | null> => {
 
 /**
  * Gets a Google ID token for authenticating API requests.
- * Uses caching to avoid regenerating tokens on every request.
+ * Uses in-memory caching to avoid regenerating tokens within the same function invocation.
+ * Note: Cache does NOT persist across serverless function invocations (each Vercel function is a new process).
  * Returns empty string in development (API allows unauthenticated requests in dev).
  */
 const getGoogleIdToken = async (): Promise<string | null> => {
@@ -134,7 +135,7 @@ const getGoogleIdToken = async (): Promise<string | null> => {
         return "";
     }
 
-    // Check cached token
+    // Check cached token (only helps within the same function invocation)
     if (cachedToken && tokenExpiry > Date.now()) {
         const remainingMs = tokenExpiry - Date.now();
         console.log(`[getGoogleIdToken] Returning cached token (expires in ${Math.round(remainingMs / 1000)}s)`);

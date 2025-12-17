@@ -13,14 +13,23 @@ const getRecentActivities = async (summitsOnly?: boolean) => {
         return [];
     }
 
-    const idToken = await getGoogleIdToken();
+    // Always generate token for Google IAM authentication (required at infrastructure level)
+    const idToken = await getGoogleIdToken().catch((err) => {
+        console.error("[getRecentActivities] Failed to get Google ID token:", err);
+        return null;
+    });
+
+    if (!idToken && process.env.NODE_ENV !== "development") {
+        console.error("[getRecentActivities] No token available - cannot make authenticated request");
+        return [];
+    }
 
     const response = await fetch(
         `${backendUrl}/activities/recent${summitsOnly ? "?summitsOnly=true" : ""}`,
         {
             method: "GET",
             headers: {
-                Authorization: `Bearer ${idToken}`,
+                ...(idToken ? { Authorization: `Bearer ${idToken}` } : {}),
             },
         }
     );

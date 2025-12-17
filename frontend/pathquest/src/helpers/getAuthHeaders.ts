@@ -14,7 +14,12 @@ const getAuthHeaders = async (): Promise<{
     session: Awaited<ReturnType<typeof useAuth>>;
 }> => {
     const session = await useAuth();
-    const token = session ? await getGoogleIdToken() : null;
+    // Always generate token for Google IAM authentication (required at infrastructure level)
+    // User identity is passed via x-user-* headers for application-level auth
+    const token = await getGoogleIdToken().catch((err) => {
+        console.error("[getAuthHeaders] Failed to get Google ID token:", err);
+        return null;
+    });
 
     const headers: Record<string, string> = {};
 
@@ -36,9 +41,9 @@ const getAuthHeaders = async (): Promise<{
     console.log("[getAuthHeaders] Token is null:", token === null);
     if (token) {
         headers["Authorization"] = `Bearer ${token}`;
-    } else if (session && process.env.NODE_ENV !== "development") {
-        // Log warning if we have a session but no token in production
-        console.warn("[getAuthHeaders] Session present but no token available - API requests may fail");
+    } else if (process.env.NODE_ENV !== "development") {
+        // Log warning if token generation failed in production (Google IAM will reject requests)
+        console.warn("[getAuthHeaders] No token available in production - API requests will fail Google IAM authentication");
     }
 
     return { headers, session };

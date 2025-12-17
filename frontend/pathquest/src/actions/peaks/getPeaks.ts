@@ -10,7 +10,11 @@ const getPeaks = async (
 ): Promise<Peak[]> => {
     const backendUrl = getBackendUrl();
 
-    const token = await getGoogleIdToken();
+    // Always generate token for Google IAM authentication (required at infrastructure level)
+    const token = await getGoogleIdToken().catch((err) => {
+        console.error("[getPeaks] Failed to get Google ID token:", err);
+        return null;
+    });
 
     if (!token && process.env.NODE_ENV !== "development") {
         console.error("[getPeaks] No token available - cannot make authenticated request");

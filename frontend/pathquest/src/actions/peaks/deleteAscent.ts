@@ -14,7 +14,11 @@ const deleteAscent = async (
         return { success: false, error: "Unauthorized" };
     }
 
-    const token = await getGoogleIdToken().catch(() => null);
+    // Always generate token for Google IAM authentication (required at infrastructure level)
+    const token = await getGoogleIdToken().catch((err) => {
+        console.error("[deleteAscent] Failed to get Google ID token:", err);
+        return null;
+    });
     const userId = session.user?.id;
 
     const url = `${backendUrl}/peaks/ascent/${ascentId}`;

@@ -18,7 +18,11 @@ const searchNearestActivities = async (
         return [];
     }
 
-    const token = await getGoogleIdToken().catch(() => null);
+    // Always generate token for Google IAM authentication (required at infrastructure level)
+    const token = await getGoogleIdToken().catch((err) => {
+        console.error("[searchNearestActivities] Failed to get Google ID token:", err);
+        return null;
+    });
     const userId = session.user?.id;
 
     const url = search

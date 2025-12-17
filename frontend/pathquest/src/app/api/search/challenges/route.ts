@@ -11,7 +11,10 @@ export const GET = async (req: NextRequest) => {
     const session = await getServerSession(authOptions);
     // Always generate token for Google IAM authentication (required at infrastructure level)
     // User identity is passed via x-user-* headers for application-level auth
-    const token = await getGoogleIdToken().catch(() => null);
+    const token = await getGoogleIdToken().catch((err) => {
+        console.error("[challenges/search] Failed to get Google ID token:", err);
+        return null;
+    });
 
     const url = new URL(
         `${backendUrl.replace(/\/$/, "")}/challenges/search`

@@ -64,7 +64,11 @@ const searchPeaksAlongRoute = async (
     maxLat += padding;
 
     // Search for peaks within this bounding box
-    const token = await getGoogleIdToken().catch(() => null);
+    // Always generate token for Google IAM authentication (required at infrastructure level)
+    const token = await getGoogleIdToken().catch((err) => {
+        console.error("[searchPeaksAlongRoute] Failed to get Google ID token:", err);
+        return null;
+    });
 
     const url = new URL(`${backendUrl}/peaks/search`);
     url.searchParams.append("northWestLat", maxLat.toString());

@@ -19,7 +19,11 @@ const getAscentDetails = async (
         return null;
     }
 
-    const token = await getGoogleIdToken();
+    // Always generate token for Google IAM authentication (required at infrastructure level)
+    const token = await getGoogleIdToken().catch((err) => {
+        console.error("[getAscentDetails] Failed to get Google ID token:", err);
+        return null;
+    });
 
     if (!token && process.env.NODE_ENV !== "development") {
         console.error("[getAscentDetails] No token available - cannot make authenticated request");

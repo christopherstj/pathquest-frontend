@@ -5,13 +5,22 @@ import getBackendUrl from "@/helpers/getBackendUrl";
 const backendUrl = getBackendUrl();
 
 const createUserInterest = async (email: string) => {
-    const idToken = await getGoogleIdToken();
+    // Always generate token for Google IAM authentication (required at infrastructure level)
+    const idToken = await getGoogleIdToken().catch((err) => {
+        console.error("[createUserInterest] Failed to get Google ID token:", err);
+        return null;
+    });
+
+    if (!idToken && process.env.NODE_ENV !== "development") {
+        console.error("[createUserInterest] No token available - cannot make authenticated request");
+        return false;
+    }
 
     const response = await fetch(`${backendUrl}/auth/user-interest`, {
         method: "POST",
         headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${idToken}`,
+            ...(idToken ? { Authorization: `Bearer ${idToken}` } : {}),
         },
         body: JSON.stringify({ email }),
     });

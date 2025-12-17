@@ -17,9 +17,10 @@ export const GET = async (req: NextRequest) => {
 
     const backendUrl = getBackendUrl();
     
-    // Get the Google ID token for backend auth (returns empty string in dev)
+    // Always generate token for Google IAM authentication (required at infrastructure level)
+    // Returns empty string in development, valid token in production
     const token = await getGoogleIdToken().catch((err) => {
-        console.error("Failed to get Google ID token:", err);
+        console.error("[recent-summits] Failed to get Google ID token:", err);
         return null;
     });
 

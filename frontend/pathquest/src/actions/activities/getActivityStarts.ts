@@ -23,7 +23,11 @@ const getActivityStarts = async (
         return [];
     }
 
-    const token = await getGoogleIdToken();
+    // Always generate token for Google IAM authentication (required at infrastructure level)
+    const token = await getGoogleIdToken().catch((err) => {
+        console.error("[getActivityStarts] Failed to get Google ID token:", err);
+        return null;
+    });
 
     if (!token && process.env.NODE_ENV !== "development") {
         console.error("[getActivityStarts] No token available - cannot make authenticated request");
