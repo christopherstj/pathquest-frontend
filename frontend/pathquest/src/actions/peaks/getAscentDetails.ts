@@ -19,21 +19,24 @@ const getAscentDetails = async (
         return null;
     }
 
-    const userId = session.user?.id;
-
     const token = await getGoogleIdToken();
+
+    if (!token && process.env.NODE_ENV !== "development") {
+        console.error("[getAscentDetails] No token available - cannot make authenticated request");
+        return null;
+    }
 
     const url = `${backendUrl}/peaks/ascent/${ascentId}`;
 
     const response = await fetch(url, {
         method: "GET",
         headers: {
-            Authorization: `Bearer ${token}`,
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
     });
 
     if (!response.ok) {
-        console.error(await response.text());
+        console.error("[getAscentDetails]", response.status, await response.text());
         return null;
     }
 

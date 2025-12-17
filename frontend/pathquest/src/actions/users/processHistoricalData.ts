@@ -22,12 +22,20 @@ const processHistoricalData = async (): Promise<{
 
     const token = await getGoogleIdToken();
 
+    if (!token && process.env.NODE_ENV !== "development") {
+        console.error("[processHistoricalData] No token available - cannot make authenticated request");
+        return {
+            success: false,
+            error: "Authentication token not available",
+        };
+    }
+
     const historicalRes = await fetch(`${backendUrl}/historical-data`, {
         method: "POST",
         cache: "no-cache",
         headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
         body: JSON.stringify({
             userId: user.id.toString(),
@@ -35,7 +43,7 @@ const processHistoricalData = async (): Promise<{
     });
 
     if (!historicalRes.ok) {
-        console.error(await historicalRes.text());
+        console.error("[processHistoricalData]", historicalRes.status, await historicalRes.text());
         return {
             success: false,
             error: "Failed to process historical data",

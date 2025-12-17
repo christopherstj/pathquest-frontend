@@ -12,6 +12,11 @@ const getPeaks = async (
 
     const token = await getGoogleIdToken();
 
+    if (!token && process.env.NODE_ENV !== "development") {
+        console.error("[getPeaks] No token available - cannot make authenticated request");
+        return [];
+    }
+
     const url = search
         ? `${backendUrl}/peaks?page=${page}&perPage=${perPage}&search=${search}`
         : `${backendUrl}/peaks?page=${page}&perPage=${perPage}`;
@@ -19,12 +24,12 @@ const getPeaks = async (
     const response = await fetch(url, {
         cache: "no-cache",
         headers: {
-            Authorization: `Bearer ${token}`,
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
     });
 
     if (!response.ok) {
-        console.error(await response.text());
+        console.error("[getPeaks]", response.status, await response.text());
         return [];
     } else {
         return await response.json();

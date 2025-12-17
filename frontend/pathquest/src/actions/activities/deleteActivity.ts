@@ -16,17 +16,22 @@ const deleteActivity = async (activityId: string) => {
 
     const token = await getGoogleIdToken();
 
+    if (!token && process.env.NODE_ENV !== "development") {
+        console.error("[deleteActivity] No token available - cannot make authenticated request");
+        return;
+    }
+
     const url = `${backendUrl}/activities/${activityId}`;
 
     const res = await fetch(url, {
         method: "DELETE",
         headers: {
-            Authorization: `Bearer ${token}`,
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
     });
 
     if (!res.ok) {
-        console.error(await res.text());
+        console.error("[deleteActivity]", res.status, await res.text());
         return;
     }
 

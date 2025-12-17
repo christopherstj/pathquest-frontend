@@ -13,17 +13,22 @@ const getUnclimbedPeaks = async (): Promise<Peak[]> => {
 
     const token = await getGoogleIdToken();
 
+    if (!token && process.env.NODE_ENV !== "development") {
+        console.error("[getUnclimbedPeaks] No token available - cannot make authenticated request");
+        return [];
+    }
+
     const backendUrl = getBackendUrl();
 
     const apiRes = await fetch(`${backendUrl}/peaks/summits/unclimbed/nearest`, {
         method: "GET",
         headers: {
-            Authorization: `Bearer ${token}`,
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
     });
 
     if (!apiRes.ok) {
-        console.error(await apiRes.text());
+        console.error("[getUnclimbedPeaks]", apiRes.status, await apiRes.text());
         return [];
     }
 

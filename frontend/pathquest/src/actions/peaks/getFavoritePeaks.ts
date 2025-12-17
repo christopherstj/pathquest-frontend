@@ -15,11 +15,16 @@ const getFavoritePeaks = async (): Promise<Peak[]> => {
 
     const token = await getGoogleIdToken();
 
+    if (!token && process.env.NODE_ENV !== "development") {
+        console.error("[getFavoritePeaks] No token available - cannot make authenticated request");
+        return [];
+    }
+
     const response = await fetch(`${backendUrl}/peaks/summits/favorites`, {
         method: "POST",
         headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
         body: JSON.stringify({
             userId: session.user.id,
@@ -27,7 +32,7 @@ const getFavoritePeaks = async (): Promise<Peak[]> => {
     });
 
     if (!response.ok) {
-        console.error(await response.text());
+        console.error("[getFavoritePeaks]", response.status, await response.text());
         return [];
     }
 

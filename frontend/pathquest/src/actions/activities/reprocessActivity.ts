@@ -23,11 +23,19 @@ const reprocessActivity = async (
 
     const token = await getGoogleIdToken();
 
+    if (!token && process.env.NODE_ENV !== "development") {
+        console.error("[reprocessActivity] No token available - cannot make authenticated request");
+        return {
+            success: false,
+            error: "Authentication token not available",
+        };
+    }
+
     const res = await fetch(`${backendUrl}/activities/reprocess`, {
         method: "POST",
         headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
         body: JSON.stringify({
             activityId,
@@ -35,7 +43,7 @@ const reprocessActivity = async (
     });
 
     if (!res.ok) {
-        console.error(await res.text());
+        console.error("[reprocessActivity]", res.status, await res.text());
         return {
             success: false,
             error: res.statusText,

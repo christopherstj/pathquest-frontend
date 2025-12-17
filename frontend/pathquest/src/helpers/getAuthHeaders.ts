@@ -32,8 +32,13 @@ const getAuthHeaders = async (): Promise<{
     }
 
     // Also include Bearer token (used in production)
+
+    console.log("[getAuthHeaders] Token is null:", token === null);
     if (token) {
         headers["Authorization"] = `Bearer ${token}`;
+    } else if (session && process.env.NODE_ENV !== "development") {
+        // Log warning if we have a session but no token in production
+        console.warn("[getAuthHeaders] Session present but no token available - API requests may fail");
     }
 
     return { headers, session };

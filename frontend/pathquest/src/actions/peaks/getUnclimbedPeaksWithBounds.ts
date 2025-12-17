@@ -18,6 +18,11 @@ const getUnclimbedPeaksWithBounds = async (
 
     const token = await getGoogleIdToken();
 
+    if (!token && process.env.NODE_ENV !== "development") {
+        console.error("[getUnclimbedPeaksWithBounds] No token available - cannot make authenticated request");
+        return [];
+    }
+
     const searchString = search ? `&search=${encodeURIComponent(search)}` : "";
 
     const showSummitted = showSummittedPeaks ? "&showSummittedPeaks=true" : "";
@@ -30,12 +35,12 @@ const getUnclimbedPeaksWithBounds = async (
         method: "GET",
         headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
     });
 
     if (!apiRes.ok) {
-        console.error(await apiRes.text());
+        console.error("[getUnclimbedPeaksWithBounds]", apiRes.status, await apiRes.text());
         return [];
     }
 

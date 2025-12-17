@@ -23,6 +23,11 @@ const getAllChallenges = async (
 
     const token = await getGoogleIdToken();
 
+    if (!token && process.env.NODE_ENV !== "development") {
+        console.error("[getAllChallenges] No token available - cannot make authenticated request");
+        return [];
+    }
+
     const searchString =
         search && search.length > 0
             ? `&search=${encodeURIComponent(search)}`
@@ -36,18 +41,16 @@ const getAllChallenges = async (
         method: "GET",
         headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
     });
 
     if (!apiRes.ok) {
-        console.error(await apiRes.text());
+        console.error("[getAllChallenges]", apiRes.status, await apiRes.text());
         return [];
     }
 
     const data: ChallengeProgress[] = await apiRes.json();
-
-    console.log(data);
 
     return data;
 };

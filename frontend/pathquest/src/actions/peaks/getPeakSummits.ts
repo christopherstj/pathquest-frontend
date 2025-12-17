@@ -15,18 +15,23 @@ const getPeakSummits = async (): Promise<Peak[]> => {
 
     const token = await getGoogleIdToken();
 
+    if (!token && process.env.NODE_ENV !== "development") {
+        console.error("[getPeakSummits] No token available - cannot make authenticated request");
+        return [];
+    }
+
     const backendUrl = getBackendUrl();
 
     const apiRes = await fetch(`${backendUrl}/peaks/summits/${userId}`, {
         method: "GET",
         headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
     });
 
     if (!apiRes.ok) {
-        console.error(await apiRes.text());
+        console.error("[getPeakSummits]", apiRes.status, await apiRes.text());
         return [];
     }
 

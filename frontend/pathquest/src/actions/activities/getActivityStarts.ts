@@ -25,6 +25,11 @@ const getActivityStarts = async (
 
     const token = await getGoogleIdToken();
 
+    if (!token && process.env.NODE_ENV !== "development") {
+        console.error("[getActivityStarts] No token available - cannot make authenticated request");
+        return [];
+    }
+
     const searchString =
         search && search.length > 0
             ? `&search=${encodeURIComponent(search)}`
@@ -41,12 +46,12 @@ const getActivityStarts = async (
         method: "GET",
         headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
     });
 
     if (!apiRes.ok) {
-        console.error(await apiRes.text());
+        console.error("[getActivityStarts]", apiRes.status, await apiRes.text());
         return [];
     }
 

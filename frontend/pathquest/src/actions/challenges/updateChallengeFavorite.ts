@@ -24,6 +24,14 @@ const updateChallengeFavorite = async (
 
     const token = await getGoogleIdToken();
 
+    if (!token && process.env.NODE_ENV !== "development") {
+        console.error("[updateChallengeFavorite] No token available - cannot make authenticated request");
+        return {
+            success: false,
+            error: "Authentication token not available",
+        };
+    }
+
     const userId = session.user?.id;
 
     const body: UserChallengeFavorite = {
@@ -38,13 +46,13 @@ const updateChallengeFavorite = async (
         method: "PUT",
         headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
         body: JSON.stringify(body),
     });
 
     if (!res.ok) {
-        console.error(await res.text());
+        console.error("[updateChallengeFavorite]", res.status, await res.text());
         return {
             success: false,
             error: res.statusText,

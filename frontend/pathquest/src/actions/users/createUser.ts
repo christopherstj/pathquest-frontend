@@ -26,12 +26,20 @@ const createUser = async (
 
     const token = await getGoogleIdToken();
 
+    if (!token && process.env.NODE_ENV !== "development") {
+        console.error("[createUser] No token available - cannot make authenticated request");
+        return {
+            success: false,
+            error: "Authentication token not available",
+        };
+    }
+
     const existingRes = await fetch(`${backendUrl}/users/${user.id}`, {
         method: "GET",
         cache: "no-cache",
         headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
     });
 
@@ -48,7 +56,7 @@ const createUser = async (
         cache: "no-cache",
         headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
         body: JSON.stringify({
             id: user.id.toString(),
@@ -60,7 +68,7 @@ const createUser = async (
     });
 
     if (!apiRes.ok) {
-        console.error(await apiRes.text());
+        console.error("[createUser]", apiRes.status, await apiRes.text());
         return {
             success: false,
             error: "Failed to create user",

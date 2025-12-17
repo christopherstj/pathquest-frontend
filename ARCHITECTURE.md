@@ -604,10 +604,13 @@ Next.js middleware for legacy route redirects:
 
 ### `auth/getGoogleIdToken.ts`
 - **Status**: ACTIVELY USED
-- Google ID token helper for backend authentication
+- Google ID token helper for backend authentication via Vercel OIDC → Google Workload Identity Federation
 - Used extensively throughout actions and API routes for Bearer token authentication
 - Returns Google ID token in production, empty string in development (where header-based auth is used)
 - Called via `getAuthHeaders` helper or directly in server actions/API routes
+- Includes comprehensive error logging for debugging token generation failures
+- Uses in-memory caching to avoid regenerating tokens on every request
+- Environment variables required: `GCP_PROJECT_NUMBER`, `GCP_SERVICE_ACCOUNT_EMAIL`, `GCP_WORKLOAD_IDENTITY_POOL_ID`, `GCP_WORKLOAD_IDENTITY_POOL_PROVIDER_ID`
 
 ### Removed Components (Cleanup December 2024)
 The following legacy components were removed as part of a codebase cleanup:
@@ -629,6 +632,12 @@ Required environment variables:
 - `NEXT_PUBLIC_API_URL` - Backend API URL
 - `NEXT_PUBLIC_MAPBOX_TOKEN` - Mapbox access token
 - `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` - Stripe publishable key
+
+Google Cloud authentication (required for production API access):
+- `GCP_PROJECT_NUMBER` - Google Cloud project number
+- `GCP_SERVICE_ACCOUNT_EMAIL` - Service account email for workload identity
+- `GCP_WORKLOAD_IDENTITY_POOL_ID` - Workload identity pool ID
+- `GCP_WORKLOAD_IDENTITY_POOL_PROVIDER_ID` - Workload identity pool provider ID (for Vercel OIDC)
 
 ## Build & Deployment
 

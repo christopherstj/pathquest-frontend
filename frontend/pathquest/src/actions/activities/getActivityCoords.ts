@@ -18,18 +18,23 @@ const getActivityCoords = async (
 
     const token = await getGoogleIdToken();
 
+    if (!token && process.env.NODE_ENV !== "development") {
+        console.error("[getActivityCoords] No token available - cannot make authenticated request");
+        return null;
+    }
+
     const coordsUrl = `${backendUrl}/activities/${activityId}/coords`;
 
     const coordsRes = await fetch(coordsUrl, {
         method: "GET",
         headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
     });
 
     if (!coordsRes.ok) {
-        console.error(await coordsRes.text());
+        console.error("[getActivityCoords]", coordsRes.status, await coordsRes.text());
         return null;
     }
 

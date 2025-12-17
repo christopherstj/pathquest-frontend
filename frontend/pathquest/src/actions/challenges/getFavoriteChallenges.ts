@@ -13,9 +13,12 @@ const getFavoriteChallenges = async (): Promise<ChallengeProgress[]> => {
         return [];
     }
 
-    const userId = session.user.id;
-
     const token = await getGoogleIdToken();
+
+    if (!token && process.env.NODE_ENV !== "development") {
+        console.error("[getFavoriteChallenges] No token available - cannot make authenticated request");
+        return [];
+    }
 
     const response = await fetch(
         `${backendUrl}/challenges/search?type=in-progress,not-started&favoritesOnly=true`,
@@ -23,13 +26,13 @@ const getFavoriteChallenges = async (): Promise<ChallengeProgress[]> => {
             method: "GET",
             headers: {
                 "Content-Type": "application/json",
-                Authorization: `Bearer ${token}`,
+                ...(token ? { Authorization: `Bearer ${token}` } : {}),
             },
         }
     );
 
     if (!response.ok) {
-        console.error(await response.text());
+        console.error("[getFavoriteChallenges]", response.status, await response.text());
         return [];
     }
 

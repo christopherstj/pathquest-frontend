@@ -26,19 +26,23 @@ const getChallengeDetails = async (
 
     const token = await getGoogleIdToken();
 
+    if (!token && process.env.NODE_ENV !== "development") {
+        console.error("[getChallengeDetails] No token available - cannot make authenticated request");
+        return null;
+    }
+
     const peaksUrl = `${backendUrl}/challenges/${challengeId}/details`;
 
     const peaksRes = await fetch(peaksUrl, {
         method: "GET",
-        // cache: "no-cache",
         headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
     });
 
     if (!peaksRes.ok) {
-        console.error(await peaksRes.text());
+        console.error("[getChallengeDetails]", peaksRes.status, await peaksRes.text());
         return null;
     }
 

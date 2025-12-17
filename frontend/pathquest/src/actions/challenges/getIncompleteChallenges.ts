@@ -16,16 +16,21 @@ const getIncompleteChallenges = async (): Promise<ChallengeProgress[]> => {
 
     const token = await getGoogleIdToken();
 
+    if (!token && process.env.NODE_ENV !== "development") {
+        console.error("[getIncompleteChallenges] No token available - cannot make authenticated request");
+        return [];
+    }
+
     const response = await fetch(`${backendUrl}/challenges/incomplete`, {
         method: "POST",
         headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
     });
 
     if (!response.ok) {
-        console.error(await response.text());
+        console.error("[getIncompleteChallenges]", response.status, await response.text());
         return [];
     }
 

@@ -17,11 +17,16 @@ const toggleFavoritePeak = async (
 
     const token = await getGoogleIdToken();
 
+    if (!token && process.env.NODE_ENV !== "development") {
+        console.error("[toggleFavoritePeak] No token available - cannot make authenticated request");
+        return false;
+    }
+
     const response = await fetch(`${backendUrl}/peaks/favorite`, {
         method: "PUT",
         headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
         body: JSON.stringify({
             newValue,
@@ -30,7 +35,7 @@ const toggleFavoritePeak = async (
     });
 
     if (!response.ok) {
-        console.error(await response.text());
+        console.error("[toggleFavoritePeak]", response.status, await response.text());
         return false;
     } else {
         return true;
