@@ -144,9 +144,9 @@ export function useProfileMapEffects({
 
         setUserPeaksOnMap();
 
-        // Cleanup: clear selected peaks
+        // Cleanup: clear selected peaks (only if viewing a profile)
         return () => {
-            if (!map) return;
+            if (!map || !userId) return;
 
             try {
                 const selectedPeaksSource = map.getSource("selectedPeaks") as mapboxgl.GeoJSONSource | undefined;
@@ -160,7 +160,7 @@ export function useProfileMapEffects({
                 console.debug("Failed to cleanup selectedPeaks map source:", error);
             }
         };
-    }, [map, peaks]);
+    }, [map, peaks, userId]);
 
     // Show peaks on map function
     const showOnMap = useCallback(() => {

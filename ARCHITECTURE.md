@@ -95,9 +95,9 @@ src/app/
 - Dynamic page with runtime data fetching
 - Privacy-aware: only accessible if user is public, or by the owner
 - Components:
-  - `ProfileDetailPanel` (desktop): Right-side panel with profile stats and accepted challenges
+  - `ProfileDetailPanel` (desktop): Right-side panel with profile stats and action buttons
   - `ProfileDetailsMobile` (mobile): Bottom sheet content with same structure
-  - `ProfileSummitsList`: Left drawer list with Peaks/Summits tabs and search
+  - `ProfileSummitsList`: Left drawer list with Peaks/Journal/Challenges tabs and search
 - Features:
   - User info (name, avatar, location)
   - Accomplishment stats (peaks summited, total summits, highest peak, challenges completed, elevation gained)
@@ -215,13 +215,13 @@ Server actions for data fetching and mutations. Organized by domain. Backend cal
   - Default: Discovery content showing visible peaks and challenges
   - Peak selected: My Activity, Community tabs (summit history drill-down mode via `summitHistoryPeakId` in mapStore—when set, shows SummitHistoryPanel)
   - Activity selected: Summits tab showing activity summits
-  - Profile selected: Peaks and Journal tabs (hides Explore tab)
+  - Profile selected: Peaks, Journal, and Challenges tabs (hides Explore tab)
   - Challenge selected: Peaks tab showing challenge peaks list with PeakRow components (hides Explore tab)
-- `DetailBottomSheet.tsx` - Mobile-only bottom sheet with tabbed interface. Uses extracted mobile components (PeakDetailsMobile, ChallengeDetailsMobile, DiscoveryContentMobile). Manages drawer height with snap points (collapsed/halfway/expanded). Supports Challenge Peaks tab when challenge is selected (hides Explore tab similar to profile).
+- `DetailBottomSheet.tsx` - Mobile-only bottom sheet with tabbed interface. Uses extracted mobile components (PeakDetailsMobile, ChallengeDetailsMobile, DiscoveryContentMobile). Manages drawer height with snap points (collapsed/halfway/expanded). Supports Challenge Peaks tab when challenge is selected (hides Explore tab similar to profile). When profile is selected, shows Peaks, Journal, and Challenges tabs.
 - `SummitHistoryPanel.tsx` - Full summit history list for a peak. Shows all public summits with user names, dates, and weather conditions at summit time. Used inside DiscoveryDrawer (desktop) or DetailBottomSheet (mobile).
 - `PeakDetailPanel.tsx` - Desktop right panel for peak details. Uses shared components (DetailPanelHeader, StatsGrid, DetailLoadingState) and usePeakMapEffects hook. Includes CurrentConditions weather widget, summit status for authenticated users.
 - `PeakDetailContent.tsx` - Peak detail content with SSR data (used by static pages). Uses shared UI components.
-- `PeakCommunity.tsx` - Community summit history display component (shows public summits with user names and weather)
+- `PeakCommunity.tsx` - Community summit history display component. Shows public summits with user names (linking to profile pages when user_id is available), weather conditions (muted primary green icons), and difficulty/experience ratings as pill-style chips. User avatar and name are clickable links to `/users/[user_id]`.
 - `PeakUserActivity.tsx` - User's activity display for a peak (shows user's ascents, activities, and allows editing). Activity cards link to `/activities/[id]` detail pages. Uses shared `ActivityWithSummits` and `OrphanSummitCard` components.
 - `ChallengeDetailPanel.tsx` - Desktop right panel for challenge details. Uses shared components and useChallengeMapEffects hook. Shows challenge progress for authenticated users. Peaks list is displayed in DiscoveryDrawer (left pane) instead of this panel. Shares challenge data with mapStore via `selectedChallengeData`.
 - `ChallengeDetailContent.tsx` - Challenge detail content with SSR data (used by static pages). Uses shared UI components.
@@ -230,17 +230,18 @@ Server actions for data fetching and mutations. Organized by domain. Backend cal
 - `AddManualSummitModal.tsx` - Modal for logging manual peak summits. Supports two flows: peak-first (from peak detail) and activity-first (from activity detail with peak search along route). Triggered by ManualSummitProvider.
 - `SummitReportModal.tsx` - Modal for editing summit experiences/reports (triggered by SummitReportProvider)
 - `ActivityDetailPanel.tsx` - Desktop right panel for activity details. Shows Details/Summits/Analytics tabs, GPX route on map, elevation profile with hover interaction.
-- `ProfileDetailPanel.tsx` - Desktop right panel for user profile details. Shows profile stats, accepted challenges, and action buttons. Uses useProfileMapEffects hook.
+- `ProfileDetailPanel.tsx` - Desktop right panel for user profile details. Shows profile stats and action buttons. Accepted challenges are displayed in the Challenges tab of the left pane (DiscoveryDrawer). Uses useProfileMapEffects hook.
 - `ProfileDetailContent.tsx` - Profile detail content with SSR data (used by static pages). Uses shared UI components.
 - `ProfileSummitsList.tsx` - User's peaks list with search. When `compact` prop is true, hides internal tabs (tabs are in DiscoveryDrawer). Supports ordering by summit count descending.
 - `ProfileJournal.tsx` - User's summit journal grouped by activity. Fetches all summits via `searchUserSummits`, groups by activity_id, fetches activity details, and renders `ActivityWithSummits` and `OrphanSummitCard` components. Similar to PeakUserActivity but for all peaks. Detects ownership via `useIsAuthenticated` hook and passes `isOwner` prop to child components to control edit/delete button visibility. Invalidates query cache when summits are deleted.
+- `ProfileChallenges.tsx` - User's accepted challenges list. Fetches user profile data and displays accepted challenges with progress bars. Used in the Challenges tab of the left pane (DiscoveryDrawer) when viewing a user profile. Shows challenge name, completion count (completed/total), and progress bar. Each challenge links to its detail page.
 
 ##### Mobile Overlays (`components/overlays/mobile/`)
 - `peak-details-mobile.tsx` - Mobile-optimized peak detail view extracted from DetailBottomSheet
 - `challenge-details-mobile.tsx` - Mobile-optimized challenge detail view. Shows stats, progress bar, and action buttons. Peaks list is shown in separate Challenge Peaks tab.
 - `discovery-content-mobile.tsx` - Mobile-optimized discovery content using shared discovery components
 - `activity-details-mobile.tsx` - Mobile-optimized activity detail view with Details/Summits/Analytics tabs
-- `profile-details-mobile.tsx` - Mobile-optimized profile detail view with stats, highest peak, and accepted challenges
+- `profile-details-mobile.tsx` - Mobile-optimized profile detail view with stats and highest peak. Accepted challenges are displayed in the Challenges tab of DetailBottomSheet.
 
 ##### Auth (`components/auth/`)
 - `AuthModal.tsx` - Modal-based authentication flow. Two modes: login (Strava OAuth) and email collection (post-OAuth). Opens via `useRequireAuth` hook when user attempts auth-gated action.
@@ -260,17 +261,17 @@ Server actions for data fetching and mutations. Organized by domain. Backend cal
 - `ActivityWithSummits.tsx` - Shared activity card with nested summits. Used by PeakUserActivity and ProfileJournal. Shows activity header with link, stats (distance, elevation gain), Strava link, and nested summit items. Supports both `Summit[]` and `SummitWithPeak[]` for summits. Props: `activity`, `summits`, `summitsWithPeak`, `isHighlighted`, `onHighlight`, `peakId`, `peakName`, `showPeakHeaders`, `isOwner` (controls edit/delete button visibility), `onSummitDeleted` (callback when a summit is deleted).
 
 ##### Summits (`components/app/summits/`)
-- `OrphanSummitCard.tsx` - Shared orphan summit card for manual summits without an activity. Used by PeakUserActivity and ProfileJournal. Shows date/time, weather conditions, difficulty/experience ratings, notes, and edit/delete buttons (only visible when `isOwner` is true). Supports both `Summit` and `SummitWithPeak` types. Optional `showPeakHeader` prop for profile context. Props include `isOwner` and `onDeleted` callback.
+- `OrphanSummitCard.tsx` - Shared orphan summit card for manual summits without an activity. Used by PeakUserActivity and ProfileJournal. Shows date/time, weather conditions (with muted primary green icons), difficulty/experience ratings as pill-style chips, notes, and edit/delete buttons (only visible when `isOwner` is true). Supports both `Summit` and `SummitWithPeak` types. Optional `showPeakHeader` prop for profile context. Props include `isOwner` and `onDeleted` callback.
 - `SummitItem.tsx` - Shared summit display component used by both Journal tab (PeakUserActivity) and Activity Summits tab (ActivitySummitsList). Features:
   - Works with both `Summit` and `SummitWithPeak` types
   - Optional peak header for activity context (`showPeakHeader` prop)
   - Hover callbacks (`onHoverStart`, `onHoverEnd`) for map marker highlighting
-  - Weather conditions (temperature, weather code, wind speed, humidity) with colored icons
-  - Difficulty badge (easy/moderate/hard/expert) with color-coded text
+  - Weather conditions (temperature, weather code, wind speed, humidity) with muted primary green icons (`text-primary/60`)
+  - Difficulty badge (easy/moderate/hard/expert) displayed as pill-style chips with colored borders
   - `isOwner` prop controls visibility of edit/delete buttons (only shown to owner)
   - Delete button with confirmation dialog, calls `deleteAscent` action
   - `onDeleted` callback for refreshing parent component after deletion
-  - Experience rating badge (amazing/good/tough/epic) with icons
+  - Experience rating badge (amazing/good/tough/epic) displayed as pill-style chips with colored borders and icons
   - Trip notes in styled box
   - Edit button for summit reports (opens SummitReportModal)
   - "Add Trip Report" CTA when no report exists

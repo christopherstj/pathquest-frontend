@@ -33,36 +33,44 @@ import {
 import deleteAscent from "@/actions/peaks/deleteAscent";
 
 // Difficulty display config
-const DIFFICULTY_CONFIG: Record<Difficulty, { label: string; color: string }> = {
-    easy: { label: "Easy", color: "text-emerald-500" },
-    moderate: { label: "Moderate", color: "text-amber-500" },
-    hard: { label: "Hard", color: "text-orange-500" },
-    expert: { label: "Expert", color: "text-red-500" },
+const DIFFICULTY_CONFIG: Record<Difficulty, { label: string; color: string; borderColor: string; bgColor: string }> = {
+    easy: { label: "Easy", color: "text-emerald-500", borderColor: "border-emerald-500/30", bgColor: "bg-emerald-500/5" },
+    moderate: { label: "Moderate", color: "text-amber-500", borderColor: "border-amber-500/30", bgColor: "bg-amber-500/5" },
+    hard: { label: "Hard", color: "text-orange-500", borderColor: "border-orange-500/30", bgColor: "bg-orange-500/5" },
+    expert: { label: "Expert", color: "text-red-500", borderColor: "border-red-500/30", bgColor: "bg-red-500/5" },
 };
 
 // Experience display config
 const EXPERIENCE_CONFIG: Record<
     ExperienceRating,
-    { label: string; color: string; icon: React.ReactNode }
+    { label: string; color: string; borderColor: string; bgColor: string; icon: React.ReactNode }
 > = {
     amazing: {
         label: "Amazing",
         color: "text-yellow-500",
+        borderColor: "border-yellow-500/30",
+        bgColor: "bg-yellow-500/5",
         icon: <Star className="w-3 h-3" />,
     },
     good: {
         label: "Good",
         color: "text-green-500",
+        borderColor: "border-green-500/30",
+        bgColor: "bg-green-500/5",
         icon: <Smile className="w-3 h-3" />,
     },
     tough: {
         label: "Tough",
         color: "text-blue-500",
+        borderColor: "border-blue-500/30",
+        bgColor: "bg-blue-500/5",
         icon: <Zap className="w-3 h-3" />,
     },
     epic: {
         label: "Epic",
         color: "text-purple-500",
+        borderColor: "border-purple-500/30",
+        bgColor: "bg-purple-500/5",
         icon: <Flame className="w-3 h-3" />,
     },
 };
@@ -207,19 +215,19 @@ const OrphanSummitCard = ({
                 <div className="mb-3 flex flex-wrap gap-3 text-xs">
                     {summit.temperature !== undefined && (
                         <div className="flex items-center gap-1">
-                            <Thermometer className="w-3 h-3 text-orange-400" />
+                            <Thermometer className="w-3 h-3 text-primary/60" />
                             <span>{Math.round(celsiusToFahrenheit(summit.temperature))}°F</span>
                         </div>
                     )}
                     {summit.weather_code !== undefined && (
                         <div className="flex items-center gap-1">
-                            <Cloud className="w-3 h-3 text-blue-400" />
+                            <Cloud className="w-3 h-3 text-primary/60" />
                             <span>{getWeatherDescription(summit.weather_code)}</span>
                         </div>
                     )}
                     {summit.wind_speed !== undefined && (
                         <div className="flex items-center gap-1">
-                            <Wind className="w-3 h-3 text-cyan-400" />
+                            <Wind className="w-3 h-3 text-primary/60" />
                             <span>{Math.round(kmhToMph(summit.wind_speed))} mph</span>
                         </div>
                     )}
@@ -228,10 +236,10 @@ const OrphanSummitCard = ({
 
             {/* Difficulty & Experience Ratings */}
             {hasRatings && (
-                <div className="mb-3 flex flex-wrap gap-3 text-xs">
+                <div className="mb-3 flex flex-wrap gap-2 text-xs">
                     {summit.difficulty && (
                         <div
-                            className={`flex items-center gap-1 ${DIFFICULTY_CONFIG[summit.difficulty].color}`}
+                            className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full border ${DIFFICULTY_CONFIG[summit.difficulty].color} ${DIFFICULTY_CONFIG[summit.difficulty].borderColor} ${DIFFICULTY_CONFIG[summit.difficulty].bgColor}`}
                         >
                             <Mountain className="w-3 h-3" />
                             <span className="font-medium">
@@ -241,7 +249,7 @@ const OrphanSummitCard = ({
                     )}
                     {summit.experience_rating && (
                         <div
-                            className={`flex items-center gap-1 ${EXPERIENCE_CONFIG[summit.experience_rating].color}`}
+                            className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full border ${EXPERIENCE_CONFIG[summit.experience_rating].color} ${EXPERIENCE_CONFIG[summit.experience_rating].borderColor} ${EXPERIENCE_CONFIG[summit.experience_rating].bgColor}`}
                         >
                             {EXPERIENCE_CONFIG[summit.experience_rating].icon}
                             <span className="font-medium">

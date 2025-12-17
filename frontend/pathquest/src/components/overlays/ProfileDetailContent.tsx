@@ -25,12 +25,11 @@ import Peak from "@/typeDefs/Peak";
 interface Props {
     user: User;
     stats: ProfileStats;
-    acceptedChallenges: ChallengeProgress[];
     peaksForMap: Peak[];
     isOwner: boolean;
 }
 
-const ProfileDetailContent = ({ user, stats, acceptedChallenges, peaksForMap, isOwner }: Props) => {
+const ProfileDetailContent = ({ user, stats, peaksForMap, isOwner }: Props) => {
     const router = useRouter();
 
     // Use shared map effects hook
@@ -230,47 +229,6 @@ const ProfileDetailContent = ({ user, stats, acceptedChallenges, peaksForMap, is
                         <MapIcon className="w-4 h-4" />
                         Show All Peaks on Map
                     </Button>
-
-                    {/* Accepted Challenges Section */}
-                    {acceptedChallenges && acceptedChallenges.length > 0 && (
-                        <div className="space-y-3">
-                            <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
-                                Accepted Challenges ({acceptedChallenges.length})
-                            </h3>
-                            <div className="space-y-2 max-h-[200px] overflow-y-auto custom-scrollbar">
-                                {acceptedChallenges.map((challenge) => {
-                                    const progress = challenge.total > 0
-                                        ? Math.round((challenge.completed / challenge.total) * 100)
-                                        : 0;
-                                    return (
-                                        <Link
-                                            key={challenge.id}
-                                            href={`/challenges/${challenge.id}`}
-                                            className="block p-3 rounded-lg bg-card border border-border/70 hover:bg-card/80 transition-colors"
-                                        >
-                                            <div className="flex items-center justify-between mb-2">
-                                                <div className="flex items-center gap-2">
-                                                    <Trophy className="w-4 h-4 text-secondary" />
-                                                    <span className="text-sm font-medium text-foreground">
-                                                        {challenge.name}
-                                                    </span>
-                                                </div>
-                                                <span className="text-xs text-muted-foreground">
-                                                    {challenge.completed}/{challenge.total}
-                                                </span>
-                                            </div>
-                                            <div className="h-1.5 bg-muted rounded-full overflow-hidden">
-                                                <div
-                                                    className="h-full bg-gradient-to-r from-secondary to-primary rounded-full"
-                                                    style={{ width: `${progress}%` }}
-                                                />
-                                            </div>
-                                        </Link>
-                                    );
-                                })}
-                            </div>
-                        </div>
-                    )}
                 </div>
             </div>
         </motion.div>

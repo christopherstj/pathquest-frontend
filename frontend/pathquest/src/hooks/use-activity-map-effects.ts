@@ -137,16 +137,18 @@ export function useActivityMapEffects({
         }
 
         if (!peakSummits || peakSummits.length === 0) {
-            // Clear peaks if we have none
-            const peaksSource = map.getSource("selectedPeaks") as mapboxgl.GeoJSONSource | undefined;
-            if (peaksSource) {
-                try {
-                    peaksSource.setData({
-                        type: "FeatureCollection",
-                        features: [],
-                    });
-                } catch (error) {
-                    console.debug("Failed to clear selectedPeaks:", error);
+            // Only clear peaks if we're actually viewing an activity (not a peak/challenge)
+            if (activity) {
+                const peaksSource = map.getSource("selectedPeaks") as mapboxgl.GeoJSONSource | undefined;
+                if (peaksSource) {
+                    try {
+                        peaksSource.setData({
+                            type: "FeatureCollection",
+                            features: [],
+                        });
+                    } catch (error) {
+                        console.debug("Failed to clear selectedPeaks:", error);
+                    }
                 }
             }
             previousPeakSummitsRef.current = null;
@@ -171,9 +173,9 @@ export function useActivityMapEffects({
 
         setPeaksOnMap();
 
-        // Cleanup: clear peaks when unmounting
+        // Cleanup: clear peaks when unmounting (only if viewing an activity)
         return () => {
-            if (!map) return;
+            if (!map || !activity) return;
 
             try {
                 const peaksSource = map.getSource("selectedPeaks") as mapboxgl.GeoJSONSource | undefined;
@@ -188,7 +190,7 @@ export function useActivityMapEffects({
                 console.debug("Failed to cleanup selectedPeaks map source:", error);
             }
         };
-    }, [map, peakSummits]);
+    }, [map, peakSummits, activity]);
 
     // Handle hover marker from elevation profile
     useEffect(() => {

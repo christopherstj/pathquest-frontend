@@ -22,23 +22,24 @@ import Link from "next/link";
 import Summit, { Difficulty, ExperienceRating } from "@/typeDefs/Summit";
 
 // Difficulty display config
-const DIFFICULTY_CONFIG: Record<Difficulty, { label: string; color: string }> = {
-    easy: { label: "Easy", color: "text-emerald-500" },
-    moderate: { label: "Moderate", color: "text-amber-500" },
-    hard: { label: "Hard", color: "text-orange-500" },
-    expert: { label: "Expert", color: "text-red-500" },
+const DIFFICULTY_CONFIG: Record<Difficulty, { label: string; color: string; borderColor: string; bgColor: string }> = {
+    easy: { label: "Easy", color: "text-emerald-500", borderColor: "border-emerald-500/30", bgColor: "bg-emerald-500/5" },
+    moderate: { label: "Moderate", color: "text-amber-500", borderColor: "border-amber-500/30", bgColor: "bg-amber-500/5" },
+    hard: { label: "Hard", color: "text-orange-500", borderColor: "border-orange-500/30", bgColor: "bg-orange-500/5" },
+    expert: { label: "Expert", color: "text-red-500", borderColor: "border-red-500/30", bgColor: "bg-red-500/5" },
 };
 
 // Experience display config
-const EXPERIENCE_CONFIG: Record<ExperienceRating, { label: string; color: string; icon: React.ReactNode }> = {
-    amazing: { label: "Amazing", color: "text-yellow-500", icon: <Star className="w-3.5 h-3.5" /> },
-    good: { label: "Good", color: "text-green-500", icon: <Smile className="w-3.5 h-3.5" /> },
-    tough: { label: "Tough", color: "text-blue-500", icon: <Zap className="w-3.5 h-3.5" /> },
-    epic: { label: "Epic", color: "text-purple-500", icon: <Flame className="w-3.5 h-3.5" /> },
+const EXPERIENCE_CONFIG: Record<ExperienceRating, { label: string; color: string; borderColor: string; bgColor: string; icon: React.ReactNode }> = {
+    amazing: { label: "Amazing", color: "text-yellow-500", borderColor: "border-yellow-500/30", bgColor: "bg-yellow-500/5", icon: <Star className="w-3.5 h-3.5" /> },
+    good: { label: "Good", color: "text-green-500", borderColor: "border-green-500/30", bgColor: "bg-green-500/5", icon: <Smile className="w-3.5 h-3.5" /> },
+    tough: { label: "Tough", color: "text-blue-500", borderColor: "border-blue-500/30", bgColor: "bg-blue-500/5", icon: <Zap className="w-3.5 h-3.5" /> },
+    epic: { label: "Epic", color: "text-purple-500", borderColor: "border-purple-500/30", bgColor: "bg-purple-500/5", icon: <Flame className="w-3.5 h-3.5" /> },
 };
 
-// Extended summit type that includes user_name from the API
+// Extended summit type that includes user info from the API
 interface PublicSummit extends Summit {
+    user_id?: string;
     user_name?: string;
 }
 
@@ -173,10 +174,32 @@ const PeakCommunity = () => {
                 <div className="space-y-3">
                     {sortedSummits.map((summit, idx) => {
                         const hasActivity = Boolean(summit.activity_id);
-                        const cardContent = (
-                            <>
-                                {/* User and Date */}
-                                <div className="flex items-start justify-between mb-3">
+                        
+                        // User section - separate to avoid nested links
+                        const userSection = (
+                            <div className="flex items-start justify-between mb-3">
+                                {summit.user_id ? (
+                                    <Link 
+                                        href={`/users/${summit.user_id}`}
+                                        className="flex items-center gap-2 group"
+                                        onClick={(e) => e.stopPropagation()}
+                                    >
+                                        <div className="w-8 h-8 rounded-full bg-secondary/10 flex items-center justify-center group-hover:bg-secondary/20 transition-colors">
+                                            <User className="w-4 h-4 text-secondary" />
+                                        </div>
+                                        <div>
+                                            <p className="font-medium text-foreground text-sm group-hover:text-primary transition-colors">
+                                                {summit.user_name || "Anonymous Hiker"}
+                                            </p>
+                                            <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                                                <Calendar className="w-3 h-3" />
+                                                <span>{formatDate(summit.timestamp, summit.timezone)}</span>
+                                                <span className="opacity-50">•</span>
+                                                <span>{formatTime(summit.timestamp, summit.timezone)}</span>
+                                            </div>
+                                        </div>
+                                    </Link>
+                                ) : (
                                     <div className="flex items-center gap-2">
                                         <div className="w-8 h-8 rounded-full bg-secondary/10 flex items-center justify-center">
                                             <User className="w-4 h-4 text-secondary" />
@@ -193,26 +216,31 @@ const PeakCommunity = () => {
                                             </div>
                                         </div>
                                     </div>
-                                    {hasActivity && (
-                                        <div className="text-muted-foreground">
-                                            <ExternalLink className="w-3.5 h-3.5" />
-                                        </div>
-                                    )}
-                                </div>
+                                )}
+                                {hasActivity && (
+                                    <div className="text-muted-foreground">
+                                        <ExternalLink className="w-3.5 h-3.5" />
+                                    </div>
+                                )}
+                            </div>
+                        );
 
+                        // Rest of card content (without user section)
+                        const cardContent = (
+                            <>
                                 {/* Difficulty & Experience Ratings (if available) */}
                                 {(summit.difficulty || summit.experience_rating) && (
-                                    <div className="flex flex-wrap gap-3 mt-3">
+                                    <div className="flex flex-wrap gap-2 mt-3">
                                         {summit.difficulty && (
-                                            <div className={`flex items-center gap-1.5 ${DIFFICULTY_CONFIG[summit.difficulty].color}`}>
+                                            <div className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full border text-xs ${DIFFICULTY_CONFIG[summit.difficulty].color} ${DIFFICULTY_CONFIG[summit.difficulty].borderColor} ${DIFFICULTY_CONFIG[summit.difficulty].bgColor}`}>
                                                 <Mountain className="w-3.5 h-3.5" />
-                                                <span className="text-sm font-medium">{DIFFICULTY_CONFIG[summit.difficulty].label}</span>
+                                                <span className="font-medium">{DIFFICULTY_CONFIG[summit.difficulty].label}</span>
                                             </div>
                                         )}
                                         {summit.experience_rating && (
-                                            <div className={`flex items-center gap-1.5 ${EXPERIENCE_CONFIG[summit.experience_rating].color}`}>
+                                            <div className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full border text-xs ${EXPERIENCE_CONFIG[summit.experience_rating].color} ${EXPERIENCE_CONFIG[summit.experience_rating].borderColor} ${EXPERIENCE_CONFIG[summit.experience_rating].bgColor}`}>
                                                 {EXPERIENCE_CONFIG[summit.experience_rating].icon}
-                                                <span className="text-sm font-medium">{EXPERIENCE_CONFIG[summit.experience_rating].label}</span>
+                                                <span className="font-medium">{EXPERIENCE_CONFIG[summit.experience_rating].label}</span>
                                             </div>
                                         )}
                                     </div>
@@ -230,7 +258,7 @@ const PeakCommunity = () => {
                                         <div className="grid grid-cols-2 gap-2">
                                             {summit.temperature !== undefined && (
                                                 <div className="flex items-center gap-1.5">
-                                                    <Thermometer className="w-3.5 h-3.5 text-orange-400" />
+                                                    <Thermometer className="w-3.5 h-3.5 text-primary/60" />
                                                     <span className="text-sm text-foreground">
                                                         {Math.round(celsiusToFahrenheit(summit.temperature))}°F
                                                     </span>
@@ -238,7 +266,7 @@ const PeakCommunity = () => {
                                             )}
                                             {summit.weather_code !== undefined && (
                                                 <div className="flex items-center gap-1.5">
-                                                    <Cloud className="w-3.5 h-3.5 text-blue-400" />
+                                                    <Cloud className="w-3.5 h-3.5 text-primary/60" />
                                                     <span className="text-sm text-foreground truncate">
                                                         {getWeatherDescription(summit.weather_code)}
                                                     </span>
@@ -246,7 +274,7 @@ const PeakCommunity = () => {
                                             )}
                                             {summit.wind_speed !== undefined && (
                                                 <div className="flex items-center gap-1.5">
-                                                    <Wind className="w-3.5 h-3.5 text-cyan-400" />
+                                                    <Wind className="w-3.5 h-3.5 text-primary/60" />
                                                     <span className="text-sm text-foreground">
                                                         {Math.round(kmhToMph(summit.wind_speed))} mph
                                                     </span>
@@ -254,7 +282,7 @@ const PeakCommunity = () => {
                                             )}
                                             {summit.humidity !== undefined && (
                                                 <div className="flex items-center gap-1.5">
-                                                    <Droplets className="w-3.5 h-3.5 text-blue-300" />
+                                                    <Droplets className="w-3.5 h-3.5 text-primary/60" />
                                                     <span className="text-sm text-foreground">
                                                         {Math.round(summit.humidity)}%
                                                     </span>
@@ -276,18 +304,24 @@ const PeakCommunity = () => {
                         );
 
                         return hasActivity ? (
-                            <Link
+                            <div
                                 key={summit.id || idx}
-                                href={`/activities/${summit.activity_id}`}
-                                className="block p-4 rounded-xl bg-card border border-border/70 hover:border-primary/50 transition-colors cursor-pointer"
+                                className="p-4 rounded-xl bg-card border border-border/70 hover:border-primary/50 transition-colors"
                             >
-                                {cardContent}
-                            </Link>
+                                {userSection}
+                                <Link
+                                    href={`/activities/${summit.activity_id}`}
+                                    className="block"
+                                >
+                                    {cardContent}
+                                </Link>
+                            </div>
                         ) : (
                             <div
                                 key={summit.id || idx}
                                 className="p-4 rounded-xl bg-card border border-border/70"
                             >
+                                {userSection}
                                 {cardContent}
                             </div>
                         );

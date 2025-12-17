@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef, useMemo } from "react";
 import { motion, useAnimation, PanInfo, AnimatePresence } from "framer-motion";
-import { Mountain, LayoutDashboard, Compass, RefreshCw, Route, Users, BarChart3 } from "lucide-react";
+import { Mountain, LayoutDashboard, Compass, RefreshCw, Route, Users, BarChart3, BookOpen, Trophy } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useMapStore } from "@/providers/MapProvider";
 import { useRouter } from "next/navigation";
@@ -32,11 +32,14 @@ import { convertSummitsToPeaks } from "@/helpers/convertSummitsToPeaks";
 import ActivityAnalytics from "@/components/app/activities/ActivityAnalytics";
 import ProfileDetailsMobile from "./mobile/profile-details-mobile";
 import ProfileSummitsList from "./ProfileSummitsList";
+import ProfileJournal from "./ProfileJournal";
+import ProfileChallenges from "./ProfileChallenges";
 import PeakRow from "@/components/lists/peak-row";
 import { usePeakHoverMapEffects } from "@/hooks/use-peak-hover-map-effects";
+import ActivitySummitsList from "@/components/app/activities/ActivitySummitsList";
 
 type DrawerHeight = "collapsed" | "halfway" | "expanded";
-type TabMode = "details" | "discover" | "dashboard" | "myActivity" | "community" | "analytics" | "profilePeaks" | "challengePeaks";
+type TabMode = "details" | "discover" | "dashboard" | "myActivity" | "community" | "analytics" | "summits" | "profilePeaks" | "profileJournal" | "profileChallenges" | "challengePeaks";
 
 const DRAWER_HEIGHTS = {
     collapsed: 60,
@@ -60,6 +63,7 @@ const DetailBottomSheet = ({ peakId, challengeId, activityId, userId, onClose }:
     const isZoomedOutTooFar = useMapStore((state) => state.isZoomedOutTooFar);
     const setSelectedPeakUserData = useMapStore((state) => state.setSelectedPeakUserData);
     const setSelectedPeakCommunityData = useMapStore((state) => state.setSelectedPeakCommunityData);
+    const setHoveredPeakId = useMapStore((state) => state.setHoveredPeakId);
     const router = useRouter();
     const routerRef = useRef(router);
     const controls = useAnimation();
@@ -346,7 +350,8 @@ const DetailBottomSheet = ({ peakId, challengeId, activityId, userId, onClose }:
         setSelectedPeakSource();
 
         return () => {
-            if (!map) return;
+            // Only cleanup if we're actually viewing a peak (not a challenge)
+            if (!map || !peakId) return;
             
             try {
                 const peaksSource = map.getSource("selectedPeaks") as mapboxgl.GeoJSONSource | undefined;
@@ -357,7 +362,7 @@ const DetailBottomSheet = ({ peakId, challengeId, activityId, userId, onClose }:
                 console.debug("Failed to cleanup selectedPeaks map source:", error);
             }
         };
-    }, [map, peak]);
+    }, [map, peak, peakId]);
 
     // Handle challenge map effects
     useEffect(() => {
@@ -433,7 +438,8 @@ const DetailBottomSheet = ({ peakId, challengeId, activityId, userId, onClose }:
         }
 
         return () => {
-            if (!map) return;
+            // Only cleanup if we're actually viewing a challenge (not a peak)
+            if (!map || !challengeId) return;
             
             try {
                 const selectedPeaksSource = map.getSource("selectedPeaks") as mapboxgl.GeoJSONSource | undefined;
@@ -645,42 +651,97 @@ const DetailBottomSheet = ({ peakId, challengeId, activityId, userId, onClose }:
                                 </button>
                             )}
                             {hasActivitySelected && (
-                                <button
-                                    onClick={() => handleTabChange("analytics")}
-                                    onKeyDown={(e) => e.key === "Enter" && handleTabChange("analytics")}
-                                    tabIndex={0}
-                                    aria-label="Analytics tab"
-                                    aria-selected={activeTab === "analytics"}
-                                    role="tab"
-                                    className={cn(
-                                        "flex flex-col items-center gap-0.5 px-2 py-1.5 rounded-md text-[10px] font-medium transition-all flex-1 justify-center min-w-0",
-                                        activeTab === "analytics"
-                                            ? "bg-background text-foreground shadow-sm"
-                                            : "text-muted-foreground hover:text-foreground"
-                                    )}
-                                >
-                                    <BarChart3 className="w-4 h-4" />
-                                    Analytics
-                                </button>
+                                <>
+                                    <button
+                                        onClick={() => handleTabChange("summits")}
+                                        onKeyDown={(e) => e.key === "Enter" && handleTabChange("summits")}
+                                        tabIndex={0}
+                                        aria-label="Summits tab"
+                                        aria-selected={activeTab === "summits"}
+                                        role="tab"
+                                        className={cn(
+                                            "flex flex-col items-center gap-0.5 px-2 py-1.5 rounded-md text-[10px] font-medium transition-all flex-1 justify-center min-w-0",
+                                            activeTab === "summits"
+                                                ? "bg-background text-foreground shadow-sm"
+                                                : "text-muted-foreground hover:text-foreground"
+                                        )}
+                                    >
+                                        <Mountain className="w-4 h-4" />
+                                        Summits
+                                    </button>
+                                    <button
+                                        onClick={() => handleTabChange("analytics")}
+                                        onKeyDown={(e) => e.key === "Enter" && handleTabChange("analytics")}
+                                        tabIndex={0}
+                                        aria-label="Analytics tab"
+                                        aria-selected={activeTab === "analytics"}
+                                        role="tab"
+                                        className={cn(
+                                            "flex flex-col items-center gap-0.5 px-2 py-1.5 rounded-md text-[10px] font-medium transition-all flex-1 justify-center min-w-0",
+                                            activeTab === "analytics"
+                                                ? "bg-background text-foreground shadow-sm"
+                                                : "text-muted-foreground hover:text-foreground"
+                                        )}
+                                    >
+                                        <BarChart3 className="w-4 h-4" />
+                                        Analytics
+                                    </button>
+                                </>
                             )}
                             {hasProfileSelected && (
-                                <button
-                                    onClick={() => handleTabChange("profilePeaks")}
-                                    onKeyDown={(e) => e.key === "Enter" && handleTabChange("profilePeaks")}
-                                    tabIndex={0}
-                                    aria-label="Peaks tab"
-                                    aria-selected={activeTab === "profilePeaks"}
-                                    role="tab"
-                                    className={cn(
-                                        "flex flex-col items-center gap-0.5 px-2 py-1.5 rounded-md text-[10px] font-medium transition-all flex-1 justify-center min-w-0",
-                                        activeTab === "profilePeaks"
-                                            ? "bg-background text-foreground shadow-sm"
-                                            : "text-muted-foreground hover:text-foreground"
-                                    )}
-                                >
-                                    <Mountain className="w-4 h-4" />
-                                    Peaks
-                                </button>
+                                <>
+                                    <button
+                                        onClick={() => handleTabChange("profilePeaks")}
+                                        onKeyDown={(e) => e.key === "Enter" && handleTabChange("profilePeaks")}
+                                        tabIndex={0}
+                                        aria-label="Peaks tab"
+                                        aria-selected={activeTab === "profilePeaks"}
+                                        role="tab"
+                                        className={cn(
+                                            "flex flex-col items-center gap-0.5 px-2 py-1.5 rounded-md text-[10px] font-medium transition-all flex-1 justify-center min-w-0",
+                                            activeTab === "profilePeaks"
+                                                ? "bg-background text-foreground shadow-sm"
+                                                : "text-muted-foreground hover:text-foreground"
+                                        )}
+                                    >
+                                        <Mountain className="w-4 h-4" />
+                                        Peaks
+                                    </button>
+                                    <button
+                                        onClick={() => handleTabChange("profileJournal")}
+                                        onKeyDown={(e) => e.key === "Enter" && handleTabChange("profileJournal")}
+                                        tabIndex={0}
+                                        aria-label="Journal tab"
+                                        aria-selected={activeTab === "profileJournal"}
+                                        role="tab"
+                                        className={cn(
+                                            "flex flex-col items-center gap-0.5 px-2 py-1.5 rounded-md text-[10px] font-medium transition-all flex-1 justify-center min-w-0",
+                                            activeTab === "profileJournal"
+                                                ? "bg-background text-foreground shadow-sm"
+                                                : "text-muted-foreground hover:text-foreground"
+                                        )}
+                                    >
+                                        <BookOpen className="w-4 h-4" />
+                                        Journal
+                                    </button>
+                                    <button
+                                        onClick={() => handleTabChange("profileChallenges")}
+                                        onKeyDown={(e) => e.key === "Enter" && handleTabChange("profileChallenges")}
+                                        tabIndex={0}
+                                        aria-label="Challenges tab"
+                                        aria-selected={activeTab === "profileChallenges"}
+                                        role="tab"
+                                        className={cn(
+                                            "flex flex-col items-center gap-0.5 px-2 py-1.5 rounded-md text-[10px] font-medium transition-all flex-1 justify-center min-w-0",
+                                            activeTab === "profileChallenges"
+                                                ? "bg-background text-foreground shadow-sm"
+                                                : "text-muted-foreground hover:text-foreground"
+                                        )}
+                                    >
+                                        <Trophy className="w-4 h-4" />
+                                        Challenges
+                                    </button>
+                                </>
                             )}
                             {hasChallengeSelected && (
                                 <button
@@ -800,7 +861,6 @@ const DetailBottomSheet = ({ peakId, challengeId, activityId, userId, onClose }:
                                     <ProfileDetailsMobile
                                         user={profileUser}
                                         stats={profileStats}
-                                        acceptedChallenges={profileAcceptedChallenges}
                                         onClose={onClose}
                                         onShowOnMap={showProfileOnMap}
                                     />
@@ -817,6 +877,7 @@ const DetailBottomSheet = ({ peakId, challengeId, activityId, userId, onClose }:
                                 animate={{ opacity: 1, x: 0 }}
                                 exit={{ opacity: 0, x: -10 }}
                                 transition={{ duration: 0.15 }}
+                                className="-mx-2"
                             >
                                 <PeakUserActivity
                                     highlightedActivityId={highlightedActivityId}
@@ -830,6 +891,7 @@ const DetailBottomSheet = ({ peakId, challengeId, activityId, userId, onClose }:
                                 animate={{ opacity: 1, x: 0 }}
                                 exit={{ opacity: 0, x: -10 }}
                                 transition={{ duration: 0.15 }}
+                                className="-mx-2"
                             >
                                 <PeakCommunity />
                             </motion.div>
@@ -847,6 +909,20 @@ const DetailBottomSheet = ({ peakId, challengeId, activityId, userId, onClose }:
                                     isZoomedOutTooFar={isZoomedOutTooFar}
                                     onPeakClick={handlePeakClick}
                                     onChallengeClick={handleChallengeClick}
+                                />
+                            </motion.div>
+                        ) : activeTab === "summits" && activityId && activitySummits ? (
+                            <motion.div
+                                key="summits"
+                                initial={{ opacity: 0, x: -10 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                exit={{ opacity: 0, x: -10 }}
+                                transition={{ duration: 0.15 }}
+                            >
+                                <ActivitySummitsList
+                                    summits={activitySummits}
+                                    activityId={activityId}
+                                    onSummitHover={setHoveredPeakId}
                                 />
                             </motion.div>
                         ) : activeTab === "analytics" && activityId && activity ? (
@@ -868,6 +944,26 @@ const DetailBottomSheet = ({ peakId, challengeId, activityId, userId, onClose }:
                                 transition={{ duration: 0.15 }}
                             >
                                 <ProfileSummitsList userId={userId} compact />
+                            </motion.div>
+                        ) : activeTab === "profileJournal" && userId ? (
+                            <motion.div
+                                key="profileJournal"
+                                initial={{ opacity: 0, x: -10 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                exit={{ opacity: 0, x: -10 }}
+                                transition={{ duration: 0.15 }}
+                            >
+                                <ProfileJournal userId={userId} />
+                            </motion.div>
+                        ) : activeTab === "profileChallenges" && userId ? (
+                            <motion.div
+                                key="profileChallenges"
+                                initial={{ opacity: 0, x: -10 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                exit={{ opacity: 0, x: -10 }}
+                                transition={{ duration: 0.15 }}
+                            >
+                                <ProfileChallenges userId={userId} />
                             </motion.div>
                         ) : activeTab === "challengePeaks" && challengeId && challengePeaks ? (
                             <motion.div

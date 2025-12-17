@@ -14,6 +14,7 @@ import PeakCommunity from "./PeakCommunity";
 import ActivitySummitsList from "@/components/app/activities/ActivitySummitsList";
 import ProfileSummitsList from "./ProfileSummitsList";
 import ProfileJournal from "./ProfileJournal";
+import ProfileChallenges from "./ProfileChallenges";
 import PeakRow from "@/components/lists/peak-row";
 import getActivityDetails from "@/actions/activities/getActivityDetails";
 import { useIsAuthenticated } from "@/hooks/useRequireAuth";
@@ -21,7 +22,7 @@ import { usePeakHoverMapEffects } from "@/hooks/use-peak-hover-map-effects";
 
 type DrawerHeight = "collapsed" | "halfway" | "expanded";
 type MobileTab = "discover" | "dashboard";
-type DesktopTab = "discover" | "myActivity" | "community" | "summits" | "profilePeaks" | "profileJournal" | "challengePeaks";
+type DesktopTab = "discover" | "myActivity" | "community" | "summits" | "profilePeaks" | "profileJournal" | "profileChallenges" | "challengePeaks";
 
 // Height values in pixels for mobile drawer snap points
 const DRAWER_HEIGHTS = {
@@ -254,6 +255,7 @@ const DiscoveryDrawer = () => {
         const showSummitsTab = hasActivitySelected;
         const showProfilePeaksTab = hasProfileSelected;
         const showProfileJournalTab = hasProfileSelected;
+        const showProfileChallengesTab = hasProfileSelected;
         const showChallengePeaksTab = hasChallengeSelected;
         const showTabs = hasPeakSelected || hasActivitySelected || hasProfileSelected || hasChallengeSelected;
 
@@ -402,6 +404,25 @@ const DiscoveryDrawer = () => {
                                         Journal
                                     </button>
                                 )}
+                                {showProfileChallengesTab && (
+                                    <button
+                                        onClick={() => handleDesktopTabChange("profileChallenges")}
+                                        onKeyDown={(e) => e.key === "Enter" && handleDesktopTabChange("profileChallenges")}
+                                        tabIndex={0}
+                                        aria-label="Challenges tab"
+                                        aria-selected={desktopActiveTab === "profileChallenges"}
+                                        role="tab"
+                                        className={cn(
+                                            "flex flex-col items-center gap-0.5 px-2 py-1.5 rounded-md text-[10px] font-medium transition-all flex-1 justify-center",
+                                            desktopActiveTab === "profileChallenges"
+                                                ? "bg-background text-foreground shadow-sm"
+                                                : "text-muted-foreground hover:text-foreground"
+                                        )}
+                                    >
+                                        <Trophy className="w-4 h-4" />
+                                        Challenges
+                                    </button>
+                                )}
                             </div>
                         </div>
                     )}
@@ -456,6 +477,16 @@ const DiscoveryDrawer = () => {
                                 >
                                     <ProfileJournal userId={profileUserId} />
                                 </motion.div>
+                            ) : desktopActiveTab === "profileChallenges" && showProfileChallengesTab && profileUserId ? (
+                                <motion.div
+                                    key="profile-challenges"
+                                    initial={{ opacity: 0, x: -20 }}
+                                    animate={{ opacity: 1, x: 0 }}
+                                    exit={{ opacity: 0, x: -20 }}
+                                    className="h-full -m-5"
+                                >
+                                    <ProfileChallenges userId={profileUserId} />
+                                </motion.div>
                             ) : desktopActiveTab === "summits" && showSummitsTab && activityId ? (
                                 <motion.div
                                     key="summits"
@@ -470,13 +501,17 @@ const DiscoveryDrawer = () => {
                                     />
                                 </motion.div>
                             ) : desktopActiveTab === "myActivity" && showMyActivityTab ? (
-                                <PeakUserActivity
-                                    key="my-activity"
-                                    highlightedActivityId={highlightedActivityId}
-                                    onHighlightActivity={setHighlightedActivityId}
-                                />
+                                <div className="-mx-2">
+                                    <PeakUserActivity
+                                        key="my-activity"
+                                        highlightedActivityId={highlightedActivityId}
+                                        onHighlightActivity={setHighlightedActivityId}
+                                    />
+                                </div>
                             ) : desktopActiveTab === "community" && showCommunityTab ? (
-                                <PeakCommunity key="community" />
+                                <div className="-mx-2">
+                                    <PeakCommunity key="community" />
+                                </div>
                             ) : (
                                 <motion.div
                                     key="discovery"

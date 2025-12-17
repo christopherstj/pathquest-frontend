@@ -22,7 +22,6 @@ import ChallengeProgress from "@/typeDefs/ChallengeProgress";
 interface ProfileDetailsMobileProps {
     user: User;
     stats: ProfileStats;
-    acceptedChallenges: ChallengeProgress[];
     onClose: () => void;
     onShowOnMap: () => void;
 }
@@ -30,7 +29,6 @@ interface ProfileDetailsMobileProps {
 const ProfileDetailsMobile = ({
     user,
     stats,
-    acceptedChallenges,
     onClose,
     onShowOnMap,
 }: ProfileDetailsMobileProps) => {
@@ -214,47 +212,6 @@ const ProfileDetailsMobile = ({
                 <MapIcon className="w-3.5 h-3.5" />
                 Show All Peaks on Map
             </Button>
-
-            {/* Accepted Challenges Section */}
-            {acceptedChallenges && acceptedChallenges.length > 0 && (
-                <div className="space-y-2">
-                    <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                        Accepted Challenges ({acceptedChallenges.length})
-                    </h3>
-                    <div className="space-y-1.5 max-h-[150px] overflow-y-auto custom-scrollbar">
-                        {acceptedChallenges.slice(0, 5).map((challenge) => {
-                            const progress = challenge.total > 0
-                                ? Math.round((challenge.completed / challenge.total) * 100)
-                                : 0;
-                            return (
-                                <Link
-                                    key={challenge.id}
-                                    href={`/challenges/${challenge.id}`}
-                                    className="block p-2.5 rounded-lg bg-card border border-border/70 hover:bg-card/80 transition-colors"
-                                >
-                                    <div className="flex items-center justify-between mb-1.5">
-                                        <div className="flex items-center gap-1.5">
-                                            <Trophy className="w-3 h-3 text-secondary" />
-                                            <span className="text-xs font-medium text-foreground">
-                                                {challenge.name}
-                                            </span>
-                                        </div>
-                                        <span className="text-[10px] text-muted-foreground">
-                                            {challenge.completed}/{challenge.total}
-                                        </span>
-                                    </div>
-                                    <div className="h-1 bg-muted rounded-full overflow-hidden">
-                                        <div
-                                            className="h-full bg-gradient-to-r from-secondary to-primary rounded-full"
-                                            style={{ width: `${progress}%` }}
-                                        />
-                                    </div>
-                                </Link>
-                            );
-                        })}
-                    </div>
-                </div>
-            )}
         </div>
     );
 };
