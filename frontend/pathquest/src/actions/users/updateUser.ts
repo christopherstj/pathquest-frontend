@@ -20,7 +20,6 @@ interface UpdateUserData {
 const updateUser = async (updateData: UpdateUserData): Promise<ServerActionResult> => {
     const { headers, session } = await getAuthHeaders();
 
-    // @ts-expect-error - id is added in session callback
     const id = session?.user?.id;
 
     if (!id) {

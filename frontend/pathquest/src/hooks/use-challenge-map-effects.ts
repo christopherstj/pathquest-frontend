@@ -39,7 +39,7 @@ export function useChallengeMapEffects({
     // Track if we've already performed the initial fitBounds
     const hasFitBoundsRef = useRef(false);
     // Track the challenge ID to reset fitBounds when viewing a different challenge
-    const lastChallengeIdRef = useRef<number | null>(null);
+    const lastChallengeIdRef = useRef<string | null>(null);
 
     // Calculate bounds of all peaks
     const bounds = useMemo(() => {

@@ -57,6 +57,7 @@ type ChartProps = {
     activity: Activity;
     peakSummits?: Peak[];
     onHover?: (coords: [number, number] | null) => void;
+    onHoverPointChange?: (point: ChartValue | null) => void;
 };
 
 const ElevationChart = ({
@@ -178,7 +179,7 @@ const ElevationChart = ({
                 onHover(coords[d.index] as [number, number]);
             }
         },
-        [distanceScale, data, coords, onHover]
+        [distanceScale, data, coords, onHover, onHoverPointChange]
     );
 
     const handleMouseLeave = useCallback(() => {

@@ -86,7 +86,7 @@ const ChallengePage = async ({ params }: Props) => {
         "@context": "https://schema.org",
         "@type": "SportsEvent",
         name: `${challenge.name} Challenge`,
-        description: challenge.description || `A peak bagging challenge${challenge.region ? ` in ${challenge.region}` : ""} with ${peakCount} peaks to conquer.`,
+        description: `A peak bagging challenge${challenge.region ? ` in ${challenge.region}` : ""} with ${peakCount} peaks to conquer.`,
         location: challenge.region ? {
             "@type": "Place",
             name: challenge.region,
@@ -128,13 +128,13 @@ const ChallengePage = async ({ params }: Props) => {
                 {challenge.region && <p>Region: {challenge.region}</p>}
                 <p>{peakCount} peaks to summit</p>
                 
-                {challenge.description && (
+                {/* {challenge.description && (
                     <section aria-label="Challenge description">
                         <h2>About this Challenge</h2>
                         <p>{challenge.description}</p>
                     </section>
                 )}
-                
+                 */}
                 {peaks && peaks.length > 0 && (
                     <section aria-label="Peaks in this challenge">
                         <h2>Peaks in this Challenge ({peaks.length})</h2>

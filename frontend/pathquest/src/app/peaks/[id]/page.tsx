@@ -151,7 +151,7 @@ const PeakPage = async ({ params }: Props) => {
                         <ul>
                             {publicSummits.slice(0, 10).map((summit, idx) => (
                                 <li key={idx}>
-                                    {summit.user_name || "Anonymous"} - {summit.timestamp ? new Date(summit.timestamp).toLocaleDateString() : "Date unknown"}
+                                    {summit.timestamp ? new Date(summit.timestamp).toLocaleDateString() : "Date unknown"}
                                 </li>
                             ))}
                         </ul>

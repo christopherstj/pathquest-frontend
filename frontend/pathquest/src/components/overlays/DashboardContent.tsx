@@ -185,7 +185,7 @@ const RecentSummitsSection = ({
                 experience_rating: summit.experience_rating,
             },
             peakId: summit.peak_id,
-            peakName: summit.name,
+            peakName: summit.name || "Unknown Peak",
         });
     };
 

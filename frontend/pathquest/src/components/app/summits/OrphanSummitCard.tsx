@@ -118,9 +118,30 @@ const OrphanSummitCard = ({
     const resolvedPeakId = peakId ?? (isSummitWithPeak ? summit.peak.id : undefined);
     const resolvedPeakName = peakName ?? (isSummitWithPeak ? summit.peak.name : undefined);
 
+    // Convert SummitWithPeak to Summit type for the report store
+    const summitForReport: Summit = isSummitWithPeak
+        ? {
+              id: summit.id,
+              timestamp: summit.timestamp,
+              timezone: summit.timezone,
+              activity_id: summit.activity_id ?? "", // Not always available in SummitWithPeak
+              notes: summit.notes,
+              temperature: summit.temperature,
+              precipitation: summit.precipitation,
+              weather_code: summit.weather_code,
+              cloud_cover: summit.cloud_cover,
+              humidity: summit.humidity,
+              wind_speed: summit.wind_speed,
+              wind_direction: summit.wind_direction,
+              difficulty: summit.difficulty,
+              experience_rating: summit.experience_rating,
+              is_public: summit.is_public,
+          }
+        : summit;
+
     const handleOpenReport = () => {
         if (resolvedPeakId && resolvedPeakName) {
-            openSummitReport({ summit, peakId: resolvedPeakId, peakName: resolvedPeakName });
+            openSummitReport({ summit: summitForReport, peakId: resolvedPeakId, peakName: resolvedPeakName });
         }
     };
 

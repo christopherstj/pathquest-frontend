@@ -110,7 +110,7 @@ const PeakDetailContent = ({ peak, publicSummits, challenges, activities }: Prop
                     <div className="flex flex-col gap-3">
                         {!isAuthenticated && (
                             <Button 
-                                onClick={() => requireAuth()}
+                                onClick={() => requireAuth(() => {})}
                                 className="w-full gap-2 bg-green-600 hover:bg-green-700 text-white"
                             >
                                 <Plus className="w-4 h-4" />
@@ -149,7 +149,7 @@ const PeakDetailContent = ({ peak, publicSummits, challenges, activities }: Prop
                                         className="flex items-center justify-between p-3 rounded-lg bg-card border border-border/70"
                                     >
                                         <span className="text-sm text-foreground">
-                                            {summit.user_name || "Anonymous"}
+                                            Anonymous
                                         </span>
                                         <span className="text-xs text-muted-foreground">
                                             {summit.timestamp

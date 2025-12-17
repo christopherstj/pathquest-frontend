@@ -188,7 +188,7 @@ const DetailBottomSheet = ({ peakId, challengeId, activityId, userId, onClose }:
         refetchInterval: activeTab === "dashboard" ? 10000 : false,
     });
 
-    const syncCount = processingResult?.success ? processingResult.data : 0;
+    const syncCount = processingResult?.success ? (processingResult.data ?? 0) : 0;
 
     const peak = peakData?.success ? peakData.data?.peak : null;
     const peakChallenges = peakData?.success ? peakData.data?.challenges : null;

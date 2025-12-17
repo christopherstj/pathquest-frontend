@@ -6,7 +6,7 @@ import User from "@/typeDefs/User";
 import ProfileStats from "@/typeDefs/ProfileStats";
 import ChallengeProgress from "@/typeDefs/ChallengeProgress";
 import Peak from "@/typeDefs/Peak";
-import { ServerActionResult } from "@/typeDefs/ServerActionResult";
+import ServerActionResult from "@/typeDefs/ServerActionResult";
 
 const backendUrl = getBackendUrl();
 

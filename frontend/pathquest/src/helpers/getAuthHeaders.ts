@@ -20,9 +20,7 @@ const getAuthHeaders = async (): Promise<{
 
     if (session?.user) {
         // Always include header-based auth (works in dev, ignored in prod if token present)
-        // @ts-expect-error - id is added in session callback
         if (session.user.id) {
-            // @ts-expect-error - id is added in session callback
             headers["x-user-id"] = session.user.id;
         }
         if (session.user.email) {

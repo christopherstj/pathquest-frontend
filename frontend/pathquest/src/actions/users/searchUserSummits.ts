@@ -3,7 +3,7 @@ import getGoogleIdToken from "@/auth/getGoogleIdToken";
 import { useAuth } from "@/auth/useAuth";
 import getBackendUrl from "@/helpers/getBackendUrl";
 import SummitWithPeak from "@/typeDefs/SummitWithPeak";
-import { ServerActionResult } from "@/typeDefs/ServerActionResult";
+import ServerActionResult  from "@/typeDefs/ServerActionResult";
 
 const backendUrl = getBackendUrl();
 

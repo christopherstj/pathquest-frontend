@@ -1,5 +1,4 @@
 import { NextResponse } from "next/server";
-import type { Request } from "next/server";
 
 export function proxy(request: Request) {
     const url = new URL(request.url);
