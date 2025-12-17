@@ -24,6 +24,7 @@ const getUserProfile = async (
     const session = await useAuth();
     // Always generate token for Google IAM authentication (required at infrastructure level)
     const token = await getGoogleIdToken().catch(() => null);
+    const currentUserId = session?.user?.id;
 
     const apiRes = await fetch(`${backendUrl}/users/${userId}/profile`, {
         method: "GET",
@@ -43,11 +44,18 @@ const getUserProfile = async (
         };
     }
 
-    const data: ProfileData = await apiRes.json();
+    const data = await apiRes.json();
+    
+    // Determine if current user is the owner of this profile
+    // Convert both to strings to handle potential type mismatch (session user.id may be number, URL userId is string)
+    const isOwner = Boolean(currentUserId && String(currentUserId) === String(userId));
 
     return {
         success: true,
-        data,
+        data: {
+            ...data,
+            isOwner,
+        },
     };
 };
 

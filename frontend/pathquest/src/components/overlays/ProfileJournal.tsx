@@ -22,8 +22,9 @@ const ProfileJournal = ({ userId }: ProfileJournalProps) => {
     const queryClient = useQueryClient();
     
     // Determine if current user is the owner of this profile
+    // Convert both to strings to handle potential type mismatch (session user.id may be number, URL userId is string)
     const { user } = useIsAuthenticated();
-    const isOwner = user?.id === userId;
+    const isOwner = Boolean(user?.id && String(user.id) === String(userId));
     
     // Callback to refresh data when a summit is deleted
     const handleSummitDeleted = () => {

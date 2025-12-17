@@ -16,6 +16,11 @@ interface UseProfileMapEffectsOptions {
 const MAX_ATTEMPTS = 10;
 const RETRY_DELAY = 300;
 
+// Default padding values (stable reference to avoid re-renders)
+// Left padding accounts for DiscoveryDrawer width (320px) + left margin (20px) + buffer (20px) = 360px
+// Right padding accounts for ProfileDetailPanel width (340px) + right margin (20px) = 360px
+const DEFAULT_PADDING = { top: 100, bottom: 100, left: 360, right: 360 };
+
 /**
  * Hook to handle map effects when viewing a user profile.
  * - Disables general peaks search
@@ -27,7 +32,7 @@ const RETRY_DELAY = 300;
 export function useProfileMapEffects({
     userId,
     peaks,
-    padding = { top: 100, bottom: 100, left: 50, right: 400 },
+    padding = DEFAULT_PADDING,
 }: UseProfileMapEffectsOptions) {
     const map = useMapStore((state) => state.map);
     const setDisablePeaksSearch = useMapStore((state) => state.setDisablePeaksSearch);

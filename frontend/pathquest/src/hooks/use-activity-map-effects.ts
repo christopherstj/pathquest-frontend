@@ -19,6 +19,11 @@ interface UseActivityMapEffectsOptions {
 const MAX_ATTEMPTS = 5;
 const RETRY_DELAY = 300;
 
+// Default padding values (stable reference to avoid re-renders)
+// Left padding accounts for DiscoveryDrawer width (320px) + left margin (20px) + buffer (20px) = 360px
+// Right padding accounts for ActivityDetailPanel width (400px) + right margin (20px) + buffer (30px) = 450px
+const DEFAULT_PADDING = { top: 100, bottom: 100, left: 360, right: 450 };
+
 /**
  * Hook to handle map effects when viewing an activity detail.
  * - Displays the activity GPX line on the map
@@ -32,7 +37,7 @@ export function useActivityMapEffects({
     peakSummits,
     hoverCoords,
     flyToOnLoad = true,
-    padding = { top: 100, bottom: 100, left: 50, right: 450 },
+    padding = DEFAULT_PADDING,
 }: UseActivityMapEffectsOptions) {
     const map = useMapStore((state) => state.map);
     const hoveredPeakId = useMapStore((state) => state.hoveredPeakId);
@@ -290,7 +295,7 @@ export function useActivityMapEffects({
         previousHoveredPeakIdRef.current = hoveredPeakId ?? null;
     }, [map, hoveredPeakId]);
 
-    // Cleanup hover source and feature states on unmount
+    // Cleanup hover source, feature states, and map padding on unmount
     useEffect(() => {
         return () => {
             // Clear hoveredPeakId in store on unmount
@@ -313,6 +318,12 @@ export function useActivityMapEffects({
                 if (map.getSource("activityHover")) {
                     map.removeSource("activityHover");
                 }
+
+                // Reset map padding and trigger peaks refresh when panel closes
+                map.setPadding({ top: 0, bottom: 0, left: 0, right: 0 });
+                setTimeout(() => {
+                    map.fire("moveend");
+                }, 50);
             } catch (error) {
                 console.debug("Failed to cleanup activityHover map source:", error);
             }
