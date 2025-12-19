@@ -169,9 +169,11 @@ const Omnibar = () => {
 
             // Deduplicate and prioritize Peaks while preserving backend relevancy order:
             // Backend already sorts by relevancy, so we preserve that order when merging
+            // For name-based searches (like "mt whitney"), prioritize global results over map-bounded results
+            // to avoid showing irrelevant local peaks just because they're on the map
             // 1. State-filtered peaks first (if state was detected in query) - already sorted by relevancy
-            // 2. Then visible peaks in bounds - already sorted by relevancy
-            // 3. Then global peaks - already sorted by relevancy
+            // 2. Then global peaks - prioritize these for name searches to avoid map location bias
+            // 3. Then visible peaks in bounds - only add if not already in results
             // 4. Then expanded search peaks - already sorted by relevancy
             const seenPeakIds = new Set<string>();
             const peaks: Peak[] = [];
@@ -191,14 +193,16 @@ const Omnibar = () => {
                 addPeaksIfNew(stateFilteredPeaks);
             }
             
-            // Add visible peaks (already sorted by relevancy)
-            if (visiblePeaks) {
-                addPeaksIfNew(visiblePeaks);
-            }
-            
-            // Add global peaks (already sorted by relevancy)
+            // Add global peaks BEFORE visible peaks to prioritize name matches over map location
+            // This ensures "mt whitney" shows Mount Whitney (CA) even when map is centered on NH
             if (globalPeaks) {
                 addPeaksIfNew(globalPeaks);
+            }
+            
+            // Add visible peaks (only if not already added from global search)
+            // This reduces map location bias for specific name searches
+            if (visiblePeaks) {
+                addPeaksIfNew(visiblePeaks);
             }
             
             // Add expanded search peaks (already sorted by relevancy)
