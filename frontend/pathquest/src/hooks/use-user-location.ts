@@ -3,7 +3,7 @@ import { useState, useEffect, useCallback } from "react";
 export interface UserLocation {
     lat: number;
     lng: number;
-    source: "browser" | "profile" | "default";
+    source: "browser" | "ip" | "profile" | "default";
 }
 
 interface UseUserLocationOptions {
@@ -20,10 +20,10 @@ interface UseUserLocationReturn {
     requestLocation: () => Promise<void>;
 }
 
-// Default location (center of contiguous US)
+// Default location (Boulder, CO)
 const DEFAULT_LOCATION: UserLocation = {
-    lat: 39.8283,
-    lng: -98.5795,
+    lat: 40.015,
+    lng: -105.2705,
     source: "default",
 };
 
@@ -32,7 +32,7 @@ const DEFAULT_LOCATION: UserLocation = {
  * Priority:
  * 1. Browser geolocation (if available and permitted)
  * 2. User profile location_coords (if provided)
- * 3. Default fallback (center of US)
+ * 3. Default fallback (Boulder, CO)
  */
 const useUserLocation = (options: UseUserLocationOptions = {}): UseUserLocationReturn => {
     const { fallbackCoords, requestOnMount = false } = options;

@@ -127,6 +127,12 @@ src/app/
 - Implements in-memory caching (10 min TTL) to reduce API calls
 - Used by `CurrentConditions` component for live peak weather
 
+##### Geolocation (`api/geolocation/route.ts`)
+- Returns user's location based on Vercel's built-in geo headers (IP-based)
+- Returns: `{ lat, lng, city, region, country }` or `null` if unavailable
+- Used by `useInitialMapLocation` hook as part of the location fallback chain
+- Note: Vercel geo headers are only available in production/preview deployments, not local dev
+
 ##### Dashboard (`api/dashboard/`)
 - `favorite-challenges/route.ts` - Fetches user's favorite challenges (in-progress/not-started only). Now includes `lastProgressDate` and `lastProgressCount` fields.
 - `recent-summits/route.ts` - Fetches user's recent summits. Now includes `hasReport` and `summitNumber` fields.
@@ -340,7 +346,7 @@ Unified navigation system (December 2024) with fixed 3-tab structure for both mo
 - `StravaLoginButton.tsx` - Strava OAuth button component (used by AuthModal)
 
 ##### Map (`components/map/`)
-- `MapBackground.tsx` - Main Mapbox map component with persistent background. Handles map initialization, 3D terrain, satellite mode, peak/challenge data loading, URL state synchronization, and **map padding based on drawer height** (mobile only). Uses `getTrueMapCenter()` to calculate the true geographic center accounting for padding when updating URL state.
+- `MapBackground.tsx` - Main Mapbox map component with persistent background. Handles map initialization, 3D terrain, satellite mode, peak/challenge data loading, URL state synchronization, and **map padding based on drawer height** (mobile only). Uses `getTrueMapCenter()` to calculate the true geographic center accounting for padding when updating URL state. **Location-aware initialization** via `useInitialMapLocation` hook - map initializes at Boulder then flies to user's resolved location (browser geolocation → IP geolocation → user profile → Boulder default). URL writes are suppressed until location resolution completes to prevent baking default coordinates into URL.
 
 ##### Peaks (`components/app/peaks/`)
 - `CurrentConditions.tsx` - Live weather display for peak detail panels. Fetches from `/api/weather` route (Open-Meteo). Shows temperature, feels like, conditions, wind, humidity.
@@ -561,7 +567,14 @@ Next.js middleware for legacy route redirects:
 - `useRequireAuth.ts` - Hook for auth-gated actions. Opens auth modal if not logged in, otherwise executes action.
 - `useIsAuthenticated.ts` (exported from useRequireAuth) - Returns auth state and user info
 - `use-mobile.ts` - Mobile detection hook using `window.matchMedia` (default breakpoint 768px). Exports `useIsMobile` function. Used by components for responsive behavior.
-- `use-user-location.ts` - Hook for getting user location. Priority: browser geolocation → profile location_coords → default (center of US). Used for challenge next peak suggestions.
+- `use-user-location.ts` - Hook for getting user location. Priority: browser geolocation → profile location_coords → default (Boulder, CO). Used for challenge next peak suggestions.
+- `use-initial-map-location.ts` - Hook for resolving initial map center with fallback chain:
+  1. URL params (respect shared links)
+  2. Browser geolocation (with 5s timeout)
+  3. IP geolocation via Vercel (`/api/geolocation`)
+  4. User profile `location_coords` (if provided)
+  5. Default: Boulder, CO
+  Returns `{ center, zoom, source, isLoading }`. Used by `MapBackground` to initialize map at user's location. Suppresses URL writes until location is resolved to prevent overwriting with default position.
 
 #### Map Hooks
 - `use-map-source.ts` - Hook to manage Mapbox GeoJSON source data with retry logic. Handles waiting for source availability and cleanup on unmount.

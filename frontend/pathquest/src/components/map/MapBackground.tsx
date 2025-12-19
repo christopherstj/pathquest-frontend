@@ -13,6 +13,7 @@ import updateMapURL from "@/helpers/updateMapURL";
 import getTrueMapCenter from "@/helpers/getTrueMapCenter";
 import { getMapboxToken } from "@/lib/map/getMapboxToken";
 import { useTabStore, type DrawerHeight } from "@/store/tabStore";
+import { useInitialMapLocation } from "@/hooks/use-initial-map-location";
 
 // Heights for drawer (same as ContentSheet) - used for map padding on mobile
 const DRAWER_HEIGHTS = {
@@ -61,9 +62,17 @@ const MapBackground = () => {
     const searchParams = useSearchParams();
     const isMobile = useIsMobile(1024);
     const isInitialStyleSet = useRef(false);
-    const isUserInteraction = useRef(true);
+    // Initialize as false to suppress URL writes until location is resolved
+    const isUserInteraction = useRef(false);
+    // Track if we've already handled location resolution
+    const hasResolvedLocation = useRef(false);
     const drawerHeight = useTabStore((state) => state.drawerHeight);
     const isDesktopPanelCollapsed = useTabStore((state) => state.isDesktopPanelCollapsed);
+    
+    // Get initial map location with fallback chain:
+    // URL params → browser geolocation → IP geolocation → default (Boulder)
+    // Note: User profile location_coords could be passed here if UserProvider is added to layout
+    const initialLocation = useInitialMapLocation();
     
     // Use refs for callbacks to avoid them being dependencies
     const routerRef = useRef(router);
@@ -164,6 +173,30 @@ const MapBackground = () => {
             });
         }
     }, [map, isMobile, drawerHeight, isDesktopPanelCollapsed]);
+
+    // Handle flying to resolved location after location hook completes
+    // This runs once after the location fallback chain resolves
+    useEffect(() => {
+        if (!map || initialLocation.isLoading || hasResolvedLocation.current) return;
+        
+        hasResolvedLocation.current = true;
+        
+        // If we got location from URL, it's already set - no need to fly
+        // For all other sources, fly to the resolved location
+        if (initialLocation.source !== "url") {
+            // Suppress URL write during the fly animation
+            isUserInteraction.current = false;
+            map.flyTo({
+                center: initialLocation.center,
+                zoom: initialLocation.zoom,
+                pitch: DEFAULT_PITCH,
+                essential: true,
+            });
+        } else {
+            // URL source - enable user interactions immediately
+            isUserInteraction.current = true;
+        }
+    }, [map, initialLocation]);
 
     const fetchPeaks = useCallback(async () => {
         if (!map) return;
