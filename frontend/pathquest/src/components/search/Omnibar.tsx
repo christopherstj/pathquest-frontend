@@ -80,6 +80,8 @@ const Omnibar = () => {
             const expandedSearch = searchTerms.length > 1 ? searchTerms[1] : null;
 
             // Run searches in parallel
+            // For peaks: Always search without state filter for broad name matching
+            // If state is detected, also search with state filter to prioritize those results
             const searchPromises = [
                 // Visible Challenges (primary search)
                 boundsParams ? searchChallengesClient({
@@ -90,25 +92,30 @@ const Omnibar = () => {
                 searchChallengesClient({
                     search: primarySearch,
                 }),
-                // Visible Peaks (with state filter if detected)
+                // Visible Peaks (WITHOUT state filter - broad name matching)
                 boundsParams ? searchPeaksClient({
-                    search: peakSearch || debouncedQuery,
-                    state: stateFilter,
+                    search: debouncedQuery,
                     bounds: boundsParams,
-                    perPage: "5",
+                    perPage: "10",
                     showSummitted: true,
                 }) : Promise.resolve([]),
-                // Global Peaks (with state filter if detected)
+                // Global Peaks (WITHOUT state filter - broad name matching)
                 searchPeaksClient({
-                    search: peakSearch || debouncedQuery,
-                    state: stateFilter,
-                    perPage: "5",
+                    search: debouncedQuery,
+                    perPage: "10",
                     showSummitted: true,
                 }),
                 // Places - include region (states) and poi (national parks, forests, etc.)
                 fetch(
                     `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(primarySearch)}.json?access_token=${getMapboxToken()}&types=region,place,poi,locality&country=us`
                 ).then(res => res.json()),
+                // State-filtered Peaks (only if state detected) - these get priority
+                stateFilter ? searchPeaksClient({
+                    search: peakSearch || debouncedQuery,
+                    state: stateFilter,
+                    perPage: "10",
+                    showSummitted: true,
+                }) : Promise.resolve([]),
             ];
 
             // Add expanded search if we have state abbreviation variants
@@ -135,6 +142,7 @@ const Omnibar = () => {
                 visiblePeaks,
                 globalPeaks,
                 places,
+                stateFilteredPeaks,
                 expandedChallenges,
                 expandedPeaks,
             ] = results as [
@@ -143,6 +151,7 @@ const Omnibar = () => {
                 Peak[],
                 Peak[],
                 any,
+                Peak[],
                 ChallengeProgress[] | undefined,
                 Peak[] | undefined,
             ];
@@ -158,16 +167,43 @@ const Omnibar = () => {
             });
             const challenges = Array.from(challengeMap.values());
 
-            // Deduplicate Peaks (visible first, then global, then expanded)
+            // Deduplicate and prioritize Peaks:
+            // 1. State-filtered peaks first (if state was detected in query)
+            // 2. Then visible peaks in bounds
+            // 3. Then global peaks
+            // 4. Then expanded search peaks
+            const stateMatchedIds = new Set<string>();
             const peakMap = new Map<string, Peak>();
-            (visiblePeaks || []).forEach((p) => peakMap.set(p.id, p));
+            
+            // Add state-filtered peaks first (highest priority)
+            (stateFilteredPeaks || []).forEach((p) => {
+                peakMap.set(p.id, p);
+                stateMatchedIds.add(p.id);
+            });
+            
+            // Add visible peaks (if not already added)
+            (visiblePeaks || []).forEach((p) => {
+                if (!peakMap.has(p.id)) peakMap.set(p.id, p);
+            });
+            
+            // Add global peaks (if not already added)
             (globalPeaks || []).forEach((p) => {
                 if (!peakMap.has(p.id)) peakMap.set(p.id, p);
             });
+            
+            // Add expanded search peaks (if not already added)
             (expandedPeaks || []).forEach((p) => {
                 if (!peakMap.has(p.id)) peakMap.set(p.id, p);
             });
-            const peaks = Array.from(peakMap.values());
+            
+            // Convert to array, keeping state-matched peaks at the front
+            const allPeaks = Array.from(peakMap.values());
+            const peaks = stateFilter 
+                ? [
+                    ...allPeaks.filter(p => stateMatchedIds.has(p.id)),
+                    ...allPeaks.filter(p => !stateMatchedIds.has(p.id))
+                  ]
+                : allPeaks;
 
             // Convert to SearchResult format
             const challengeResults: SearchResult[] = challenges

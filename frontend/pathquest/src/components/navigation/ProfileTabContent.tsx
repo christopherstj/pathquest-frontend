@@ -1,10 +1,11 @@
 "use client";
 
 import React from "react";
-import { Mountain, BookOpen, Trophy, ClipboardCheck, BarChart3 } from "lucide-react";
+import { Mountain, BookOpen, Trophy, ClipboardCheck, BarChart3, LogIn } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useTabStore, ProfileSubTab } from "@/store/tabStore";
 import { useIsAuthenticated } from "@/hooks/useRequireAuth";
+import { useAuthModalStore } from "@/providers/AuthModalProvider";
 import ProfileSummitsList from "@/components/overlays/ProfileSummitsList";
 import ProfileJournal from "@/components/overlays/ProfileJournal";
 import ProfileChallenges from "@/components/overlays/ProfileChallenges";
@@ -54,6 +55,7 @@ const ProfileTabContent = ({ isActive }: ProfileTabContentProps) => {
     const activeSubTab = useTabStore((state) => state.profileSubTab);
     const setProfileSubTab = useTabStore((state) => state.setProfileSubTab);
     const { isAuthenticated, isLoading, user } = useIsAuthenticated();
+    const openLoginModal = useAuthModalStore((state) => state.openLoginModal);
 
     // Get current user's ID for profile queries
     const userId = user?.id ? String(user.id) : null;
@@ -74,6 +76,13 @@ const ProfileTabContent = ({ isActive }: ProfileTabContentProps) => {
                 <p className="text-sm text-muted-foreground mt-1">
                     Track your peaks, summit journal, and challenges
                 </p>
+                <button
+                    onClick={openLoginModal}
+                    className="mt-4 inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-primary-foreground font-medium text-sm hover:bg-primary/90 transition-colors"
+                >
+                    <LogIn className="w-4 h-4" />
+                    Sign In
+                </button>
             </div>
         );
     }

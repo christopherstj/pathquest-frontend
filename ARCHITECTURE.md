@@ -247,7 +247,7 @@ For static ISR pages (`/peaks/[id]`, `/challenges/[id]`), always use the "Public
 - `ChallengeDetailPanel.tsx` - Desktop right panel for challenge details. Uses shared components and useChallengeMapEffects hook. Shows challenge progress for authenticated users. Peaks list is displayed in DiscoveryDrawer (left pane) instead of this panel. Shares challenge data with mapStore via `selectedChallengeData`.
 - `ChallengeDetailContent.tsx` - Challenge detail content with SSR data (used by static pages). Uses shared UI components.
 - `DashboardPanel.tsx` - User dashboard panel (authenticated only). Wrapper component that renders DashboardContent.
-- `DashboardContent.tsx` - Dashboard content component (refactored December 2024). Shows:
+- `DashboardContent.tsx` - Dashboard content component (refactored December 2024). Shows login CTA button when not authenticated. When authenticated, shows:
   - Queue status indicator (when activities are processing) - polls `/api/dashboard/queue-status` every 10s when items in queue
   - **Quick Stats Bar** - 4-metric horizontal bar (total peaks, elevation gained, summits this month with trend, primary challenge progress)
   - **Hero Summit Card** - Celebratory card for most recent unreviewed summit with "Add Trip Report" CTA
@@ -325,7 +325,7 @@ Unified navigation system (December 2024) with fixed 3-tab structure for both mo
   - Detail mode: Shows peak/challenge/activity/user detail views with sub-tabs
   - Sub-tabs vary by content type (Peak: Community/Journal; Challenge: Progress/Peaks; Activity: Details/Summits/Analytics; Profile: Peaks/Journal/Challenges)
   - Maintains back stack for navigation within Explore tab
-- `ProfileTabContent.tsx` - Profile tab content for viewing YOUR data. Sub-tabs: Stats (default), Peaks, Journal, Challenges, Review. Note: Other users' profiles are viewed in the Explore tab.
+- `ProfileTabContent.tsx` - Profile tab content for viewing YOUR data. Sub-tabs: Stats (default), Peaks, Journal, Challenges, Review. Note: Other users' profiles are viewed in the Explore tab. Shows login CTA button when not authenticated.
 - `ProfileStatsContent.tsx` - Stats sub-tab content showing highlight reel with: highest peak, climbing streak (monthly consecutive), geographic diversity (states/countries), peak type breakdown (14ers, 13ers, etc.), total elevation, challenges completed, year-over-year comparison.
 - `ProfileReviewContent.tsx` - Review sub-tab content showing all unconfirmed summits. Features "Confirm All" bulk action, individual confirm/deny buttons per summit, "View Activity" links, and refresh button. Empty state when all summits are reviewed.
 - `index.ts` - Export barrel for navigation components
@@ -457,7 +457,9 @@ Utility functions for common operations.
 **Note**: There are two `useIsMobile` implementations:
 - `hooks/use-mobile.ts` - Modern implementation using `window.matchMedia` (default breakpoint 768px, can be customized). This is the primary implementation used by components.
 - `helpers/useIsMobile.ts` - Legacy implementation using window resize (breakpoint 900px). May be deprecated.
-- `stateAbbreviations.ts` - US state abbreviation mapping and search query expansion utilities
+- `stateAbbreviations.ts` - US state abbreviation mapping and search query utilities:
+  - `expandSearchQuery()` - Expands abbreviations to full names and vice versa
+  - `extractStateFromQuery()` - Smart state extraction that only extracts state if remaining search is meaningful (prevents "mount washington" from being parsed as "mount" + WA state)
 
 ### Libraries (`src/lib/`)
 
@@ -585,12 +587,14 @@ Next.js middleware for legacy route redirects:
 ### Omnibar Search Flow
 1. User types into the Omnibar (global navigation).
 2. Search query is expanded using state abbreviation utilities (e.g., "nh" also searches "new hampshire").
-3. Client fetchers call REST API for challenges (with case-insensitive name AND region matching) and peaks.
-4. Mapbox geocoding searches for regions (states), places (cities), POIs (national parks/forests), and localities.
-5. Results are prioritized: Challenges first (max 4), then Peaks (max 3), then Places (max 3).
-6. Places are filtered to outdoor-relevant POIs (parks, forests, trails, etc.).
-7. Peak results display public summit counts and user summit counts (with summited styling when authenticated).
-8. Selecting an item clears the search, blurs the input, and navigates to the detail page or flies the map.
+3. State extraction is smart: only extracts state if remaining search term is meaningful (e.g., "mount washington" keeps the full term, "mount washington nh" extracts NH).
+4. Peak searches always include broad name matching (without state filter). If state is detected, an additional state-filtered search runs in parallel.
+5. Client fetchers call REST API for challenges (with case-insensitive name AND region matching) and peaks.
+6. Mapbox geocoding searches for regions (states), places (cities), POIs (national parks/forests), and localities.
+7. Results are prioritized: Challenges first (max 4), then Peaks (max 3, with state-matched peaks first), then Places (max 3).
+8. Places are filtered to outdoor-relevant POIs (parks, forests, trails, etc.).
+9. Peak results display public summit counts and user summit counts (with summited styling when authenticated).
+10. Selecting an item clears the search, blurs the input, and navigates to the detail page or flies the map.
 
 ### Peak Discovery Flow
 1. User browses map on home page

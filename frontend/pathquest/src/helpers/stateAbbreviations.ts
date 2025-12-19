@@ -114,16 +114,36 @@ export const getStateAbbreviation = (name: string): string => {
     return STATE_NAMES[name.toLowerCase()] || name;
 };
 
+// Common peak name prefixes that shouldn't be left alone after state extraction
+const PEAK_PREFIXES = ['mount', 'mt', 'mountain', 'peak', 'pico', 'cerro', 'monte', 'volcano', 'volcán', 'volcan'];
+
+/**
+ * Check if remaining search term would be meaningful after extracting state.
+ * Returns false if the search term is too short or just a common prefix.
+ */
+const isMeaningfulSearch = (searchTerm: string): boolean => {
+    const trimmed = searchTerm.trim().toLowerCase();
+    // Too short to be meaningful
+    if (trimmed.length < 3) return false;
+    // Don't extract if it would leave just a peak prefix (e.g., "mount", "mt")
+    if (PEAK_PREFIXES.includes(trimmed)) return false;
+    return true;
+};
+
 /**
  * Extracts state filter from a search query.
  * Looks for state abbreviations or full names at the end of the query.
  * Returns the state as an uppercase abbreviation (e.g., "NH", "CA") to match database format.
  * 
+ * IMPORTANT: Only extracts state if the remaining search term is meaningful.
+ * This prevents "mount washington" from being parsed as "mount" + state "WA".
+ * 
  * Examples:
  * - "mount washington nh" → { search: "mount washington", state: "NH" }
  * - "mount washington new hampshire" → { search: "mount washington", state: "NH" }
+ * - "mount washington" → { search: "mount washington", state: undefined } (NOT "mount" + WA)
  * - "mount rainier" → { search: "mount rainier", state: undefined }
- * - "ca" → { search: "", state: "CA" }
+ * - "peaks in ca" → { search: "peaks in", state: "CA" }
  * 
  * @param query The search query
  * @returns Object with cleaned search string and optional state abbreviation filter
@@ -134,27 +154,35 @@ export const extractStateFromQuery = (query: string): { search: string; state?: 
     const words = normalizedQuery.split(/\s+/);
     
     // Check if last word is a state abbreviation (e.g., "mount washington nh")
+    // Only 2-letter abbreviations are checked here
     const lastWord = words[words.length - 1]?.toLowerCase();
-    if (lastWord && STATE_ABBREVIATIONS[lastWord]) {
+    if (lastWord && lastWord.length === 2 && STATE_ABBREVIATIONS[lastWord]) {
         const searchWithoutState = words.slice(0, -1).join(' ');
-        return { 
-            search: searchWithoutState, 
-            state: lastWord.toUpperCase() 
-        };
-    }
-    
-    // Check if query ends with a full state name (e.g., "mount washington new hampshire")
-    for (const [name, abbr] of Object.entries(STATE_NAMES)) {
-        if (lowerQuery.endsWith(name)) {
-            const searchWithoutState = normalizedQuery.slice(0, -name.length).trim();
+        // Only extract if the remaining search is meaningful
+        if (isMeaningfulSearch(searchWithoutState)) {
             return { 
                 search: searchWithoutState, 
-                state: abbr.toUpperCase() 
+                state: lastWord.toUpperCase() 
             };
         }
     }
     
-    // No state found
+    // Check if query ends with a full state name (e.g., "mount washington new hampshire")
+    // But NOT if it's the only word or would leave meaningless remainder
+    for (const [name, abbr] of Object.entries(STATE_NAMES)) {
+        if (lowerQuery.endsWith(name)) {
+            const searchWithoutState = normalizedQuery.slice(0, -name.length).trim();
+            // Only extract if the remaining search is meaningful
+            if (isMeaningfulSearch(searchWithoutState)) {
+                return { 
+                    search: searchWithoutState, 
+                    state: abbr.toUpperCase() 
+                };
+            }
+        }
+    }
+    
+    // No state found (or extraction would leave meaningless search)
     return { search: normalizedQuery };
 };
 
