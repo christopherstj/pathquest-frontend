@@ -167,43 +167,44 @@ const Omnibar = () => {
             });
             const challenges = Array.from(challengeMap.values());
 
-            // Deduplicate and prioritize Peaks:
-            // 1. State-filtered peaks first (if state was detected in query)
-            // 2. Then visible peaks in bounds
-            // 3. Then global peaks
-            // 4. Then expanded search peaks
-            const stateMatchedIds = new Set<string>();
-            const peakMap = new Map<string, Peak>();
+            // Deduplicate and prioritize Peaks while preserving backend relevancy order:
+            // Backend already sorts by relevancy, so we preserve that order when merging
+            // 1. State-filtered peaks first (if state was detected in query) - already sorted by relevancy
+            // 2. Then visible peaks in bounds - already sorted by relevancy
+            // 3. Then global peaks - already sorted by relevancy
+            // 4. Then expanded search peaks - already sorted by relevancy
+            const seenPeakIds = new Set<string>();
+            const peaks: Peak[] = [];
             
-            // Add state-filtered peaks first (highest priority)
-            (stateFilteredPeaks || []).forEach((p) => {
-                peakMap.set(p.id, p);
-                stateMatchedIds.add(p.id);
-            });
+            // Add peaks in order, skipping duplicates (preserves relevancy order from backend)
+            const addPeaksIfNew = (peakList: Peak[]) => {
+                peakList.forEach((p) => {
+                    if (!seenPeakIds.has(p.id)) {
+                        seenPeakIds.add(p.id);
+                        peaks.push(p);
+                    }
+                });
+            };
             
-            // Add visible peaks (if not already added)
-            (visiblePeaks || []).forEach((p) => {
-                if (!peakMap.has(p.id)) peakMap.set(p.id, p);
-            });
+            // Add state-filtered peaks first (highest priority, already sorted by relevancy)
+            if (stateFilteredPeaks) {
+                addPeaksIfNew(stateFilteredPeaks);
+            }
             
-            // Add global peaks (if not already added)
-            (globalPeaks || []).forEach((p) => {
-                if (!peakMap.has(p.id)) peakMap.set(p.id, p);
-            });
+            // Add visible peaks (already sorted by relevancy)
+            if (visiblePeaks) {
+                addPeaksIfNew(visiblePeaks);
+            }
             
-            // Add expanded search peaks (if not already added)
-            (expandedPeaks || []).forEach((p) => {
-                if (!peakMap.has(p.id)) peakMap.set(p.id, p);
-            });
+            // Add global peaks (already sorted by relevancy)
+            if (globalPeaks) {
+                addPeaksIfNew(globalPeaks);
+            }
             
-            // Convert to array, keeping state-matched peaks at the front
-            const allPeaks = Array.from(peakMap.values());
-            const peaks = stateFilter 
-                ? [
-                    ...allPeaks.filter(p => stateMatchedIds.has(p.id)),
-                    ...allPeaks.filter(p => !stateMatchedIds.has(p.id))
-                  ]
-                : allPeaks;
+            // Add expanded search peaks (already sorted by relevancy)
+            if (expandedPeaks) {
+                addPeaksIfNew(expandedPeaks);
+            }
 
             // Convert to SearchResult format
             const challengeResults: SearchResult[] = challenges
