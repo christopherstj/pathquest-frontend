@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useSearchParams } from "next/navigation";
 import getMapStateFromURL from "@/helpers/getMapStateFromURL";
 
@@ -20,7 +20,7 @@ const DEFAULT_ZOOM = 11;
  * 
  * Priority:
  * 1. URL params (respect shared links)
- * 2. Browser geolocation (with 5s timeout)
+ * 2. Browser geolocation (with 10s timeout)
  * 3. IP geolocation via Vercel (via /api/geolocation)
  * 4. User profile location_coords
  * 5. Default: Boulder, CO
@@ -38,11 +38,26 @@ export function useInitialMapLocation(
         source: "default",
         isLoading: true,
     });
+    
+    // Prevent running resolution multiple times (React Strict Mode, remounts, etc.)
+    const hasResolved = useRef(false);
+    const isResolving = useRef(false);
 
     const resolveLocation = useCallback(async () => {
+        // Skip if already resolved or currently resolving
+        if (hasResolved.current || isResolving.current) {
+            console.log("[useInitialMapLocation] Skipping - already resolved or resolving");
+            return;
+        }
+        
+        isResolving.current = true;
+        console.log("[useInitialMapLocation] Starting location resolution...");
+        
         // 1. Check URL params first (respect shared links)
         const mapState = getMapStateFromURL(searchParams);
         if (mapState.center && mapState.zoom) {
+            console.log("[useInitialMapLocation] Using URL params");
+            hasResolved.current = true;
             setLocation({
                 center: mapState.center,
                 zoom: mapState.zoom,
@@ -55,13 +70,16 @@ export function useInitialMapLocation(
         // 2. Try browser geolocation
         if (typeof navigator !== "undefined" && navigator.geolocation) {
             try {
+                console.log("[useInitialMapLocation] Requesting browser geolocation...");
                 const position = await new Promise<GeolocationPosition>((resolve, reject) => {
                     navigator.geolocation.getCurrentPosition(resolve, reject, {
                         enableHighAccuracy: false,
-                        timeout: 5000,
+                        timeout: 10000, // Increased to 10s to give user time to respond to prompt
                         maximumAge: 300000, // Cache for 5 minutes
                     });
                 });
+                console.log("[useInitialMapLocation] Got browser geolocation:", position.coords.latitude, position.coords.longitude);
+                hasResolved.current = true;
                 setLocation({
                     center: [position.coords.longitude, position.coords.latitude],
                     zoom: DEFAULT_ZOOM,
@@ -69,17 +87,21 @@ export function useInitialMapLocation(
                     isLoading: false,
                 });
                 return;
-            } catch {
+            } catch (err) {
                 // Geolocation denied or failed, continue to next fallback
+                console.log("[useInitialMapLocation] Browser geolocation failed:", err);
             }
         }
 
         // 3. Try IP geolocation via Vercel
         try {
+            console.log("[useInitialMapLocation] Trying IP geolocation...");
             const response = await fetch("/api/geolocation");
             if (response.ok) {
                 const data = await response.json();
+                console.log("[useInitialMapLocation] IP geolocation response:", data);
                 if (data?.lat && data?.lng) {
+                    hasResolved.current = true;
                     setLocation({
                         center: [data.lng, data.lat],
                         zoom: DEFAULT_ZOOM,
@@ -89,12 +111,15 @@ export function useInitialMapLocation(
                     return;
                 }
             }
-        } catch {
+        } catch (err) {
             // IP geolocation failed, continue to next fallback
+            console.log("[useInitialMapLocation] IP geolocation failed:", err);
         }
 
         // 4. Use user profile location
         if (userLocationCoords && userLocationCoords.length === 2) {
+            console.log("[useInitialMapLocation] Using profile location");
+            hasResolved.current = true;
             setLocation({
                 center: userLocationCoords, // Already [lng, lat]
                 zoom: DEFAULT_ZOOM,
@@ -105,6 +130,8 @@ export function useInitialMapLocation(
         }
 
         // 5. Default to Boulder, CO
+        console.log("[useInitialMapLocation] Falling back to Boulder default");
+        hasResolved.current = true;
         setLocation({
             center: DEFAULT_CENTER,
             zoom: DEFAULT_ZOOM,
