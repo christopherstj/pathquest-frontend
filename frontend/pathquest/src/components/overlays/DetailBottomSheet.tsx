@@ -1,5 +1,20 @@
 "use client";
 
+/**
+ * @deprecated This component has been replaced by the new mobile navigation system.
+ * 
+ * The new system consists of:
+ * - MobileNavLayout: Main orchestrator with fixed tab bar
+ * - BottomTabBar: Fixed 3-tab navigation (Home, Explore, Profile)
+ * - ContentSheet: Reusable draggable sheet component
+ * - HomeTabContent, ExploreTabContent, ProfileTabContent: Tab content components
+ * 
+ * This file is kept for reference during the migration period and can be removed
+ * once the new navigation system is fully tested and stabilized.
+ * 
+ * See: src/components/navigation/
+ */
+
 import React, { useState, useEffect, useRef, useMemo } from "react";
 import { motion, useAnimation, PanInfo, AnimatePresence } from "framer-motion";
 import { Mountain, LayoutDashboard, Compass, RefreshCw, Route, Users, BarChart3, BookOpen, Trophy } from "lucide-react";

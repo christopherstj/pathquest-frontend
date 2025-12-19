@@ -11,4 +11,8 @@ export default interface ManualPeakSummit {
     timezone: string;
     difficulty?: Difficulty;
     experience_rating?: ExperienceRating;
+    /** Whether the summit has a trip report (notes, difficulty, or experience rating) */
+    hasReport?: boolean;
+    /** The summit number for this user (1st summit, 2nd summit, etc.) */
+    summitNumber?: number;
 }

@@ -128,9 +128,17 @@ src/app/
 - Used by `CurrentConditions` component for live peak weather
 
 ##### Dashboard (`api/dashboard/`)
-- `favorite-challenges/route.ts` - Fetches user's favorite challenges (in-progress/not-started only)
-- `recent-summits/route.ts` - Fetches user's recent summits
+- `favorite-challenges/route.ts` - Fetches user's favorite challenges (in-progress/not-started only). Now includes `lastProgressDate` and `lastProgressCount` fields.
+- `recent-summits/route.ts` - Fetches user's recent summits. Now includes `hasReport` and `summitNumber` fields.
 - `queue-status/route.ts` - Fetches count of activities waiting to be processed from event queue
+- `stats/route.ts` - Fetches dashboard quick stats (total peaks, elevation gained, summits this/last month, primary challenge progress)
+- All routes require authentication and use `getGoogleIdToken` for backend auth
+
+##### Summits (`api/summits/`)
+- `unconfirmed/route.ts` - GET: Fetches summits that need user review (low confidence auto-detections). Optional `limit` query param.
+- `[id]/confirm/route.ts` - POST: Confirms a summit as valid. Updates `confirmation_status` to `user_confirmed`.
+- `[id]/deny/route.ts` - POST: Denies a summit as invalid. Updates `confirmation_status` to `denied`. Summit is kept for audit but excluded from all counts.
+- `confirm-all/route.ts` - POST: Bulk confirms all unconfirmed summits for the user.
 - All routes require authentication and use `getGoogleIdToken` for backend auth
 
 ### Actions (`src/actions/`)
@@ -218,28 +226,42 @@ For static ISR pages (`/peaks/[id]`, `/challenges/[id]`), always use the "Public
 - `Logo.tsx` - SVG logo component with topographic contour-line mountain design. Uses currentColor for theming, supports size prop.
 
 ##### Overlays (`components/overlays/`)
-- `UrlOverlayManager.tsx` - Central overlay orchestrator. On desktop, renders DiscoveryDrawer (left panel) plus PeakDetailPanel/ChallengeDetailPanel/ActivityDetailPanel/ProfileDetailPanel (right panel). On mobile (< 1024px), renders DetailBottomSheet with tabbed interface. Routes handled: `/peaks/[id]`, `/challenges/[id]`, `/activities/[id]`, `/users/[userId]`.
+- `UrlOverlayManager.tsx` - Central overlay orchestrator. On desktop, renders DiscoveryDrawer (left panel) plus PeakDetailPanel/ChallengeDetailPanel/ActivityDetailPanel/ProfileDetailPanel (right panel). On mobile (< 1024px), renders `MobileNavLayout` with fixed 3-tab navigation (Home, Explore, Profile). Routes handled: `/peaks/[id]`, `/challenges/[id]`, `/activities/[id]`, `/users/[userId]`.
 - `DiscoveryDrawer.tsx` - Desktop left panel for discovering peaks and challenges. Supports multiple modes:
   - Default: Discovery content showing visible peaks and challenges
-  - Peak selected: My Activity, Community tabs (summit history drill-down mode via `summitHistoryPeakId` in mapStore—when set, shows SummitHistoryPanel)
+  - Peak selected: Shows discovery content (peak tabs moved to PeakDetailPanel right panel as of December 2024)
   - Activity selected: Summits tab showing activity summits
   - Profile selected: Peaks, Journal, and Challenges tabs (hides Explore tab)
   - Challenge selected: Peaks tab showing challenge peaks list with PeakRow components (hides Explore tab)
-- `DetailBottomSheet.tsx` - Mobile-only bottom sheet with tabbed interface. Uses extracted mobile components (PeakDetailsMobile, ChallengeDetailsMobile, DiscoveryContentMobile). Manages drawer height with snap points (collapsed/halfway/expanded). Supports Challenge Peaks tab when challenge is selected (hides Explore tab similar to profile). When profile is selected, shows Peaks, Journal, and Challenges tabs.
+- `DetailBottomSheet.tsx` - **DEPRECATED (December 2024)**: Legacy mobile bottom sheet with dynamic tabbed interface. Replaced by `MobileNavLayout` with fixed 3-tab navigation. Kept for reference during migration. Original functionality: Used extracted mobile components, managed drawer height with snap points, dynamic tabs based on context.
 - `SummitHistoryPanel.tsx` - Full summit history list for a peak. Shows all public summits with user names, dates, and weather conditions at summit time. Used inside DiscoveryDrawer (desktop) or DetailBottomSheet (mobile).
-- `PeakDetailPanel.tsx` - Desktop right panel for peak details. Uses shared components (DetailPanelHeader, StatsGrid, DetailLoadingState) and usePeakMapEffects hook. Includes CurrentConditions weather widget, summit status for authenticated users.
+- `PeakDetailPanel.tsx` - Desktop right panel for peak details (redesigned December 2024). Features:
+  - Compact header with peak name, elevation, summit status badge, and PeakActivityIndicator
+  - Collapsible weather widget (CurrentConditions)
+  - `[Community]` `[My Journal]` tabs (Community is default)
+  - Fly to Peak and close buttons in header
+  - "Share Your Experience" CTA in Community tab (for users with unreported summits)
+  - "Log Summit" CTA in My Journal tab
 - `PeakDetailContent.tsx` - Peak detail content with SSR data (used by static pages). Uses shared UI components.
-- `PeakCommunity.tsx` - Community summit history display component. Shows public summits with user names (linking to profile pages when user_id is available), weather conditions (muted primary green icons), and difficulty/experience ratings as pill-style chips. User avatar and name are clickable links to `/users/[user_id]`.
+- `PeakCommunity.tsx` - Community summit history display component. Shows public summits with user names (linking to profile pages when user_id is available), weather conditions, difficulty/experience ratings as pill-style chips, and condition tags (dry, snow, ice, etc.) as small pills. User avatar and name are clickable links to `/users/[user_id]`.
 - `PeakUserActivity.tsx` - User's activity display for a peak (shows user's ascents, activities, and allows editing). Activity cards link to `/activities/[id]` detail pages. Uses shared `ActivityWithSummits` and `OrphanSummitCard` components.
 - `ChallengeDetailPanel.tsx` - Desktop right panel for challenge details. Uses shared components and useChallengeMapEffects hook. Shows challenge progress for authenticated users. Peaks list is displayed in DiscoveryDrawer (left pane) instead of this panel. Shares challenge data with mapStore via `selectedChallengeData`.
 - `ChallengeDetailContent.tsx` - Challenge detail content with SSR data (used by static pages). Uses shared UI components.
 - `DashboardPanel.tsx` - User dashboard panel (authenticated only). Wrapper component that renders DashboardContent.
-- `DashboardContent.tsx` - Dashboard content component. Shows:
+- `DashboardContent.tsx` - Dashboard content component (refactored December 2024). Shows:
   - Queue status indicator (when activities are processing) - polls `/api/dashboard/queue-status` every 10s when items in queue
-  - Recent summits (fetched from `/api/dashboard/recent-summits`)
-  - Favorite challenges with progress bars (fetched from `/api/dashboard/favorite-challenges`)
+  - **Quick Stats Bar** - 4-metric horizontal bar (total peaks, elevation gained, summits this month with trend, primary challenge progress)
+  - **Hero Summit Card** - Celebratory card for most recent unreviewed summit with "Add Trip Report" CTA
+  - **Unreviewed Summits Queue** - List of summits older than 72 hours without reports (max 5 items)
+  - Recent summits (fetched from `/api/dashboard/recent-summits`) with `hasReport` and `summitNumber` fields
+  - Favorite challenges with progress bars and last progress date (fetched from `/api/dashboard/favorite-challenges`)
 - `AddManualSummitModal.tsx` - Modal for logging manual peak summits. Supports two flows: peak-first (from peak detail) and activity-first (from activity detail with peak search along route). Triggered by ManualSummitProvider.
-- `SummitReportModal.tsx` - Modal for editing summit experiences/reports (triggered by SummitReportProvider)
+- `SummitReportModal.tsx` - Modal for editing summit experiences/reports (triggered by SummitReportProvider). Features:
+  - Trip notes textarea with random placeholder prompts
+  - Difficulty selection (easy/moderate/hard/expert) with pill buttons
+  - Experience rating (tough/good/amazing/epic) with pill buttons
+  - Condition tags multi-select (clear, dry, wet, mud, snow, ice, icy, postholing, windy, foggy) with color-coded pills
+  - Saves condition_tags to backend
 - `UserManagementModal.tsx` - Modal for account settings. Features:
   - Location search using Mapbox Search Box (`@mapbox/search-js-react`) configured for places/regions
   - Small Mapbox GL map preview (300x200px) showing user's location with marker
@@ -263,6 +285,30 @@ For static ISR pages (`/peaks/[id]`, `/challenges/[id]`), always use the "Public
 - `activity-details-mobile.tsx` - Mobile-optimized activity detail view with Details/Summits/Analytics tabs
 - `profile-details-mobile.tsx` - Mobile-optimized profile detail view with stats and highest peak. Accepted challenges are displayed in the Challenges tab of DetailBottomSheet.
 
+##### Dashboard Components (`components/dashboard/`)
+Action-oriented dashboard components (December 2024):
+- `QuickStatsBar.tsx` - Horizontal 4-stat bar showing total peaks, elevation gained, summits this month (with trend arrow vs last month), and primary challenge progress percentage. Displays loading skeleton state.
+- `HeroSummitCard.tsx` - Celebratory card for recent unreviewed summits. Features gradient background, summit details, prominent "Add Trip Report" CTA, and "This was your Xth summit!" fun fact. Links to peak detail.
+- `UnreviewedSummitsQueue.tsx` - List of summits older than 72 hours without reports. Shows up to 5 items with quick "Add Report" buttons. Includes community message footer. Links to Profile tab for full backlog.
+- `UnconfirmedSummitsCard.tsx` - Card showing summits needing user review (low confidence auto-detections). Shows up to 3 items with inline confirm/deny buttons and "View Activity" links. Navigates to Profile → Review tab for full backlog.
+- `ProcessingToast.tsx` - Dismissible toast notification showing activity processing status. Renders via portal to document.body.
+- `index.ts` - Export barrel for dashboard components
+
+##### Mobile Navigation (`components/navigation/`)
+New mobile navigation system (December 2024) with fixed 3-tab navigation:
+- `BottomTabBar.tsx` - Fixed bottom navigation bar with 3 tabs: Home, Explore, Profile. Always visible, never changes based on context. Uses Zustand tab store for state management.
+- `ContentSheet.tsx` - Reusable draggable sheet component extracted from DetailBottomSheet. Supports 3 snap heights (collapsed, halfway, expanded) with swipe gestures and velocity detection. Positions above the bottom tab bar.
+- `MobileNavLayout.tsx` - Main layout orchestrator for mobile. Manages tab switching, URL-driven tab activation, and content sheet rendering. Replaces the old DetailBottomSheet-based mobile UI.
+- `HomeTabContent.tsx` - Home tab content wrapper. Renders DashboardContent for authenticated users.
+- `ExploreTabContent.tsx` - Explore tab content with two modes:
+  - Discovery mode: Shows visible peaks/challenges when no detail is selected
+  - Detail mode: Shows peak/challenge/activity/user detail views with sub-tabs
+  - Sub-tabs vary by content type (Peak: Community/Journal; Challenge: Progress/Peaks; Activity: Details/Summits/Analytics; Profile: Peaks/Journal/Challenges)
+  - Maintains back stack for navigation within Explore tab
+- `ProfileTabContent.tsx` - Profile tab content for viewing YOUR data. Sub-tabs: Peaks, Journal, Challenges, Review. Note: Other users' profiles are viewed in the Explore tab.
+- `ProfileReviewContent.tsx` - Review sub-tab content showing all unconfirmed summits. Features "Confirm All" bulk action, individual confirm/deny buttons per summit, "View Activity" links, and refresh button. Empty state when all summits are reviewed.
+- `index.ts` - Export barrel for navigation components
+
 ##### Auth (`components/auth/`)
 - `AuthModal.tsx` - Modal-based authentication flow. Two modes: login (Strava OAuth) and email collection (post-OAuth). Opens via `useRequireAuth` hook when user attempts auth-gated action.
 
@@ -274,6 +320,10 @@ For static ISR pages (`/peaks/[id]`, `/challenges/[id]`), always use the "Public
 
 ##### Peaks (`components/app/peaks/`)
 - `CurrentConditions.tsx` - Live weather display for peak detail panels. Fetches from `/api/weather` route (Open-Meteo). Shows temperature, feels like, conditions, wind, humidity.
+
+##### Peak Components (`components/peaks/`)
+- `PeakActivityIndicator.tsx` - Shows recent summit activity on a peak. Fetches from `/api/peaks/[id]/activity`. Displays fire icon + "X this week" or trending icon + "X this month". Shows "Be the first this week!" when no recent activity. Supports `compact` prop for inline display.
+- `index.ts` - Export barrel for peak components
 
 ##### Activities (`components/app/activities/`)
 - `ActivityElevationProfile.tsx` - Interactive elevation profile chart using visx. Supports hover interaction that shows a marker on the GPX track at the corresponding distance point via `onHover` callback, displays summit markers on chart, shows min/max elevation labels.
@@ -424,6 +474,12 @@ Zustand state management stores:
   - `summitHistoryPeakId` - When set, DiscoveryDrawer shows SummitHistoryPanel instead of discovery content (desktop drill-down)
   - `selectedChallengeData` - Challenge peaks data shared between ChallengeDetailPanel and DiscoveryDrawer (challengeId, challengeName, peaks)
   - `hoveredPeakId` - ID of peak being hovered over in summit list, used for map marker highlighting with amber accent color
+- `tabStore.ts` - Mobile navigation tab state (vanilla Zustand with React hook). State includes:
+  - `activeTab` - Current active tab ('home' | 'explore' | 'profile')
+  - `profileSubTab` - Active sub-tab within Profile tab ('peaks' | 'journal' | 'challenges' | 'review')
+  - `exploreSubTab` - Active sub-tab within Explore tab (varies by content type)
+  - `exploreBackStack` - Navigation history within Explore tab for back navigation
+  - Actions: `setActiveTab`, `setProfileSubTab`, `setExploreSubTab`, `pushExploreHistory`, `popExploreHistory`, `clearExploreHistory`
 - `userStore.tsx` - User data store (vanilla Zustand)
 - `authModalStore.ts` - Auth modal state (isOpen, mode, redirectAction)
 - `dashboardStore.ts` - Dashboard panel state (isOpen, toggle)
@@ -444,16 +500,19 @@ TypeScript type definitions:
 - `ActivityStart.ts` - Activity start location
 - `AscentDetail.ts` - Peak ascent details
 - `Challenge.ts` - Challenge data structure
-- `ChallengeProgress.ts` - Challenge progress tracking
-- `ManualPeakSummit.ts` - Manual summit entry
+- `ChallengeProgress.ts` - Challenge progress tracking. Extended with `lastProgressDate` and `lastProgressCount` fields.
+- `DashboardStats.ts` - Dashboard quick stats (totalPeaks, totalElevationGained, summitsThisMonth, summitsLastMonth, primaryChallengeProgress)
+- `ManualPeakSummit.ts` - Manual summit entry. Extended with optional `hasReport` and `summitNumber` fields.
 - `Peak.ts` - Peak data structure
 - `ProductDisplay.ts` - Stripe product display
 - `ServerActionResult.ts` - Server action result wrapper
 - `StravaCreds.ts` - Strava OAuth credentials
-- `Summit.ts` - Summit data structure with difficulty and experience rating
-- `SummitWithPeak.ts` - Individual summit entry with nested peak data. Used by activity detail API response. Includes all summit fields (notes, weather, difficulty, experience rating) plus peak info.
+- `Summit.ts` - Summit data structure with difficulty, experience rating, and condition_tags. Includes ConditionTag type: "dry" | "snow" | "ice" | "mud" | "wet" | "windy" | "foggy" | "icy" | "postholing" | "clear"
+- `SummitWithPeak.ts` - Individual summit entry with nested peak data. Used by activity detail API response. Includes all summit fields (notes, weather, difficulty, experience rating, condition_tags) plus peak info.
+- `PeakActivity.ts` - Peak activity statistics (summitsThisWeek, summitsThisMonth, lastSummitDate). Used by PeakActivityIndicator.
 - `ProfileStats.ts` - User profile statistics (peaks summited, total summits, highest peak, challenges completed, elevation gained, states/countries, year stats, peak type breakdown)
 - `UserPeakWithSummitCount.ts` - Peak with summit count and first/last summit dates for user profile search results
+- `UnconfirmedSummit.ts` - Unconfirmed summit needing user review (id, peakId, peakName, peakElevation, activityId, timestamp, distanceFromPeak, confidenceScore)
 - `User.ts` - User data structure
 - `UserChallengeFavorite.ts` - User challenge favorite
 
@@ -556,20 +615,27 @@ Next.js middleware for legacy route redirects:
 - Custom styling via Tailwind classes with retro borders/notches on overlays
 
 ### Responsive Layout
-- **Mobile First**: Application is designed to be fully functional on mobile devices.
+- **Mobile First**: Application is designed to be fully functional on mobile devices. The `useIsMobile` hook defaults to `true` during SSR and initial render for mobile-first experience.
 - **Adaptive Components**: 
   - **Desktop (≥ 1024px)**: 
     - `DiscoveryDrawer` on left side for discovering peaks/challenges
     - `PeakDetailPanel`/`ChallengeDetailPanel` on right side for details
     - Summit history drill-down replaces discovery content in left panel
   - **Mobile (< 1024px)**: 
-    - `DetailBottomSheet` with tabbed interface (Details | Discover)
-    - Draggable bottom sheet with 3 snap heights:
+    - **New (December 2024)**: `MobileNavLayout` with fixed 3-tab navigation:
+      - Fixed `BottomTabBar` always visible at bottom: Home, Explore, Profile
+      - `ContentSheet` draggable sheet positioned above tab bar
+      - **Home Tab**: Dashboard content (recent summits, challenges, queue status)
+      - **Explore Tab**: Discovery mode OR detail views with contextual sub-tabs
+      - **Profile Tab**: Your aggregated data with sub-tabs (Peaks, Journal, Challenges, Review)
+    - Draggable content sheet with 3 snap heights:
       - **Collapsed** (~60px): Just the drag handle visible
       - **Halfway** (~45vh): Default state, map partially visible
-      - **Expanded** (~100vh - 80px): Full screen content
+      - **Expanded** (~100vh - 140px): Full screen content (accounting for tab bar)
     - Supports swipe gestures with velocity detection
-    - Tab switches between peak/challenge details and discovery list
+    - Back stack navigation within Explore tab
+    - URL-driven tab switching (e.g., `/peaks/abc` → Explore tab with peak detail)
+    - **Legacy**: `DetailBottomSheet` has been deprecated but kept for reference
   - `GlobalNavigation`: Adapts padding and visibility of elements (logo hidden on mobile) to preserve space.
 - **Hooks**: Uses `useIsMobile` hook (based on `window.matchMedia`, default breakpoint 768px, 1024px for layout changes) for programmatic layout adaptations.
 

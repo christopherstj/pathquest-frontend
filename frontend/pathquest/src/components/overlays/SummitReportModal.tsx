@@ -24,7 +24,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useSummitReportStore } from "@/providers/SummitReportProvider";
 import updateAscent from "@/actions/peaks/updateAscent";
 import { useQueryClient } from "@tanstack/react-query";
-import { Difficulty, ExperienceRating } from "@/typeDefs/Summit";
+import { ConditionTag, Difficulty, ExperienceRating } from "@/typeDefs/Summit";
 
 const DIFFICULTY_OPTIONS: {
     value: Difficulty;
@@ -90,6 +90,23 @@ const EXPERIENCE_OPTIONS: {
     },
 ];
 
+const CONDITION_OPTIONS: {
+    value: ConditionTag;
+    label: string;
+    color: string;
+}[] = [
+    { value: "clear", label: "Clear", color: "text-sky-500 border-sky-500/30 bg-sky-500/10" },
+    { value: "dry", label: "Dry", color: "text-amber-500 border-amber-500/30 bg-amber-500/10" },
+    { value: "wet", label: "Wet", color: "text-blue-500 border-blue-500/30 bg-blue-500/10" },
+    { value: "mud", label: "Mud", color: "text-orange-700 border-orange-700/30 bg-orange-700/10" },
+    { value: "snow", label: "Snow", color: "text-slate-400 border-slate-400/30 bg-slate-400/10" },
+    { value: "ice", label: "Ice", color: "text-cyan-400 border-cyan-400/30 bg-cyan-400/10" },
+    { value: "icy", label: "Icy", color: "text-cyan-500 border-cyan-500/30 bg-cyan-500/10" },
+    { value: "postholing", label: "Postholing", color: "text-indigo-400 border-indigo-400/30 bg-indigo-400/10" },
+    { value: "windy", label: "Windy", color: "text-teal-500 border-teal-500/30 bg-teal-500/10" },
+    { value: "foggy", label: "Foggy", color: "text-gray-400 border-gray-400/30 bg-gray-400/10" },
+];
+
 const PLACEHOLDER_PROMPTS = [
     "What made this summit special?",
     "How was the view from the top?",
@@ -113,6 +130,7 @@ const SummitReportModal = () => {
     const [experience, setExperience] = useState<ExperienceRating | undefined>(
         undefined
     );
+    const [conditionTags, setConditionTags] = useState<ConditionTag[]>([]);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [showSuccess, setShowSuccess] = useState(false);
     const [placeholder, setPlaceholder] = useState(PLACEHOLDER_PROMPTS[0]);
@@ -123,6 +141,7 @@ const SummitReportModal = () => {
             setNotes(data.summit.notes || "");
             setDifficulty(data.summit.difficulty);
             setExperience(data.summit.experience_rating);
+            setConditionTags(data.summit.condition_tags || []);
             setIsSubmitting(false);
             setShowSuccess(false);
             // Pick a random placeholder
@@ -133,6 +152,14 @@ const SummitReportModal = () => {
             );
         }
     }, [data]);
+
+    const toggleConditionTag = (tag: ConditionTag) => {
+        setConditionTags((prev) =>
+            prev.includes(tag)
+                ? prev.filter((t) => t !== tag)
+                : [...prev, tag]
+        );
+    };
 
     const handleSubmit = async () => {
         if (!data?.summit || !data?.peakId) return;
@@ -149,6 +176,7 @@ const SummitReportModal = () => {
             timezone: data.summit.timezone || "",
             difficulty,
             experience_rating: experience,
+            condition_tags: conditionTags,
         });
 
         if (result.success) {
@@ -291,6 +319,24 @@ const SummitReportModal = () => {
                                         ))}
                                     </div>
                                 </div>
+
+                                {/* Conditions */}
+                                <div className="space-y-2">
+                                    <label className="text-sm font-medium text-muted-foreground">
+                                        Trail conditions (select all that apply)
+                                    </label>
+                                    <div className="flex flex-wrap gap-2">
+                                        {CONDITION_OPTIONS.map((option) => (
+                                            <ConditionTagButton
+                                                key={option.value}
+                                                option={option}
+                                                isSelected={conditionTags.includes(option.value)}
+                                                onClick={() => toggleConditionTag(option.value)}
+                                                disabled={isSubmitting}
+                                            />
+                                        ))}
+                                    </div>
+                                </div>
                             </div>
 
                             {/* Actions */}
@@ -402,6 +448,42 @@ const ExperienceButton = ({
         >
             {option.icon}
             <span className="text-xs font-medium">{option.label}</span>
+        </button>
+    );
+};
+
+type ConditionTagButtonProps = {
+    option: (typeof CONDITION_OPTIONS)[number];
+    isSelected: boolean;
+    onClick: () => void;
+    disabled: boolean;
+};
+
+const ConditionTagButton = ({
+    option,
+    isSelected,
+    onClick,
+    disabled,
+}: ConditionTagButtonProps) => {
+    return (
+        <button
+            type="button"
+            onClick={onClick}
+            disabled={disabled}
+            className={`
+                px-3 py-1.5 rounded-full border-2 text-xs font-medium transition-all
+                ${
+                    isSelected
+                        ? option.color
+                        : "border-border/50 text-muted-foreground hover:border-border"
+                }
+                ${disabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}
+            `}
+            aria-label={`${isSelected ? "Remove" : "Add"} ${option.label} condition`}
+            aria-pressed={isSelected}
+            tabIndex={0}
+        >
+            {option.label}
         </button>
     );
 };

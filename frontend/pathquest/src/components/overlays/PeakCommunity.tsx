@@ -19,7 +19,7 @@ import {
 } from "lucide-react";
 import { useMapStore } from "@/providers/MapProvider";
 import Link from "next/link";
-import Summit, { Difficulty, ExperienceRating } from "@/typeDefs/Summit";
+import Summit, { ConditionTag, Difficulty, ExperienceRating } from "@/typeDefs/Summit";
 
 // Difficulty display config
 const DIFFICULTY_CONFIG: Record<Difficulty, { label: string; color: string; borderColor: string; bgColor: string }> = {
@@ -35,6 +35,20 @@ const EXPERIENCE_CONFIG: Record<ExperienceRating, { label: string; color: string
     good: { label: "Good", color: "text-green-500", borderColor: "border-green-500/30", bgColor: "bg-green-500/5", icon: <Smile className="w-3.5 h-3.5" /> },
     tough: { label: "Tough", color: "text-blue-500", borderColor: "border-blue-500/30", bgColor: "bg-blue-500/5", icon: <Zap className="w-3.5 h-3.5" /> },
     epic: { label: "Epic", color: "text-purple-500", borderColor: "border-purple-500/30", bgColor: "bg-purple-500/5", icon: <Flame className="w-3.5 h-3.5" /> },
+};
+
+// Condition tag display config
+const CONDITION_CONFIG: Record<ConditionTag, { label: string; color: string; borderColor: string; bgColor: string }> = {
+    clear: { label: "Clear", color: "text-sky-500", borderColor: "border-sky-500/30", bgColor: "bg-sky-500/5" },
+    dry: { label: "Dry", color: "text-amber-500", borderColor: "border-amber-500/30", bgColor: "bg-amber-500/5" },
+    wet: { label: "Wet", color: "text-blue-500", borderColor: "border-blue-500/30", bgColor: "bg-blue-500/5" },
+    mud: { label: "Mud", color: "text-orange-700", borderColor: "border-orange-700/30", bgColor: "bg-orange-700/5" },
+    snow: { label: "Snow", color: "text-slate-400", borderColor: "border-slate-400/30", bgColor: "bg-slate-400/5" },
+    ice: { label: "Ice", color: "text-cyan-400", borderColor: "border-cyan-400/30", bgColor: "bg-cyan-400/5" },
+    icy: { label: "Icy", color: "text-cyan-500", borderColor: "border-cyan-500/30", bgColor: "bg-cyan-500/5" },
+    postholing: { label: "Postholing", color: "text-indigo-400", borderColor: "border-indigo-400/30", bgColor: "bg-indigo-400/5" },
+    windy: { label: "Windy", color: "text-teal-500", borderColor: "border-teal-500/30", bgColor: "bg-teal-500/5" },
+    foggy: { label: "Foggy", color: "text-gray-400", borderColor: "border-gray-400/30", bgColor: "bg-gray-400/5" },
 };
 
 // Extended summit type that includes user info from the API
@@ -243,6 +257,24 @@ const PeakCommunity = () => {
                                                 <span className="font-medium">{EXPERIENCE_CONFIG[summit.experience_rating].label}</span>
                                             </div>
                                         )}
+                                    </div>
+                                )}
+
+                                {/* Condition Tags (if available) */}
+                                {summit.condition_tags && summit.condition_tags.length > 0 && (
+                                    <div className="flex flex-wrap gap-1.5 mt-2">
+                                        {summit.condition_tags.map((tag) => {
+                                            const config = CONDITION_CONFIG[tag];
+                                            if (!config) return null;
+                                            return (
+                                                <span
+                                                    key={tag}
+                                                    className={`inline-flex px-2 py-0.5 rounded-full border text-[10px] font-medium ${config.color} ${config.borderColor} ${config.bgColor}`}
+                                                >
+                                                    {config.label}
+                                                </span>
+                                            );
+                                        })}
                                     </div>
                                 )}
 

@@ -7,8 +7,8 @@ import PeakDetailPanel from "./PeakDetailPanel";
 import ChallengeDetailPanel from "./ChallengeDetailPanel";
 import ActivityDetailPanel from "./ActivityDetailPanel";
 import ProfileDetailPanel from "./ProfileDetailPanel";
-import DetailBottomSheet from "./DetailBottomSheet";
 import DiscoveryDrawer from "./DiscoveryDrawer";
+import MobileNavLayout from "@/components/navigation/MobileNavLayout";
 import { useIsMobile } from "@/hooks/use-mobile";
 
 /**
@@ -20,7 +20,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
  * - SEO-friendly static pages with generateStaticParams
  * - Smooth client-side navigation between all routes
  * 
- * Mobile: Uses DetailBottomSheet with tabs for Details/Discover
+ * Mobile: Uses MobileNavLayout with fixed tab bar and content sheet
  * Desktop: Uses separate panels (PeakDetailPanel, ChallengeDetailPanel, DiscoveryDrawer)
  * 
  * The overlays are rendered via this component (in root layout),
@@ -65,17 +65,9 @@ const UrlOverlayManagerContent = () => {
         }
     }, [pathname]);
 
-    // Mobile: Use DetailBottomSheet with tabs
+    // Mobile: Use new MobileNavLayout with fixed tab bar
     if (isMobile) {
-        return (
-            <DetailBottomSheet
-                peakId={peakId}
-                challengeId={challengeId ? parseInt(challengeId, 10) : null}
-                activityId={activityId}
-                userId={userId}
-                onClose={handleClose}
-            />
-        );
+        return <MobileNavLayout />;
     }
 
     // Desktop: Use separate panels for details and discovery

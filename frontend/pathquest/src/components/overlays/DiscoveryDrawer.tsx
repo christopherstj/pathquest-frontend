@@ -104,12 +104,11 @@ const DiscoveryDrawer = () => {
         }
     }, [isAuthenticated, authLoading, hasInitializedTab]);
 
-    // Auto-switch to appropriate tab when a peak, activity, profile, or challenge is selected
+    // Auto-switch to appropriate tab when activity, profile, or challenge is selected
     // - Profile selected: open Profile Peaks tab
-    // - Peak selected + authenticated: open My Activity tab
-    // - Peak selected + not authenticated: open Community tab
     // - Activity selected: open Summits tab
     // - Challenge selected: open Challenge Peaks tab
+    // - Peak selected: Stay on discover (peak tabs are now in PeakDetailPanel on the right)
     useEffect(() => {
         if (hasProfileSelected && !isMobile) {
             setDesktopActiveTab("profilePeaks");
@@ -117,17 +116,12 @@ const DiscoveryDrawer = () => {
             setDesktopActiveTab("summits");
         } else if (hasChallengeSelected && !isMobile) {
             setDesktopActiveTab("challengePeaks");
-        } else if (hasPeakSelected && !isMobile) {
-            if (isAuthenticated) {
-                setDesktopActiveTab("myActivity");
-            } else {
-                setDesktopActiveTab("community");
-            }
-        } else if (!hasPeakSelected && !hasActivitySelected && !hasProfileSelected && !hasChallengeSelected && !isMobile) {
+        } else if (!hasActivitySelected && !hasProfileSelected && !hasChallengeSelected && !isMobile) {
+            // Default to discover (including when peak is selected - tabs are in right panel now)
             setDesktopActiveTab("discover");
             setHighlightedActivityId(null);
         }
-    }, [hasPeakSelected, hasActivitySelected, hasProfileSelected, hasChallengeSelected, isAuthenticated, isMobile]);
+    }, [hasActivitySelected, hasProfileSelected, hasChallengeSelected, isMobile]);
 
     // Update heights on window resize
     useEffect(() => {
@@ -246,32 +240,29 @@ const DiscoveryDrawer = () => {
 
     // Desktop version with tabs
     if (!isMobile) {
-        // Show tabs when a peak, activity, profile, or challenge is selected
-        // My Activity tab: only for authenticated users when peak selected
-        // Community tab: for all users when peak selected
+        // Show tabs when activity, profile, or challenge is selected
+        // Peak tabs (Journal/Community) are now handled in PeakDetailPanel on the right
         // Summits tab: when activity is selected
         // Profile tabs: when profile is selected
         // Challenge Peaks tab: when challenge is selected
-        const showMyActivityTab = hasPeakSelected && isAuthenticated;
-        const showCommunityTab = hasPeakSelected;
+        const showMyActivityTab = false; // Now in PeakDetailPanel
+        const showCommunityTab = false; // Now in PeakDetailPanel
         const showSummitsTab = hasActivitySelected;
         const showProfilePeaksTab = hasProfileSelected;
         const showProfileJournalTab = hasProfileSelected;
         const showProfileChallengesTab = hasProfileSelected;
         const showChallengePeaksTab = hasChallengeSelected;
-        const showTabs = hasPeakSelected || hasActivitySelected || hasProfileSelected || hasChallengeSelected;
+        const showTabs = hasActivitySelected || hasProfileSelected || hasChallengeSelected;
         
         // Count visible tabs to determine if we should show the tab navigation
         const visibleTabCount = [
-            showMyActivityTab,
-            showCommunityTab,
             showSummitsTab,
             showProfilePeaksTab,
             showProfileJournalTab,
             showProfileChallengesTab,
             showChallengePeaksTab,
         ].filter(Boolean).length;
-        const hasExploreTab = !hasProfileSelected && !hasChallengeSelected;
+        const hasExploreTab = !hasProfileSelected && !hasChallengeSelected && !hasPeakSelected;
         const totalTabs = visibleTabCount + (hasExploreTab ? 1 : 0);
         // Hide tab navigation when only challenge peaks tab is showing
         const shouldShowTabNavigation = showTabs && !(hasChallengeSelected && totalTabs === 1);

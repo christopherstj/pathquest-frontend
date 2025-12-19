@@ -5,20 +5,18 @@ import {
     Mountain,
     Trophy,
     Loader2,
-    MapPin,
-    ChevronRight,
-    PenLine,
-    RefreshCw,
+    Calendar,
 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 import { useIsAuthenticated } from "@/hooks/useRequireAuth";
-import { useSummitReportStore } from "@/providers/SummitReportProvider";
-import metersToFt from "@/helpers/metersToFt";
 import dayjs from "@/helpers/dayjs";
 import ManualPeakSummit from "@/typeDefs/ManualPeakSummit";
 import Peak from "@/typeDefs/Peak";
 import ChallengeProgress from "@/typeDefs/ChallengeProgress";
+import DashboardStats from "@/typeDefs/DashboardStats";
+import UnconfirmedSummit from "@/typeDefs/UnconfirmedSummit";
+import { QuickStatsBar, HeroSummitCard, UnreviewedSummitsQueue, ProcessingToast, UnconfirmedSummitsCard } from "@/components/dashboard";
 
 // Fetch recent summits from API route instead of server action
 const fetchRecentSummits = async (): Promise<(Peak & ManualPeakSummit)[] | null> => {
@@ -56,6 +54,30 @@ const fetchQueueStatus = async (): Promise<{ numProcessing: number }> => {
     return res.json();
 };
 
+// Fetch dashboard stats
+const fetchDashboardStats = async (): Promise<DashboardStats | null> => {
+    const res = await fetch("/api/dashboard/stats", {
+        credentials: "include",
+    });
+    if (!res.ok) {
+        console.error("Failed to fetch dashboard stats:", res.status);
+        return null;
+    }
+    return res.json();
+};
+
+// Fetch unconfirmed summits (limit to 3 for dashboard card)
+const fetchUnconfirmedSummits = async (): Promise<UnconfirmedSummit[]> => {
+    const res = await fetch("/api/summits/unconfirmed?limit=10", {
+        credentials: "include",
+    });
+    if (!res.ok) {
+        console.error("Failed to fetch unconfirmed summits:", res.status);
+        return [];
+    }
+    return res.json();
+};
+
 type DashboardContentProps = {
     isActive?: boolean;
     showHeader?: boolean;
@@ -67,7 +89,7 @@ const DashboardContent = ({ isActive = true, showHeader = false }: DashboardCont
     // Only fetch when authenticated and content is active
     const shouldFetch = isAuthenticated && isActive;
 
-    const { data: recentSummits, isLoading: summitsLoading } = useQuery({
+    const { data: recentSummits } = useQuery({
         queryKey: ["recentSummits"],
         queryFn: fetchRecentSummits,
         enabled: shouldFetch,
@@ -77,6 +99,13 @@ const DashboardContent = ({ isActive = true, showHeader = false }: DashboardCont
     const { data: favoriteChallenges, isLoading: challengesLoading } = useQuery({
         queryKey: ["favoriteChallenges"],
         queryFn: fetchFavoriteChallenges,
+        enabled: shouldFetch,
+        staleTime: 30000,
+    });
+
+    const { data: dashboardStats, isLoading: statsLoading } = useQuery({
+        queryKey: ["dashboardStats"],
+        queryFn: fetchDashboardStats,
         enabled: shouldFetch,
         staleTime: 30000,
     });
@@ -93,6 +122,28 @@ const DashboardContent = ({ isActive = true, showHeader = false }: DashboardCont
             return numProcessing > 0 ? 10000 : 30000;
         },
     });
+
+    // Fetch unconfirmed summits that need review
+    const { data: unconfirmedSummits } = useQuery({
+        queryKey: ["unconfirmedSummits"],
+        queryFn: fetchUnconfirmedSummits,
+        enabled: shouldFetch,
+        staleTime: 30000,
+    });
+
+    // Find the most recent unreviewed summit (for hero card)
+    const heroSummit = React.useMemo(() => {
+        if (!recentSummits || recentSummits.length === 0) return null;
+        // Find the first summit without a report
+        const unreviewed = recentSummits.find(summit => {
+            const hasReport = summit.hasReport || 
+                (summit.notes && summit.notes.trim() !== "") || 
+                summit.difficulty || 
+                summit.experience_rating;
+            return !hasReport;
+        });
+        return unreviewed || null;
+    }, [recentSummits]);
 
     // Show loading state while auth is loading
     if (authLoading) {
@@ -117,7 +168,7 @@ const DashboardContent = ({ isActive = true, showHeader = false }: DashboardCont
     }
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-5">
             {/* Optional Header */}
             {showHeader && (
                 <div className="flex items-center gap-3 mb-4">
@@ -138,139 +189,32 @@ const DashboardContent = ({ isActive = true, showHeader = false }: DashboardCont
                 </div>
             )}
 
-            {/* Queue Status Indicator */}
-            {queueStatus && queueStatus.numProcessing > 0 && (
-                <QueueStatusIndicator count={queueStatus.numProcessing} />
-            )}
+            {/* Processing Toast (fixed position, doesn't take up layout space) */}
+            <ProcessingToast count={queueStatus?.numProcessing ?? 0} />
 
-            {/* Recent Summits */}
-            <RecentSummitsSection
-                summits={recentSummits}
-                isLoading={summitsLoading}
-            />
+            {/* Quick Stats Bar */}
+            <QuickStatsBar stats={dashboardStats ?? null} isLoading={statsLoading} />
+
+            {/* Hero Summit Card (if there's an unreviewed summit) */}
+            {heroSummit && <HeroSummitCard summit={heroSummit} />}
+
+            {/* Unreviewed Summits Queue (older summits without reports) */}
+            {recentSummits && recentSummits.length > 0 && (
+                <UnreviewedSummitsQueue summits={recentSummits} />
+            )}
 
             {/* Challenge Progress */}
             <ChallengeProgressSection
                 challenges={favoriteChallenges}
                 isLoading={challengesLoading}
             />
-        </div>
-    );
-};
 
-type RecentSummitsSectionProps = {
-    summits: (Peak & ManualPeakSummit)[] | null | undefined;
-    isLoading: boolean;
-};
-
-const RecentSummitsSection = ({
-    summits,
-    isLoading,
-}: RecentSummitsSectionProps) => {
-    const openSummitReport = useSummitReportStore((state) => state.openSummitReport);
-
-    const handleAddTripReport = (e: React.MouseEvent, summit: Peak & ManualPeakSummit) => {
-        e.preventDefault();
-        e.stopPropagation();
-        // Convert ManualPeakSummit to Summit format for the modal
-        openSummitReport({
-            summit: {
-                id: summit.id,
-                timestamp: summit.timestamp,
-                timezone: summit.timezone,
-                activity_id: summit.activity_id || "",
-                notes: summit.notes,
-                is_public: summit.is_public,
-                difficulty: summit.difficulty,
-                experience_rating: summit.experience_rating,
-            },
-            peakId: summit.peak_id,
-            peakName: summit.name || "Unknown Peak",
-        });
-    };
-
-    return (
-        <div className="space-y-3">
-            <div className="flex items-center gap-2">
-                <Mountain className="w-4 h-4 text-primary" />
-                <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
-                    Recent Summits
-                </h3>
-            </div>
-
-            {isLoading ? (
-                <div className="space-y-2">
-                    {[1, 2, 3].map((i) => (
-                        <div
-                            key={i}
-                            className="h-16 rounded-lg bg-card/50 animate-pulse"
-                        />
-                    ))}
-                </div>
-            ) : summits && summits.length > 0 ? (
-                <div className="space-y-2">
-                    {summits.slice(0, 5).map((summit) => {
-                        const hasNotes = summit.notes && summit.notes.trim().length > 0;
-                        
-                        return (
-                            <Link
-                                key={summit.id}
-                                href={`/peaks/${summit.peak_id || summit.id}`}
-                                className="flex items-center justify-between p-3 rounded-lg bg-card border border-border/70 hover:bg-card/80 transition-colors group"
-                            >
-                                <div className="flex-1 min-w-0">
-                                    <p className="text-sm font-medium text-foreground truncate">
-                                        {summit.name}
-                                    </p>
-                                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                                        {summit.elevation && (
-                                            <span>
-                                                {Math.round(
-                                                    metersToFt(summit.elevation)
-                                                ).toLocaleString()}{" "}
-                                                ft
-                                            </span>
-                                        )}
-                                        {summit.timestamp && (
-                                            <>
-                                                <span>•</span>
-                                                <span>
-                                                    {dayjs(
-                                                        summit.timestamp
-                                                    ).fromNow()}
-                                                </span>
-                                            </>
-                                        )}
-                                    </div>
-                                </div>
-                                <div className="flex items-center gap-2 flex-shrink-0">
-                                    {!hasNotes && (
-                                        <button
-                                            onClick={(e) => handleAddTripReport(e, summit)}
-                                            className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-semibold text-primary-foreground bg-primary hover:bg-primary/90 rounded-md transition-colors cursor-pointer shadow-sm"
-                                            aria-label="Add trip report"
-                                            tabIndex={0}
-                                        >
-                                            <PenLine className="w-3.5 h-3.5" />
-                                            Add Report
-                                        </button>
-                                    )}
-                                    <ChevronRight className="w-4 h-4 text-muted-foreground group-hover:text-foreground transition-colors" />
-                                </div>
-                            </Link>
-                        );
-                    })}
-                </div>
-            ) : (
-                <div className="p-6 rounded-lg bg-card/50 border border-border/50 text-center">
-                    <MapPin className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
-                    <p className="text-sm text-muted-foreground">
-                        No summits yet
-                    </p>
-                    <p className="text-xs text-muted-foreground mt-1">
-                        Your summit history will appear here
-                    </p>
-                </div>
+            {/* Unconfirmed Summits Card (summits needing user review) - lower priority */}
+            {unconfirmedSummits && unconfirmedSummits.length > 0 && (
+                <UnconfirmedSummitsCard 
+                    summits={unconfirmedSummits.slice(0, 3)} 
+                    totalCount={unconfirmedSummits.length}
+                />
             )}
         </div>
     );
@@ -334,10 +278,21 @@ const ChallengeProgressSection = ({
                                         style={{ width: `${progressPercent}%` }}
                                     />
                                 </div>
-                                <p className="text-xs text-muted-foreground mt-1">
-                                    {progressPercent}% complete
-                                    {challenge.region && ` • ${challenge.region}`}
-                                </p>
+                                <div className="flex items-center justify-between mt-1.5">
+                                    <p className="text-xs text-muted-foreground">
+                                        {progressPercent}% complete
+                                        {challenge.region && ` • ${challenge.region}`}
+                                    </p>
+                                    {/* Last progress indicator */}
+                                    {challenge.lastProgressDate && challenge.lastProgressCount && challenge.lastProgressCount > 0 && (
+                                        <div className="flex items-center gap-1 text-xs text-green-600 dark:text-green-400">
+                                            <Calendar className="w-3 h-3" />
+                                            <span>
+                                                +{challenge.lastProgressCount} on {dayjs(challenge.lastProgressDate).format("MMM D")}
+                                            </span>
+                                        </div>
+                                    )}
+                                </div>
                             </Link>
                         );
                     })}
@@ -357,27 +312,4 @@ const ChallengeProgressSection = ({
     );
 };
 
-type QueueStatusIndicatorProps = {
-    count: number;
-};
-
-const QueueStatusIndicator = ({ count }: QueueStatusIndicatorProps) => {
-    return (
-        <div className="flex items-center gap-3 p-3 rounded-lg bg-primary/5 border border-primary/20">
-            <div className="flex items-center justify-center w-8 h-8 rounded-full bg-primary/10">
-                <RefreshCw className="w-4 h-4 text-primary animate-spin" style={{ animationDuration: '3s' }} />
-            </div>
-            <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-foreground">
-                    Processing activities
-                </p>
-                <p className="text-xs text-muted-foreground">
-                    {count} {count === 1 ? 'activity' : 'activities'} in queue
-                </p>
-            </div>
-        </div>
-    );
-};
-
 export default DashboardContent;
-
