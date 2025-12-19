@@ -8,7 +8,9 @@ export const GET = async (req: NextRequest) => {
     const backendUrl = getBackendUrl();
     
     // Get session to pass user identity to backend
+    // This works the same as dashboard routes - getServerSession reads cookies automatically
     const session = await getServerSession(authOptions);
+    
     // Always generate token for Google IAM authentication (required at infrastructure level)
     // User identity is passed via x-user-* headers for application-level auth
     const token = await getGoogleIdToken().catch((err) => {
@@ -26,7 +28,7 @@ export const GET = async (req: NextRequest) => {
     const res = await fetch(url.toString(), {
         headers: {
             ...(token ? { Authorization: `Bearer ${token}` } : {}),
-            // Pass user identity via headers
+            // Pass user identity via headers - backend uses this to calculate progress
             ...(session?.user?.id ? { "x-user-id": session.user.id } : {}),
             ...(session?.user?.email ? { "x-user-email": session.user.email } : {}),
             ...(session?.user?.name ? { "x-user-name": encodeURIComponent(session.user.name) } : {}),

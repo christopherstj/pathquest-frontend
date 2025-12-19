@@ -59,25 +59,27 @@ const DiscoveryChallengesList = ({
                                     {challenge.name}
                                 </h3>
                                 <div className="mt-1.5">
-                                    {isAuthenticated && challenge.total > 0 ? (
+                                    {challenge.total > 0 ? (
                                         <>
                                             <div className="flex items-center justify-between mb-1.5">
                                                 <span className="text-xs text-muted-foreground">
                                                     {challenge.completed}/{challenge.total} peaks
                                                 </span>
                                             </div>
-                                            <div className="h-1.5 bg-muted rounded-full overflow-hidden">
-                                                <div
-                                                    className="h-full bg-gradient-to-r from-secondary to-primary rounded-full transition-all"
-                                                    style={{ 
-                                                        width: `${Math.round((challenge.completed / challenge.total) * 100)}%` 
-                                                    }}
-                                                />
-                                            </div>
+                                            {isAuthenticated && challenge.completed > 0 && (
+                                                <div className="h-1.5 bg-muted rounded-full overflow-hidden">
+                                                    <div
+                                                        className="h-full bg-gradient-to-r from-secondary to-primary rounded-full transition-all"
+                                                        style={{ 
+                                                            width: `${Math.round((challenge.completed / challenge.total) * 100)}%` 
+                                                        }}
+                                                    />
+                                                </div>
+                                            )}
                                         </>
                                     ) : (
                                         <span className="text-xs text-muted-foreground">
-                                            0/{challenge.total || challenge.num_peaks || 0} peaks
+                                            {challenge.num_peaks || 0} peaks
                                         </span>
                                     )}
                                 </div>
