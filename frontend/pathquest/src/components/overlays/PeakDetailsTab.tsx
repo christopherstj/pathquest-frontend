@@ -95,7 +95,7 @@ const ChallengeListItem = ({ challenge, showProgress }: ChallengeListItemProps) 
                     </div>
                     <div className="flex items-center gap-2 mt-1">
                         <span className="text-xs text-muted-foreground">
-                            {challenge.num_peaks || challenge.total} peaks
+                            {challenge.num_peaks || ('total' in challenge ? challenge.total : 0)} peaks
                         </span>
                         {challenge.region && (
                             <>

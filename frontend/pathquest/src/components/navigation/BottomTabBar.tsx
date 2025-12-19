@@ -4,7 +4,7 @@ import React, { useMemo } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { Home, Compass, User } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useTabStore, type TabType } from "@/store/tabStore";
+import { useTabStore, getTabStore, type TabType } from "@/store/tabStore";
 
 interface TabButtonProps {
     tab: TabType;
@@ -63,7 +63,7 @@ const BottomTabBar = ({ className }: BottomTabBarProps) => {
     const pathname = usePathname();
     
     // Tab memory: remember last Explore detail path
-    const lastExplorePath = useTabStore((state) => state.lastExplorePath);
+    // Note: We read from store directly in handleTabChange to avoid stale closure issues
     const setLastExplorePath = useTabStore((state) => state.setLastExplorePath);
 
     // Derive active tab from URL - URL is the source of truth
@@ -76,6 +76,10 @@ const BottomTabBar = ({ className }: BottomTabBarProps) => {
     }, [pathname]);
 
     const handleTabChange = (tab: TabType) => {
+        // Read the current store state at click time to avoid stale closure issues
+        // This ensures we always get the most up-to-date lastExplorePath value
+        const currentLastExplorePath = getTabStore().getState().lastExplorePath;
+        
         // If leaving Explore, save the current path (or clear if on discovery mode)
         if (activeTab === "explore" && tab !== "explore") {
             if (isExploreDetailPath(pathname)) {
@@ -89,9 +93,9 @@ const BottomTabBar = ({ className }: BottomTabBarProps) => {
         
         // Determine where to navigate
         let targetUrl: string;
-        if (tab === "explore" && lastExplorePath) {
+        if (tab === "explore" && currentLastExplorePath) {
             // Restore saved Explore path
-            targetUrl = lastExplorePath;
+            targetUrl = currentLastExplorePath;
         } else if (tab === "home") {
             targetUrl = "/";
         } else if (tab === "profile") {

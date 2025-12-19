@@ -165,7 +165,7 @@ const ExploreTabContent = ({ isActive }: ExploreTabContentProps) => {
         } else {
             setExploreSubTab("discovery");
         }
-    }, [contentType, setExploreSubTab]);
+    }, [contentType, peakId, challengeId, activityId, userId, setExploreSubTab]);
 
     // Data fetching queries
     // placeholderData keeps previous data visible while refetching
@@ -316,25 +316,27 @@ const ExploreTabContent = ({ isActive }: ExploreTabContentProps) => {
                 ascents: peak.ascents || [],
                 activities: peakActivities || [],
             });
-        }
-        return () => {
+        } else if (!peakId || !isAuthenticated) {
+            // Only clear if we're not viewing a peak anymore or user logged out
             setSelectedPeakUserData(null);
             setHighlightedActivityId(null);
-        };
+        }
     }, [peak, peakActivities, isAuthenticated, peakId, setSelectedPeakUserData]);
 
     // Share community data with map store
     useEffect(() => {
         if (peak && peakId) {
+            // Set data immediately when peak is available, even if publicSummits is still loading
             setSelectedPeakCommunityData({
                 peakId: peakId,
                 peakName: peak.name || "Unknown Peak",
                 publicSummits: publicSummits || [],
             });
-        }
-        return () => {
+        } else if (!peakId) {
+            // Only clear if we're not viewing a peak anymore
             setSelectedPeakCommunityData(null);
-        };
+        }
+        // Note: We don't clear in cleanup to avoid race conditions when navigating between peaks
     }, [peak, publicSummits, peakId, setSelectedPeakCommunityData]);
 
     // Display activity GPX lines on map for peak details
@@ -620,8 +622,8 @@ const ExploreTabContent = ({ isActive }: ExploreTabContentProps) => {
                     <SubTabButton
                         icon={<Info className="w-3.5 h-3.5" />}
                         label="Details"
-                        isActive={exploreSubTab === "conditions"}
-                        onClick={() => setExploreSubTab("conditions")}
+                        isActive={exploreSubTab === "details"}
+                        onClick={() => setExploreSubTab("details")}
                     />
                 </div>
             );
@@ -725,7 +727,15 @@ const ExploreTabContent = ({ isActive }: ExploreTabContentProps) => {
         }
 
         // Peak detail
-        if (contentType === "peak" && peak) {
+        if (contentType === "peak") {
+            // Show loading state if peak data isn't ready yet
+            if (!peak) {
+                return (
+                    <div className="flex items-center justify-center py-10">
+                        <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary" />
+                    </div>
+                );
+            }
             const userSummits = peak.summits ?? 0;
             const hasUnreportedSummits = peak.ascents?.some(
                 (a) => !a.notes && !a.difficulty && !a.experience_rating

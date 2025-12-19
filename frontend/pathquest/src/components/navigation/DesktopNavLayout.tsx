@@ -3,9 +3,9 @@
 import React, { useMemo, useState, useEffect } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { Home, Compass, User, PanelLeftClose, PanelLeft } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
-import { useTabStore, type TabType } from "@/store/tabStore";
+import { useTabStore, getTabStore, type TabType } from "@/store/tabStore";
 import HomeTabContent from "./HomeTabContent";
 import ExploreTabContent from "./ExploreTabContent";
 import ProfileTabContent from "./ProfileTabContent";
@@ -90,7 +90,7 @@ const DesktopNavLayout = () => {
     const [hasHydrated, setHasHydrated] = useState(false);
     
     // Tab memory for Explore
-    const lastExplorePath = useTabStore((state) => state.lastExplorePath);
+    // Note: We read lastExplorePath from store directly in handleTabChange to avoid stale closure issues
     const setLastExplorePath = useTabStore((state) => state.setLastExplorePath);
     const setDesktopPanelCollapsed = useTabStore((state) => state.setDesktopPanelCollapsed);
 
@@ -133,6 +133,10 @@ const DesktopNavLayout = () => {
     }, [pathname]);
 
     const handleTabChange = (tab: TabType) => {
+        // Read the current store state at click time to avoid stale closure issues
+        // This ensures we always get the most up-to-date lastExplorePath value
+        const currentLastExplorePath = getTabStore().getState().lastExplorePath;
+        
         // If leaving Explore, save the current path (or clear if on discovery mode)
         if (activeTab === "explore" && tab !== "explore") {
             if (isExploreDetailPath(pathname)) {
@@ -144,8 +148,8 @@ const DesktopNavLayout = () => {
         
         // Determine where to navigate
         let targetUrl: string;
-        if (tab === "explore" && lastExplorePath) {
-            targetUrl = lastExplorePath;
+        if (tab === "explore" && currentLastExplorePath) {
+            targetUrl = currentLastExplorePath;
         } else if (tab === "home") {
             targetUrl = "/";
         } else if (tab === "profile") {
@@ -243,20 +247,11 @@ const DesktopNavLayout = () => {
             </div>
 
             {/* Content Area */}
-            <AnimatePresence mode="wait">
-                {!isCollapsed && (
-                    <motion.div
-                        key={activeTab}
-                        initial={{ opacity: 0, x: -10 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        exit={{ opacity: 0, x: -10 }}
-                        transition={{ duration: 0.15 }}
-                        className="flex-1 overflow-y-auto overflow-x-hidden custom-scrollbar"
-                    >
-                        {renderContent()}
-                    </motion.div>
-                )}
-            </AnimatePresence>
+            {!isCollapsed && (
+                <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden custom-scrollbar">
+                    {renderContent()}
+                </div>
+            )}
 
             {/* Collapsed state hint */}
             {isCollapsed && (

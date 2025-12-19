@@ -314,6 +314,7 @@ Unified navigation system (December 2024) with fixed 3-tab structure for both mo
   - Collapse toggle button (also Cmd/Ctrl+B keyboard shortcut)
   - Collapse state persisted in localStorage
   - Same content components as mobile (HomeTabContent, ExploreTabContent, ProfileTabContent)
+  - **Note**: Content area does NOT use Framer Motion AnimatePresence for tab transitions (causes height calculation issues with flex layout)
 
 **Mobile Components:**
 - `BottomTabBar.tsx` - Fixed bottom navigation bar with 3 tabs: Home, Explore, Profile. Always visible, never changes based on context. Uses Zustand tab store for state management.
@@ -510,10 +511,11 @@ Zustand state management stores:
   - `profileSubTab` - Active sub-tab within Profile tab ("stats" | "peaks" | "journal" | "challenges" | "review")
   - `exploreSubTab` - Active sub-tab within Explore tab (varies by content type)
   - `exploreBackStack` - Navigation history within Explore tab for back navigation
-  - `lastExplorePath` - Remembers last Explore detail path for "tab memory" (so clicking Explore restores where you were)
+  - `lastExplorePath` - Remembers last Explore detail path for "tab memory" (so clicking Explore restores where you were). **Important**: Read via `getTabStore().getState().lastExplorePath` in click handlers to avoid stale closure issues.
   - `drawerHeight` - Current mobile drawer height for map padding ("collapsed" | "halfway" | "expanded")
   - `isDesktopPanelCollapsed` - Desktop panel collapse state for map padding
   - Actions: `setProfileSubTab`, `setExploreSubTab`, `pushExploreHistory`, `popExploreHistory`, `clearExploreHistory`, `setLastExplorePath`, `setDrawerHeight`, `setDesktopPanelCollapsed`
+  - Exports: `getTabStore()` - Returns the singleton store instance for direct state access (use in click handlers to avoid stale closures)
 - `userStore.tsx` - User data store (vanilla Zustand)
 - `authModalStore.ts` - Auth modal state (isOpen, mode, redirectAction)
 - `dashboardStore.ts` - Dashboard panel state (isOpen, toggle)
