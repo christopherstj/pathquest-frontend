@@ -158,23 +158,12 @@ const PeakCommunity = () => {
             transition={{ duration: 0.15 }}
             className="space-y-5"
         >
-            {/* Header */}
-            <div className="pb-3 border-b border-border/60">
-                <div className="flex items-center gap-2 text-secondary mb-1">
-                    <Users className="w-4 h-4" />
-                    <span className="text-xs font-mono uppercase tracking-wider">
-                        Community
-                    </span>
-                </div>
-                <h2
-                    className="text-lg font-bold text-foreground"
-                    style={{ fontFamily: "var(--font-display)" }}
-                >
-                    {peakName}
-                </h2>
-                <p className="text-sm text-muted-foreground mt-1">
+            {/* Summary */}
+            <div className="flex items-center gap-2 text-muted-foreground pb-3 border-b border-border/60">
+                <Users className="w-4 h-4" />
+                <span className="text-sm">
                     {sortedSummits.length} recorded summit{sortedSummits.length !== 1 ? "s" : ""}
-                </p>
+                </span>
             </div>
 
             {/* Summit List */}

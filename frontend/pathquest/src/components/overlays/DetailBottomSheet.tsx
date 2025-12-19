@@ -397,8 +397,8 @@ const DetailBottomSheet = ({ peakId, challengeId, activityId, userId, onClose }:
         return () => {
             setPeaksSearchDisabled(false);
             setDisablePeaksSearch(false);
+            // Note: Don't reset map padding here - it's controlled by MapBackground based on drawer height
             if (map) {
-                map.setPadding({ top: 0, bottom: 0, left: 0, right: 0 });
                 setTimeout(() => map.fire("moveend"), 50);
             }
         };

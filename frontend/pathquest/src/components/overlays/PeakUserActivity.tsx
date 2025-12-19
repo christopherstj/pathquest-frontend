@@ -9,10 +9,11 @@ import {
 } from "lucide-react";
 import { useMapStore } from "@/providers/MapProvider";
 import { useManualSummitStore } from "@/providers/ManualSummitProvider";
+import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import Summit from "@/typeDefs/Summit";
 import ActivityWithSummits from "@/components/app/activities/ActivityWithSummits";
-import OrphanSummitCard from "@/components/app/summits/OrphanSummitCard";
+import { PeakJournalCard } from "@/components/journal";
 
 type PeakUserActivityProps = {
     highlightedActivityId?: string | null;
@@ -22,6 +23,7 @@ type PeakUserActivityProps = {
 const PeakUserActivity = ({ highlightedActivityId, onHighlightActivity }: PeakUserActivityProps) => {
     const selectedPeakUserData = useMapStore((state) => state.selectedPeakUserData);
     const openManualSummit = useManualSummitStore((state) => state.openManualSummit);
+    const queryClient = useQueryClient();
 
     if (!selectedPeakUserData) {
         return (
@@ -45,45 +47,18 @@ const PeakUserActivity = ({ highlightedActivityId, onHighlightActivity }: PeakUs
         });
     };
 
-    // Debug logging
-    console.log("Activities:", activities.map(a => ({ id: a.id, title: a.title })));
-    console.log("Ascents:", ascents.map(s => ({ id: s.id, activity_id: s.activity_id })));
-
-    // Group summits by activity_id (convert to string for safe comparison)
-    const summitsByActivity = new Map<string, Summit[]>();
-    const orphanSummits: Summit[] = [];
-
-    ascents.forEach((summit) => {
-        if (summit.activity_id) {
-            const activityIdStr = String(summit.activity_id);
-            const existing = summitsByActivity.get(activityIdStr) || [];
-            summitsByActivity.set(activityIdStr, [...existing, summit]);
-        } else {
-            orphanSummits.push(summit);
-        }
-    });
-
-    console.log("SummitsByActivity keys:", Array.from(summitsByActivity.keys()));
-
     // Create activity map for lookup (use string IDs)
     const activityMap = new Map(activities.map((a) => [String(a.id), a]));
 
-    // Get activities that have summits, sorted by date (most recent first)
-    const activitiesWithSummits = activities
-        .filter((a) => summitsByActivity.has(String(a.id)))
-        .sort((a, b) => new Date(b.start_time).getTime() - new Date(a.start_time).getTime());
-
-    console.log("Activities with summits:", activitiesWithSummits.map(a => a.id));
+    // Sort all summits by date (most recent first)
+    const sortedSummits = [...ascents].sort(
+        (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+    );
 
     // Get activities without summits
     const activitiesWithoutSummits = activities
-        .filter((a) => !summitsByActivity.has(String(a.id)))
+        .filter((a) => !ascents.some((s) => String(s.activity_id) === String(a.id)))
         .sort((a, b) => new Date(b.start_time).getTime() - new Date(a.start_time).getTime());
-
-    // Sort orphan summits by date
-    const sortedOrphanSummits = orphanSummits.sort(
-        (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
-    );
 
     const handleHighlightActivity = (activityId: string) => {
         if (onHighlightActivity) {
@@ -93,6 +68,11 @@ const PeakUserActivity = ({ highlightedActivityId, onHighlightActivity }: PeakUs
                 onHighlightActivity(activityId);
             }
         }
+    };
+
+    const handleSummitDeleted = () => {
+        // Invalidate queries to refresh the peak user data
+        queryClient.invalidateQueries({ queryKey: ["peakUserData", peakId] });
     };
 
     const totalSummits = ascents.length;
@@ -106,24 +86,13 @@ const PeakUserActivity = ({ highlightedActivityId, onHighlightActivity }: PeakUs
             transition={{ duration: 0.15 }}
             className="space-y-5"
         >
-            {/* Header */}
-            <div className="pb-3 border-b border-border/60">
-                <div className="flex items-center gap-2 text-primary mb-1">
-                    <Mountain className="w-4 h-4" />
-                    <span className="text-xs font-mono uppercase tracking-wider">
-                        My Activity
-                    </span>
-                </div>
-                <h2
-                    className="text-lg font-bold text-foreground"
-                    style={{ fontFamily: "var(--font-display)" }}
-                >
-                    {peakName}
-                </h2>
-                <p className="text-sm text-muted-foreground mt-1">
+            {/* Summary */}
+            <div className="flex items-center gap-2 text-muted-foreground pb-3 border-b border-border/60">
+                <Mountain className="w-4 h-4" />
+                <span className="text-sm">
                     {totalSummits} summit{totalSummits !== 1 ? "s" : ""}
                     {totalActivities > 0 && ` • ${totalActivities} activit${totalActivities !== 1 ? "ies" : "y"}`}
-                </p>
+                </span>
             </div>
 
             {/* Log Summit CTA */}
@@ -135,38 +104,27 @@ const PeakUserActivity = ({ highlightedActivityId, onHighlightActivity }: PeakUs
                 Log Summit
             </Button>
 
-            {/* Activities with Summits */}
-            {activitiesWithSummits.length > 0 && (
-                <section className="space-y-3">
-                    {activitiesWithSummits.map((activity) => (
-                        <ActivityWithSummits
-                            key={activity.id}
-                            activity={activity}
-                            summits={summitsByActivity.get(String(activity.id)) || []}
-                            isHighlighted={highlightedActivityId === activity.id}
-                            onHighlight={handleHighlightActivity}
-                            peakId={peakId}
-                            peakName={peakName}
-                            isOwner={true}
-                        />
-                    ))}
-                </section>
-            )}
-
-            {/* Orphan Summits (without activity) */}
-            {sortedOrphanSummits.length > 0 && (
-                <section>
-                    <div className="flex items-center gap-2 mb-3">
-                        <Mountain className="w-4 h-4 text-summited" />
-                        <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
-                            Manual Summits
-                        </h3>
-                    </div>
-                    <div className="space-y-3">
-                        {sortedOrphanSummits.map((summit) => (
-                            <OrphanSummitCard key={summit.id} summit={summit} peakId={peakId} peakName={peakName} isOwner={true} />
-                        ))}
-                    </div>
+            {/* All Summits - Journal Style */}
+            {sortedSummits.length > 0 && (
+                <section className="space-y-2">
+                    {sortedSummits.map((summit, idx) => {
+                        const activity = summit.activity_id 
+                            ? activityMap.get(String(summit.activity_id))
+                            : undefined;
+                        
+                        return (
+                            <PeakJournalCard
+                                key={summit.id}
+                                summit={summit}
+                                peakId={peakId}
+                                peakName={peakName}
+                                activityTitle={activity?.title}
+                                isOwner={true}
+                                onDeleted={handleSummitDeleted}
+                                index={sortedSummits.length - idx}
+                            />
+                        );
+                    })}
                 </section>
             )}
 

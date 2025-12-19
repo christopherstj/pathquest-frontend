@@ -1,13 +1,13 @@
 "use client";
 
-import React, { useEffect } from "react";
+import React, { useMemo } from "react";
 import { usePathname } from "next/navigation";
-import { useTabStore } from "@/store/tabStore";
 import BottomTabBar from "./BottomTabBar";
 import ContentSheet from "./ContentSheet";
 import HomeTabContent from "./HomeTabContent";
 import ExploreTabContent from "./ExploreTabContent";
 import ProfileTabContent from "./ProfileTabContent";
+import type { TabType } from "@/store/tabStore";
 
 /**
  * MobileNavLayout - Main mobile navigation orchestrator
@@ -15,30 +15,35 @@ import ProfileTabContent from "./ProfileTabContent";
  * This component manages:
  * 1. Fixed bottom tab bar (Home, Explore, Profile)
  * 2. Draggable content sheet that changes based on active tab
- * 3. URL-driven tab switching (e.g., /peaks/abc -> Explore tab)
+ * 3. URL-driven tab selection (tab is derived from URL, not stored in state)
+ * 
+ * Route structure:
+ * - `/` → Home tab
+ * - `/explore` → Explore tab (discovery mode)
+ * - `/profile` → Profile tab
+ * - `/peaks/[id]`, `/challenges/[id]`, etc. → Explore tab (detail mode)
  * 
  * The map always remains visible in the background.
  */
 const MobileNavLayout = () => {
     const pathname = usePathname();
-    const activeTab = useTabStore((state) => state.activeTab);
-    const setActiveTab = useTabStore((state) => state.setActiveTab);
 
-    // URL-driven tab switching
-    // When URL contains detail routes, switch to Explore tab
-    useEffect(() => {
-        const isDetailRoute = 
+    // Derive active tab from URL - URL is the source of truth
+    const activeTab: TabType = useMemo(() => {
+        if (pathname === "/profile") return "profile";
+        if (
+            pathname === "/explore" ||
             pathname.startsWith("/peaks/") ||
             pathname.startsWith("/challenges/") ||
             pathname.startsWith("/activities/") ||
-            pathname.startsWith("/users/");
-
-        if (isDetailRoute && activeTab !== "explore") {
-            setActiveTab("explore");
+            pathname.startsWith("/users/")
+        ) {
+            return "explore";
         }
-    }, [pathname, activeTab, setActiveTab]);
+        return "home";
+    }, [pathname]);
 
-    // Render content based on active tab
+    // Render content based on active tab (derived from URL)
     const renderContent = () => {
         switch (activeTab) {
             case "home":

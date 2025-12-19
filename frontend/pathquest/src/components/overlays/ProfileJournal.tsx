@@ -1,212 +1,186 @@
 "use client";
 
-import React, { useMemo, useState } from "react";
+import React, { useState, useRef, useEffect, useCallback } from "react";
 import { motion } from "framer-motion";
-import { Search, Mountain, Route, Calendar, BookOpen } from "lucide-react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
-import searchUserSummits from "@/actions/users/searchUserSummits";
-import getActivityDetails from "@/actions/activities/getActivityDetails";
-import ActivityWithSummits from "@/components/app/activities/ActivityWithSummits";
-import OrphanSummitCard from "@/components/app/summits/OrphanSummitCard";
-import SummitWithPeak from "@/typeDefs/SummitWithPeak";
-import Activity from "@/typeDefs/Activity";
+import { BookOpen, Loader2 } from "lucide-react";
+import { useInfiniteQuery, useQueryClient } from "@tanstack/react-query";
+import { JournalResult } from "@/typeDefs/JournalEntry";
+import { JournalEntryCard, JournalFilterBar } from "@/components/journal";
 import { useIsAuthenticated } from "@/hooks/useRequireAuth";
 
 interface ProfileJournalProps {
     userId: string;
 }
 
+// Fetch journal entries from the API
+const fetchJournal = async (
+    userId: string,
+    cursor?: string,
+    search?: string,
+    year?: number,
+    hasReport?: boolean
+): Promise<JournalResult> => {
+    const params = new URLSearchParams();
+    params.set("limit", "20");
+    if (cursor) params.set("cursor", cursor);
+    if (search) params.set("search", search);
+    if (year) params.set("year", String(year));
+    if (hasReport !== undefined) params.set("hasReport", String(hasReport));
+
+    const res = await fetch(`/api/users/${userId}/journal?${params.toString()}`);
+    if (!res.ok) {
+        throw new Error("Failed to fetch journal");
+    }
+    return res.json();
+};
+
 const ProfileJournal = ({ userId }: ProfileJournalProps) => {
     const [search, setSearch] = useState("");
     const [debouncedSearch, setDebouncedSearch] = useState("");
+    const [year, setYear] = useState<number | undefined>(undefined);
+    const [hasReport, setHasReport] = useState<boolean | undefined>(undefined);
+    
+    const scrollRef = useRef<HTMLDivElement>(null);
     const queryClient = useQueryClient();
     
     // Determine if current user is the owner of this profile
-    // Convert both to strings to handle potential type mismatch (session user.id may be number, URL userId is string)
     const { user } = useIsAuthenticated();
     const isOwner = Boolean(user?.id && String(user.id) === String(userId));
-    
-    // Callback to refresh data when a summit is deleted
-    const handleSummitDeleted = () => {
-        queryClient.invalidateQueries({ queryKey: ["userSummitsJournal", userId] });
-    };
 
     // Debounce search
-    React.useEffect(() => {
+    useEffect(() => {
         const timer = setTimeout(() => {
             setDebouncedSearch(search);
         }, 300);
         return () => clearTimeout(timer);
     }, [search]);
 
-    // Fetch all summits (with large page size to get all)
-    const { data: summitsData, isLoading: summitsLoading } = useQuery({
-        queryKey: ["userSummitsJournal", userId, debouncedSearch],
-        queryFn: async () => {
-            const res = await searchUserSummits(userId, debouncedSearch || undefined, 1, 500);
-            return res.success ? res.data : null;
-        },
+    // Infinite query for journal entries
+    const {
+        data,
+        fetchNextPage,
+        hasNextPage,
+        isFetchingNextPage,
+        isLoading,
+        isError,
+        error,
+    } = useInfiniteQuery({
+        queryKey: ["userJournal", userId, debouncedSearch, year, hasReport],
+        queryFn: ({ pageParam }) => 
+            fetchJournal(userId, pageParam, debouncedSearch || undefined, year, hasReport),
+        getNextPageParam: (lastPage) => lastPage.nextCursor ?? undefined,
+        initialPageParam: undefined as string | undefined,
+        staleTime: 1000 * 60 * 5, // 5 minutes
     });
 
-    // Group summits by activity_id
-    const { activityIds, summitsByActivity, orphanSummits } = useMemo(() => {
-        const summits = summitsData?.summits ?? [];
-        const summitsByActivity = new Map<string, SummitWithPeak[]>();
-        const orphanSummits: SummitWithPeak[] = [];
-        const activityIds = new Set<string>();
+    // Flatten all entries from all pages
+    const allEntries = data?.pages.flatMap((page) => page.entries) ?? [];
+    const totalCount = data?.pages[0]?.totalCount ?? 0;
 
-        summits.forEach((summit) => {
-            if (summit.activity_id) {
-                const activityIdStr = String(summit.activity_id);
-                activityIds.add(activityIdStr);
-                const existing = summitsByActivity.get(activityIdStr) || [];
-                summitsByActivity.set(activityIdStr, [...existing, summit]);
-            } else {
-                orphanSummits.push(summit);
-            }
-        });
+    // Load more when scrolling near the bottom
+    const handleScroll = useCallback(() => {
+        if (!scrollRef.current) return;
+        
+        const { scrollTop, scrollHeight, clientHeight } = scrollRef.current;
+        const scrolledToBottom = scrollTop + clientHeight >= scrollHeight - 200;
+        
+        if (scrolledToBottom && hasNextPage && !isFetchingNextPage) {
+            fetchNextPage();
+        }
+    }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
 
-        return { activityIds: Array.from(activityIds), summitsByActivity, orphanSummits };
-    }, [summitsData]);
+    // Attach scroll listener
+    useEffect(() => {
+        const element = scrollRef.current;
+        if (!element) return;
+        
+        element.addEventListener("scroll", handleScroll);
+        return () => element.removeEventListener("scroll", handleScroll);
+    }, [handleScroll]);
 
-    // Fetch activity details for all activity IDs
-    const { data: activitiesData, isLoading: activitiesLoading } = useQuery({
-        queryKey: ["profileJournalActivities", activityIds],
-        queryFn: async () => {
-            if (activityIds.length === 0) return new Map<string, Activity>();
-
-            // Fetch activity details in parallel (batch of 10 at a time)
-            const activityMap = new Map<string, Activity>();
-            const batchSize = 10;
-
-            for (let i = 0; i < activityIds.length; i += batchSize) {
-                const batch = activityIds.slice(i, i + batchSize);
-                const results = await Promise.all(
-                    batch.map(async (id) => {
-                        try {
-                            const result = await getActivityDetails(id);
-                            return { id, activity: result?.activity };
-                        } catch {
-                            return { id, activity: null };
-                        }
-                    })
-                );
-                results.forEach((r) => {
-                    if (r.activity) {
-                        activityMap.set(r.id, r.activity);
-                    }
-                });
-            }
-
-            return activityMap;
-        },
-        enabled: activityIds.length > 0,
-    });
-
-    // Sort activities by date (most recent first)
-    const sortedActivities = useMemo(() => {
-        if (!activitiesData) return [];
-        return Array.from(activitiesData.values()).sort(
-            (a, b) => new Date(b.start_time).getTime() - new Date(a.start_time).getTime()
-        );
-    }, [activitiesData]);
-
-    // Sort orphan summits by date (most recent first)
-    const sortedOrphanSummits = useMemo(() => {
-        return orphanSummits.sort(
-            (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
-        );
-    }, [orphanSummits]);
-
-    const isLoading = summitsLoading || activitiesLoading;
-    const totalSummits = summitsData?.totalCount ?? 0;
-    const totalActivities = sortedActivities.length;
+    // Handle summit deletion - invalidate query to refresh
+    const handleDeleted = () => {
+        queryClient.invalidateQueries({ queryKey: ["userJournal", userId] });
+    };
 
     return (
         <div className="flex flex-col h-full gap-4">
-            {/* Search Input */}
-            <div className="relative px-4">
-                <Search className="absolute left-7 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                <input
-                    type="text"
-                    value={search}
-                    onChange={(e) => setSearch(e.target.value)}
-                    placeholder="Search summits..."
-                    className="w-full pl-9 pr-4 py-2 bg-card border border-border rounded-lg text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
-                />
-            </div>
+            {/* Filter Bar */}
+            <JournalFilterBar
+                search={search}
+                onSearchChange={setSearch}
+                year={year}
+                onYearChange={setYear}
+                hasReport={hasReport}
+                onHasReportChange={setHasReport}
+                totalCount={totalCount}
+            />
 
             {/* Content */}
-            <div className="flex-1 overflow-y-auto px-4 pb-4 custom-scrollbar">
+            <div 
+                ref={scrollRef}
+                className="flex-1 overflow-y-auto px-4 pb-4 custom-scrollbar"
+            >
                 {isLoading ? (
                     <div className="flex items-center justify-center py-12">
                         <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
                     </div>
-                ) : totalSummits === 0 ? (
+                ) : isError ? (
+                    <div className="flex flex-col items-center justify-center py-12 text-center">
+                        <p className="text-sm text-destructive">
+                            {error?.message || "Failed to load journal"}
+                        </p>
+                        <button
+                            onClick={() => queryClient.invalidateQueries({ queryKey: ["userJournal", userId] })}
+                            className="mt-2 text-xs text-primary hover:underline"
+                        >
+                            Try again
+                        </button>
+                    </div>
+                ) : allEntries.length === 0 ? (
                     <div className="flex flex-col items-center justify-center py-12 text-center">
                         <BookOpen className="w-12 h-12 text-muted-foreground/50 mb-3" />
                         <p className="text-sm text-muted-foreground">
-                            {debouncedSearch
-                                ? "No summits match your search"
+                            {debouncedSearch || year || hasReport !== undefined
+                                ? "No summits match your filters"
                                 : "No summit journal entries yet"}
                         </p>
                         <p className="text-xs text-muted-foreground mt-1">
-                            Summit records will appear here
+                            {debouncedSearch || year || hasReport !== undefined
+                                ? "Try adjusting your filters"
+                                : "Summit records will appear here"}
                         </p>
                     </div>
                 ) : (
                     <motion.div
                         initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
-                        className="space-y-6"
+                        className="space-y-2"
                     >
-                        {/* Activities with Summits */}
-                        {sortedActivities.length > 0 && (
-                            <section className="space-y-3">
-                                <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                                    <Route className="w-3.5 h-3.5 text-primary" />
-                                    <span className="font-medium uppercase tracking-wider">
-                                        Activities ({totalActivities})
-                                    </span>
-                                </div>
-                                {sortedActivities.map((activity) => {
-                                    const summits = summitsByActivity.get(String(activity.id)) || [];
-                                    return (
-                                        <ActivityWithSummits
-                                            key={activity.id}
-                                            activity={activity}
-                                            summits={[]}
-                                            summitsWithPeak={summits}
-                                            showPeakHeaders={true}
-                                            isOwner={isOwner}
-                                            onSummitDeleted={handleSummitDeleted}
-                                        />
-                                    );
-                                })}
-                            </section>
-                        )}
-
-                        {/* Manual Summits (without activity) */}
-                        {sortedOrphanSummits.length > 0 && (
-                            <section className="space-y-3">
-                                <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                                    <Mountain className="w-3.5 h-3.5 text-summited" />
-                                    <span className="font-medium uppercase tracking-wider">
-                                        Manual Summits ({sortedOrphanSummits.length})
-                                    </span>
-                                </div>
-                                {sortedOrphanSummits.map((summit) => (
-                                    <OrphanSummitCard
-                                        key={summit.id}
-                                        summit={summit}
-                                        showPeakHeader={true}
-                                        isOwner={isOwner}
-                                        onDeleted={handleSummitDeleted}
-                                    />
-                                ))}
-                            </section>
-                        )}
+                        {allEntries.map((entry) => (
+                            <JournalEntryCard
+                                key={entry.id}
+                                entry={entry}
+                                isOwner={isOwner}
+                                onDeleted={handleDeleted}
+                            />
+                        ))}
                     </motion.div>
+                )}
+
+                {/* Loading More Indicator */}
+                {isFetchingNextPage && (
+                    <div className="flex items-center justify-center py-4">
+                        <Loader2 className="w-5 h-5 animate-spin text-primary" />
+                        <span className="ml-2 text-sm text-muted-foreground">Loading more...</span>
+                    </div>
+                )}
+
+                {/* End of List */}
+                {!hasNextPage && allEntries.length > 0 && (
+                    <div className="text-center py-4 text-xs text-muted-foreground">
+                        You&apos;ve reached the end
+                    </div>
                 )}
             </div>
         </div>
@@ -214,4 +188,3 @@ const ProfileJournal = ({ userId }: ProfileJournalProps) => {
 };
 
 export default ProfileJournal;
-

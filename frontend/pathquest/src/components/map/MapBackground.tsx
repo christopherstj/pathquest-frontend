@@ -10,7 +10,16 @@ import { searchChallengesClient } from "@/lib/client/searchChallengesClient";
 import { useIsMobile } from "@/hooks/use-mobile";
 import getMapStateFromURL from "@/helpers/getMapStateFromURL";
 import updateMapURL from "@/helpers/updateMapURL";
+import getTrueMapCenter from "@/helpers/getTrueMapCenter";
 import { getMapboxToken } from "@/lib/map/getMapboxToken";
+import { useTabStore, type DrawerHeight } from "@/store/tabStore";
+
+// Heights for drawer (same as ContentSheet) - used for map padding
+const DRAWER_HEIGHTS = {
+    collapsed: 60,
+    halfway: typeof window !== "undefined" ? window.innerHeight * 0.45 : 400,
+    expanded: typeof window !== "undefined" ? window.innerHeight - 140 : 600,
+};
 
 // Debounce utility function
 const debounce = <T extends (...args: any[]) => any>(
@@ -48,6 +57,7 @@ const MapBackground = () => {
     const isMobile = useIsMobile(1024);
     const isInitialStyleSet = useRef(false);
     const isUserInteraction = useRef(true);
+    const drawerHeight = useTabStore((state) => state.drawerHeight);
     
     // Use refs for callbacks to avoid them being dependencies
     const routerRef = useRef(router);
@@ -107,6 +117,30 @@ const MapBackground = () => {
                 : "mapbox://styles/mapbox/outdoors-v12"
         );
     }, [isSatellite, map]);
+
+    // Set map padding based on drawer height (mobile only)
+    // This is the ONLY place that should control map padding
+    useEffect(() => {
+        if (!map || !isMobile) return;
+        
+        // Calculate drawer pixel height (same calculation as ContentSheet)
+        const getDrawerPixelHeight = (height: DrawerHeight): number => {
+            if (typeof window === "undefined") return DRAWER_HEIGHTS[height];
+            switch (height) {
+                case "collapsed": return 60;
+                case "halfway": return window.innerHeight * 0.45;
+                case "expanded": return window.innerHeight - 140;
+            }
+        };
+        
+        const bottomPadding = getDrawerPixelHeight(drawerHeight) + 20; // Add small buffer
+        map.setPadding({
+            top: 20,
+            bottom: bottomPadding,
+            left: 0,
+            right: 0,
+        });
+    }, [map, isMobile, drawerHeight]);
 
     const fetchPeaks = useCallback(async () => {
         if (!map) return;
@@ -448,9 +482,12 @@ const MapBackground = () => {
         }, 300);
 
         // Debounced URL update (separate from data fetching for better UX)
+        // Uses getTrueMapCenter to account for padding offset, preventing map jump
+        // when navigating between routes with different padding
         const debouncedUpdateURL = debounce(() => {
             if (isUserInteraction.current) {
-                const center = newMap.getCenter();
+                // Get the true center accounting for any padding applied
+                const center = getTrueMapCenter(newMap);
                 updateMapURL(
                     {
                         center: { lng: center.lng, lat: center.lat },

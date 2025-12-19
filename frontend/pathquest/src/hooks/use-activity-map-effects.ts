@@ -13,16 +13,10 @@ interface UseActivityMapEffectsOptions {
     peakSummits?: Peak[] | null;
     hoverCoords?: [number, number] | null;
     flyToOnLoad?: boolean;
-    padding?: { top: number; bottom: number; left: number; right: number };
 }
 
 const MAX_ATTEMPTS = 5;
 const RETRY_DELAY = 300;
-
-// Default padding values (stable reference to avoid re-renders)
-// Left padding accounts for DiscoveryDrawer width (320px) + left margin (20px) + buffer (20px) = 360px
-// Right padding accounts for ActivityDetailPanel width (400px) + right margin (20px) + buffer (30px) = 450px
-const DEFAULT_PADDING = { top: 100, bottom: 100, left: 360, right: 450 };
 
 /**
  * Hook to handle map effects when viewing an activity detail.
@@ -31,13 +25,14 @@ const DEFAULT_PADDING = { top: 100, bottom: 100, left: 360, right: 450 };
  * - Handles hover marker from elevation profile
  * - Handles hover highlighting of peaks from summit list (via mapStore.hoveredPeakId)
  * - Fits map bounds to activity route
+ * 
+ * Note: Map padding is controlled by MapBackground based on drawer height, not here.
  */
 export function useActivityMapEffects({
     activity,
     peakSummits,
     hoverCoords,
     flyToOnLoad = true,
-    padding = DEFAULT_PADDING,
 }: UseActivityMapEffectsOptions) {
     const map = useMapStore((state) => state.map);
     const hoveredPeakId = useMapStore((state) => state.hoveredPeakId);
@@ -70,12 +65,11 @@ export function useActivityMapEffects({
         });
 
         map.fitBounds(bounds, {
-            padding,
             maxZoom: 14,
         });
 
         hasFittedBoundsRef.current = true;
-    }, [activity?.coords, activity?.id, map, flyToOnLoad, padding]);
+    }, [activity?.coords, activity?.id, map, flyToOnLoad]);
 
     // Display activity GPX line on the map
     useEffect(() => {
@@ -319,8 +313,8 @@ export function useActivityMapEffects({
                     map.removeSource("activityHover");
                 }
 
-                // Reset map padding and trigger peaks refresh when panel closes
-                map.setPadding({ top: 0, bottom: 0, left: 0, right: 0 });
+                // Trigger peaks refresh when panel closes
+                // Note: Don't reset map padding here - it's controlled by MapBackground based on drawer height
                 setTimeout(() => {
                     map.fire("moveend");
                 }, 50);
@@ -340,10 +334,9 @@ export function useActivityMapEffects({
         });
 
         map.fitBounds(bounds, {
-            padding,
             maxZoom: 14,
         });
-    }, [activity?.coords, map, padding]);
+    }, [activity?.coords, map]);
 
     return { flyToActivity };
 }

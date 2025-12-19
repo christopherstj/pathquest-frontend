@@ -6,6 +6,7 @@ import Activity from "@/typeDefs/Activity";
 import Challenge from "@/typeDefs/Challenge";
 import Peak from "@/typeDefs/Peak";
 import ServerActionResult from "@/typeDefs/ServerActionResult";
+import { ChallengeProgressInfo } from "./getChallengeDetails";
 
 const backendUrl = getBackendUrl();
 
@@ -23,6 +24,7 @@ const getPublicChallengeDetails = async (
     ServerActionResult<{
         challenge: Challenge;
         peaks: Peak[];
+        progress?: ChallengeProgressInfo;
         activityCoords?: {
             id: string;
             coords: Activity["coords"];

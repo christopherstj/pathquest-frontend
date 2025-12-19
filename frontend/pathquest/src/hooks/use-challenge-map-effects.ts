@@ -11,27 +11,22 @@ import mapboxgl from "mapbox-gl";
 interface UseChallengeMapEffectsOptions {
     challenge: Challenge | null | undefined;
     peaks?: Peak[] | null;
-    padding?: { top: number; bottom: number; left: number; right: number };
 }
 
 const MAX_ATTEMPTS = 10;
 const RETRY_DELAY = 300;
-
-// Default padding values (stable reference to avoid re-renders)
-// Left padding accounts for DiscoveryDrawer width (320px) + left margin (20px) + buffer (20px) = 360px
-// Right padding accounts for ChallengeDetailPanel width (340px) + right margin (20px) = 360px
-const DEFAULT_PADDING = { top: 100, bottom: 100, left: 360, right: 360 };
 
 /**
  * Hook to handle map effects when viewing a challenge detail.
  * - Disables general peaks search
  * - Shows challenge peaks on the map
  * - Fits map to challenge bounds (only once on initial load)
+ * 
+ * Note: Map padding is controlled by MapBackground based on drawer height, not here.
  */
 export function useChallengeMapEffects({
     challenge,
     peaks,
-    padding = DEFAULT_PADDING,
 }: UseChallengeMapEffectsOptions) {
     const map = useMapStore((state) => state.map);
     const setDisablePeaksSearch = useMapStore((state) => state.setDisablePeaksSearch);
@@ -82,9 +77,9 @@ export function useChallengeMapEffects({
             setPeaksSearchDisabled(false);
             setDisablePeaksSearch(false);
 
-            // Reset map padding and trigger peaks refresh when panel closes
+            // Trigger peaks refresh when panel closes
+            // Note: Don't reset map padding here - it's controlled by MapBackground based on drawer height
             if (map) {
-                map.setPadding({ top: 0, bottom: 0, left: 0, right: 0 });
                 setTimeout(() => {
                     map.fire("moveend");
                 }, 50);
@@ -106,7 +101,6 @@ export function useChallengeMapEffects({
         if (bounds && map) {
             hasFitBoundsRef.current = true;
             map.fitBounds(bounds, {
-                padding,
                 maxZoom: 12,
             });
         } else if (challenge?.location_coords && map) {
@@ -117,7 +111,7 @@ export function useChallengeMapEffects({
                 essential: true,
             });
         }
-    }, [bounds, challenge?.id, challenge?.location_coords, map, padding]);
+    }, [bounds, challenge?.id, challenge?.location_coords, map]);
 
     // Show challenge peaks on the map
     useEffect(() => {
@@ -167,11 +161,10 @@ export function useChallengeMapEffects({
     const showOnMap = useCallback(() => {
         if (bounds && map) {
             map.fitBounds(bounds, {
-                padding,
                 maxZoom: 12,
             });
         }
-    }, [bounds, map, padding]);
+    }, [bounds, map]);
 
     return { bounds, showOnMap };
 }

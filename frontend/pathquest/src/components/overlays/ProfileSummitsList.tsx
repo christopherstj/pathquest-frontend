@@ -1,8 +1,8 @@
 "use client";
 
-import React, { useState, useCallback } from "react";
-import { Search, Mountain, ChevronRight, Calendar } from "lucide-react";
-import { useQuery } from "@tanstack/react-query";
+import React, { useState, useCallback, useRef, useEffect } from "react";
+import { Search, Mountain, ChevronRight, Calendar, Loader2 } from "lucide-react";
+import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import { useMapStore } from "@/providers/MapProvider";
 import searchUserPeaks from "@/actions/users/searchUserPeaks";
 import searchUserSummits from "@/actions/users/searchUserSummits";
@@ -18,6 +18,8 @@ interface ProfileSummitsListProps {
     compact?: boolean;
 }
 
+const PAGE_SIZE = 50;
+
 const ProfileSummitsList = ({ userId, compact = false }: ProfileSummitsListProps) => {
     // When compact, force peaks tab only (no tabs shown, tabs are in DiscoveryDrawer)
     const [activeTab, setActiveTab] = useState<Tab>("peaks");
@@ -25,26 +27,39 @@ const ProfileSummitsList = ({ userId, compact = false }: ProfileSummitsListProps
     const [search, setSearch] = useState("");
     const [debouncedSearch, setDebouncedSearch] = useState("");
     const setHoveredPeakId = useMapStore((state) => state.setHoveredPeakId);
+    const scrollRef = useRef<HTMLDivElement>(null);
 
     // Debounce search
-    React.useEffect(() => {
+    useEffect(() => {
         const timer = setTimeout(() => {
             setDebouncedSearch(search);
         }, 300);
         return () => clearTimeout(timer);
     }, [search]);
 
-    // Query for peaks
-    const { data: peaksData, isLoading: peaksLoading } = useQuery({
+    // Infinite query for peaks
+    const {
+        data: peaksData,
+        fetchNextPage: fetchNextPeaksPage,
+        hasNextPage: hasNextPeaksPage,
+        isFetchingNextPage: isFetchingNextPeaksPage,
+        isLoading: peaksLoading,
+    } = useInfiniteQuery({
         queryKey: ["userPeaks", userId, debouncedSearch],
-        queryFn: async () => {
-            const res = await searchUserPeaks(userId, debouncedSearch || undefined);
-            return res.success ? res.data : null;
+        queryFn: async ({ pageParam = 1 }) => {
+            const res = await searchUserPeaks(userId, debouncedSearch || undefined, pageParam, PAGE_SIZE);
+            return res.success ? { ...res.data, page: pageParam } : null;
         },
+        getNextPageParam: (lastPage) => {
+            if (!lastPage) return undefined;
+            const totalPages = Math.ceil(lastPage.totalCount / PAGE_SIZE);
+            return lastPage.page < totalPages ? lastPage.page + 1 : undefined;
+        },
+        initialPageParam: 1,
         enabled: effectiveTab === "peaks",
     });
 
-    // Query for summits (only when not compact)
+    // Query for summits (only when not compact) - keeping simple for now
     const { data: summitsData, isLoading: summitsLoading } = useQuery({
         queryKey: ["userSummits", userId, debouncedSearch],
         queryFn: async () => {
@@ -62,8 +77,32 @@ const ProfileSummitsList = ({ userId, compact = false }: ProfileSummitsListProps
         setHoveredPeakId(null);
     }, [setHoveredPeakId]);
 
+    // Load more when scrolling near the bottom
+    const handleScroll = useCallback(() => {
+        if (!scrollRef.current || effectiveTab !== "peaks") return;
+        
+        const { scrollTop, scrollHeight, clientHeight } = scrollRef.current;
+        const scrolledToBottom = scrollTop + clientHeight >= scrollHeight - 200;
+        
+        if (scrolledToBottom && hasNextPeaksPage && !isFetchingNextPeaksPage) {
+            fetchNextPeaksPage();
+        }
+    }, [effectiveTab, hasNextPeaksPage, isFetchingNextPeaksPage, fetchNextPeaksPage]);
+
+    // Attach scroll listener
+    useEffect(() => {
+        const element = scrollRef.current;
+        if (!element) return;
+        
+        element.addEventListener("scroll", handleScroll);
+        return () => element.removeEventListener("scroll", handleScroll);
+    }, [handleScroll]);
+
     const isLoading = effectiveTab === "peaks" ? peaksLoading : summitsLoading;
-    const peaks = peaksData?.peaks || [];
+    
+    // Flatten all peaks from all pages
+    const peaks = peaksData?.pages.flatMap((page) => page?.peaks ?? []) ?? [];
+    const peaksTotalCount = peaksData?.pages[0]?.totalCount ?? 0;
     const summits = summitsData?.summits || [];
 
     return (
@@ -93,8 +132,8 @@ const ProfileSummitsList = ({ userId, compact = false }: ProfileSummitsListProps
                         )}
                     >
                         Peaks
-                        {peaksData && (
-                            <span className="ml-1.5 text-xs opacity-70">({peaksData.totalCount})</span>
+                        {peaksTotalCount > 0 && (
+                            <span className="ml-1.5 text-xs opacity-70">({peaksTotalCount})</span>
                         )}
                     </button>
                     <button
@@ -115,47 +154,67 @@ const ProfileSummitsList = ({ userId, compact = false }: ProfileSummitsListProps
             )}
 
             {/* Content */}
-            <div className="flex-1 overflow-y-auto px-4 pb-4 custom-scrollbar">
+            <div 
+                ref={scrollRef}
+                className="flex-1 overflow-y-auto px-4 pb-4 custom-scrollbar"
+            >
                 {isLoading ? (
                     <div className="flex items-center justify-center py-12">
                         <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
                     </div>
                 ) : effectiveTab === "peaks" ? (
                     peaks.length > 0 ? (
-                        <div className="space-y-2">
-                            {peaks.map((peak) => (
-                                <Link
-                                    key={peak.id}
-                                    href={`/peaks/${peak.id}`}
-                                    className="flex items-center justify-between p-3 rounded-lg bg-card border border-border/70 hover:bg-card/80 transition-colors"
-                                    onMouseEnter={() => handlePeakHoverStart(peak.id)}
-                                    onMouseLeave={handlePeakHoverEnd}
-                                >
-                                    <div className="flex items-center gap-3">
-                                        <div className="w-8 h-8 rounded-full bg-summited/10 flex items-center justify-center">
-                                            <Mountain className="w-4 h-4 text-summited" />
-                                        </div>
-                                        <div>
-                                            <span className="text-sm font-medium text-foreground block">
-                                                {peak.name}
-                                            </span>
-                                            <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                                                <span>
-                                                    {peak.elevation ? Math.round(metersToFt(peak.elevation)).toLocaleString() : 0} ft
+                        <>
+                            <div className="space-y-2">
+                                {peaks.map((peak) => (
+                                    <Link
+                                        key={peak.id}
+                                        href={`/peaks/${peak.id}`}
+                                        className="flex items-center justify-between p-3 rounded-lg bg-card border border-border/70 hover:bg-card/80 transition-colors"
+                                        onMouseEnter={() => handlePeakHoverStart(peak.id)}
+                                        onMouseLeave={handlePeakHoverEnd}
+                                    >
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-8 h-8 rounded-full bg-summited/10 flex items-center justify-center">
+                                                <Mountain className="w-4 h-4 text-summited" />
+                                            </div>
+                                            <div>
+                                                <span className="text-sm font-medium text-foreground block">
+                                                    {peak.name}
                                                 </span>
-                                                {peak.summit_count > 1 && (
-                                                    <>
-                                                        <span>•</span>
-                                                        <span>{peak.summit_count} summits</span>
-                                                    </>
-                                                )}
+                                                <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                                                    <span>
+                                                        {peak.elevation ? Math.round(metersToFt(peak.elevation)).toLocaleString() : 0} ft
+                                                    </span>
+                                                    {peak.summit_count > 1 && (
+                                                        <>
+                                                            <span>•</span>
+                                                            <span>{peak.summit_count} summits</span>
+                                                        </>
+                                                    )}
+                                                </div>
                                             </div>
                                         </div>
-                                    </div>
-                                    <ChevronRight className="w-4 h-4 text-muted-foreground" />
-                                </Link>
-                            ))}
-                        </div>
+                                        <ChevronRight className="w-4 h-4 text-muted-foreground" />
+                                    </Link>
+                                ))}
+                            </div>
+
+                            {/* Loading More Indicator */}
+                            {isFetchingNextPeaksPage && (
+                                <div className="flex items-center justify-center py-4">
+                                    <Loader2 className="w-5 h-5 animate-spin text-primary" />
+                                    <span className="ml-2 text-sm text-muted-foreground">Loading more...</span>
+                                </div>
+                            )}
+
+                            {/* End of List */}
+                            {!hasNextPeaksPage && peaks.length > 0 && (
+                                <div className="text-center py-4 text-xs text-muted-foreground">
+                                    {peaks.length} of {peaksTotalCount} peaks
+                                </div>
+                            )}
+                        </>
                     ) : (
                         <div className="flex flex-col items-center justify-center py-12 text-center">
                             <Mountain className="w-12 h-12 text-muted-foreground/50 mb-3" />
@@ -166,7 +225,7 @@ const ProfileSummitsList = ({ userId, compact = false }: ProfileSummitsListProps
                     )
                 ) : summits.length > 0 ? (
                     <div className="space-y-3">
-                        {summits.map((summit) => (
+                        {summits.map((summit, idx) => (
                             <div key={summit.id}>
                                 {/* Date header if needed */}
                                 <div className="flex items-center gap-2 mb-2 text-xs text-muted-foreground">
@@ -185,6 +244,7 @@ const ProfileSummitsList = ({ userId, compact = false }: ProfileSummitsListProps
                                     showPeakHeader={true}
                                     onHoverStart={handlePeakHoverStart}
                                     onHoverEnd={handlePeakHoverEnd}
+                                    index={idx + 1}
                                 />
                             </div>
                         ))}

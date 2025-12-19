@@ -1,13 +1,13 @@
 "use client";
 
 import React, { useState } from "react";
+import { useRouter } from "next/navigation";
 import { AlertCircle, Check, X, ExternalLink, ChevronRight, Loader2 } from "lucide-react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 import metersToFt from "@/helpers/metersToFt";
 import dayjs from "@/helpers/dayjs";
 import UnconfirmedSummit from "@/typeDefs/UnconfirmedSummit";
-import { useTabStore } from "@/store/tabStore";
 import { useQueryClient } from "@tanstack/react-query";
 
 interface UnconfirmedSummitsCardProps {
@@ -25,9 +25,9 @@ const UnconfirmedSummitsCard = ({
     onConfirm,
     onDeny 
 }: UnconfirmedSummitsCardProps) => {
+    const router = useRouter();
     const [processingIds, setProcessingIds] = useState<Set<string>>(new Set());
     const [dismissedIds, setDismissedIds] = useState<Set<string>>(new Set());
-    const setActiveTab = useTabStore((state) => state.setActiveTab);
     const queryClient = useQueryClient();
 
     const handleConfirm = async (id: string, e: React.MouseEvent) => {
@@ -92,9 +92,8 @@ const UnconfirmedSummitsCard = ({
 
     const handleViewAll = (e: React.MouseEvent) => {
         e.preventDefault();
-        // Navigate to Profile tab with Review sub-tab
-        setActiveTab("profile");
-        // TODO: Set sub-tab to Review
+        // Navigate to Profile page - Review sub-tab will be handled by ProfileTabContent
+        router.push("/profile");
     };
 
     const visibleSummits = summits.filter(s => !dismissedIds.has(s.id));

@@ -14,10 +14,16 @@ import mapboxgl from "mapbox-gl";
 // Data fetching actions
 import getPeakDetails from "@/actions/peaks/getPeakDetails";
 import getPublicChallengeDetails from "@/actions/challenges/getPublicChallengeDetails";
+import getChallengeDetails from "@/actions/challenges/getChallengeDetails";
+import getNextPeakSuggestion from "@/actions/challenges/getNextPeakSuggestion";
+import getChallengeActivity from "@/actions/challenges/getChallengeActivity";
 import getActivityDetails from "@/actions/activities/getActivityDetails";
 import getUserProfile from "@/actions/users/getUserProfile";
 import addChallengeFavorite from "@/actions/challenges/addChallengeFavorite";
 import deleteChallengeFavorite from "@/actions/challenges/deleteChallengeFavorite";
+
+// Hooks
+import useUserLocation from "@/hooks/use-user-location";
 
 // Mobile detail components
 import PeakDetailsMobile from "@/components/overlays/mobile/peak-details-mobile";
@@ -50,7 +56,6 @@ import { convertSummitsToPeaks } from "@/helpers/convertSummitsToPeaks";
 import { useActivityMapEffects } from "@/hooks/use-activity-map-effects";
 import { useProfileMapEffects } from "@/hooks/use-profile-map-effects";
 import { usePeakHoverMapEffects } from "@/hooks/use-peak-hover-map-effects";
-import { useContentSheetHeights } from "./ContentSheet";
 
 interface SubTabButtonProps {
     icon: React.ReactNode;
@@ -98,7 +103,6 @@ const ExploreTabContent = ({ isActive }: ExploreTabContentProps) => {
     const queryClient = useQueryClient();
     const requireAuth = useRequireAuth();
     const { isAuthenticated } = useIsAuthenticated();
-    const heights = useContentSheetHeights();
 
     // Map store
     const visiblePeaks = useMapStore((state) => state.visiblePeaks);
@@ -163,6 +167,8 @@ const ExploreTabContent = ({ isActive }: ExploreTabContentProps) => {
     }, [contentType, setExploreSubTab]);
 
     // Data fetching queries
+    // placeholderData keeps previous data visible while refetching
+    // This prevents empty states when switching tabs
     const { data: peakData, isLoading: peakLoading } = useQuery({
         queryKey: ["peakDetails", peakId],
         queryFn: async () => {
@@ -170,15 +176,54 @@ const ExploreTabContent = ({ isActive }: ExploreTabContentProps) => {
             return await getPeakDetails(peakId);
         },
         enabled: Boolean(peakId) && isActive,
+        placeholderData: (previousData) => previousData,
     });
 
     const { data: challengeData, isLoading: challengeLoading } = useQuery({
-        queryKey: ["challengeDetails", challengeId],
+        queryKey: ["challengeDetails", challengeId, isAuthenticated],
         queryFn: async () => {
             if (!challengeId) return null;
-            return await getPublicChallengeDetails(String(challengeId));
+            // Use authenticated endpoint when logged in to get progress data
+            if (isAuthenticated) {
+                const data = await getChallengeDetails(String(challengeId));
+                // Convert to ServerActionResult format for consistency
+                return data ? { success: true, data } : { success: false, error: "Failed to fetch challenge details" };
+            } else {
+                // Use public endpoint for unauthenticated users
+                return await getPublicChallengeDetails(String(challengeId));
+            }
         },
         enabled: Boolean(challengeId) && isActive,
+        placeholderData: (previousData) => previousData,
+    });
+
+    // User location for next peak suggestions
+    const { location: userLocation } = useUserLocation({ requestOnMount: Boolean(challengeId) });
+
+    // Next peak suggestion query
+    const { data: nextPeakData } = useQuery({
+        queryKey: ["nextPeakSuggestion", challengeId, userLocation?.lat, userLocation?.lng],
+        queryFn: async () => {
+            if (!challengeId) return null;
+            return await getNextPeakSuggestion(
+                String(challengeId),
+                userLocation?.lat,
+                userLocation?.lng
+            );
+        },
+        enabled: Boolean(challengeId) && isActive && Boolean(userLocation),
+        placeholderData: (previousData) => previousData,
+    });
+
+    // Challenge community activity query
+    const { data: challengeActivityData } = useQuery({
+        queryKey: ["challengeActivity", challengeId],
+        queryFn: async () => {
+            if (!challengeId) return null;
+            return await getChallengeActivity(String(challengeId));
+        },
+        enabled: Boolean(challengeId) && isActive,
+        placeholderData: (previousData) => previousData,
     });
 
     const { data: activityData, isLoading: activityLoading } = useQuery({
@@ -188,6 +233,7 @@ const ExploreTabContent = ({ isActive }: ExploreTabContentProps) => {
             return await getActivityDetails(activityId);
         },
         enabled: Boolean(activityId) && isActive,
+        placeholderData: (previousData) => previousData,
     });
 
     const { data: profileData, isLoading: profileLoading } = useQuery({
@@ -197,7 +243,28 @@ const ExploreTabContent = ({ isActive }: ExploreTabContentProps) => {
             return await getUserProfile(userId);
         },
         enabled: Boolean(userId) && isActive,
+        placeholderData: (previousData) => previousData,
     });
+
+    // Refetch queries when tab becomes active again
+    // This ensures data is fresh when returning to the Explore tab
+    useEffect(() => {
+        if (!isActive) return;
+
+        // Refetch active queries when tab becomes active
+        if (peakId) {
+            queryClient.refetchQueries({ queryKey: ["peakDetails", peakId] });
+        }
+        if (challengeId) {
+            queryClient.refetchQueries({ queryKey: ["challengeDetails", challengeId] });
+        }
+        if (activityId) {
+            queryClient.refetchQueries({ queryKey: ["activityDetails", activityId] });
+        }
+        if (userId) {
+            queryClient.refetchQueries({ queryKey: ["userProfile", userId] });
+        }
+    }, [isActive, peakId, challengeId, activityId, userId, queryClient]);
 
     // Extract data from queries
     const peak = peakData?.success ? peakData.data?.peak : null;
@@ -207,6 +274,9 @@ const ExploreTabContent = ({ isActive }: ExploreTabContentProps) => {
 
     const challenge = challengeData?.success ? challengeData.data?.challenge : null;
     const challengePeaks = challengeData?.success ? challengeData.data?.peaks : null;
+    const challengeProgress = challengeData?.success ? challengeData.data?.progress : null;
+    const nextPeakSuggestion = nextPeakData?.success ? nextPeakData.data : null;
+    const communityActivity = challengeActivityData?.success ? challengeActivityData.data : null;
     const isFavorited = challenge?.is_favorited ?? false;
 
     const activity = activityData?.activity ?? null;
@@ -220,19 +290,19 @@ const ExploreTabContent = ({ isActive }: ExploreTabContentProps) => {
     const profilePeaksForMap = profileResult?.peaksForMap ?? [];
 
     // Activity map effects
+    // Note: padding is now controlled by MapBackground based on drawer height
     const { flyToActivity } = useActivityMapEffects({
         activity,
         peakSummits: activityPeakSummits,
         hoverCoords: activityHoverCoords,
         flyToOnLoad: true,
-        padding: { top: 100, bottom: heights.halfway + 50, left: 50, right: 50 },
     });
 
     // Profile map effects
+    // Note: padding is now controlled by MapBackground based on drawer height
     const { showOnMap: showProfileOnMap } = useProfileMapEffects({
         userId,
         peaks: profilePeaksForMap,
-        padding: { top: 100, bottom: heights.halfway + 50, left: 50, right: 50 },
     });
 
     // Share user's ascents and activities with map store for peak details
@@ -310,18 +380,18 @@ const ExploreTabContent = ({ isActive }: ExploreTabContentProps) => {
         };
     }, [map, peakActivities]);
 
-    // Handle peak map effects
+    // Handle peak map effects - fly to peak (padding is controlled by MapBackground based on drawer height)
     useEffect(() => {
-        if (!peak?.location_coords || !map) return;
+        if (!peak?.location_coords || !map || !peakId) return;
+        
         map.flyTo({
             center: peak.location_coords,
             zoom: 13,
             pitch: 50,
             bearing: 20,
-            padding: { top: 20, bottom: heights.halfway + 20, left: 0, right: 0 },
             essential: true,
         });
-    }, [peak?.location_coords, map, heights.halfway]);
+    }, [peakId, peak?.location_coords, map]);
 
     // Set selected peak on map
     useEffect(() => {
@@ -375,8 +445,8 @@ const ExploreTabContent = ({ isActive }: ExploreTabContentProps) => {
         return () => {
             setPeaksSearchDisabled(false);
             setDisablePeaksSearch(false);
+            // Note: Don't reset map padding here - it's controlled by MapBackground based on drawer height
             if (map) {
-                map.setPadding({ top: 0, bottom: 0, left: 0, right: 0 });
                 setTimeout(() => map.fire("moveend"), 50);
             }
         };
@@ -423,7 +493,6 @@ const ExploreTabContent = ({ isActive }: ExploreTabContentProps) => {
                 const bounds = new mapboxgl.LngLatBounds();
                 peakCoords.forEach((coord) => bounds.extend(coord));
                 map.fitBounds(bounds, {
-                    padding: { top: 100, bottom: heights.halfway + 20, left: 50, right: 50 },
                     maxZoom: 12,
                 });
             }
@@ -440,7 +509,7 @@ const ExploreTabContent = ({ isActive }: ExploreTabContentProps) => {
                 console.debug("Failed to cleanup selectedPeaks map source:", error);
             }
         };
-    }, [map, challengePeaks, challengeId, heights.halfway]);
+    }, [map, challengePeaks, challengeId]);
 
     // Navigation handlers
     const handlePeakClick = useCallback((id: string, coords?: [number, number]) => {
@@ -453,11 +522,10 @@ const ExploreTabContent = ({ isActive }: ExploreTabContentProps) => {
                 center: coords,
                 zoom: 14,
                 pitch: 60,
-                padding: { top: 20, bottom: heights.halfway + 20, left: 0, right: 0 },
                 essential: true,
             });
         }
-    }, [pathname, pushExploreHistory, map, heights.halfway]);
+    }, [pathname, pushExploreHistory, map]);
 
     const handleChallengeClick = useCallback((id: string) => {
         if (pathname !== "/") {
@@ -494,11 +562,10 @@ const ExploreTabContent = ({ isActive }: ExploreTabContentProps) => {
                 zoom: 14,
                 pitch: 60,
                 bearing: 30,
-                padding: { top: 20, bottom: heights.halfway + 20, left: 0, right: 0 },
                 essential: true,
             });
         }
-    }, [peak, map, heights.halfway]);
+    }, [peak, map]);
 
     const handleShowChallengeOnMap = useCallback(() => {
         if (!challengePeaks || challengePeaks.length === 0 || !map) return;
@@ -511,11 +578,10 @@ const ExploreTabContent = ({ isActive }: ExploreTabContentProps) => {
             const bounds = new mapboxgl.LngLatBounds();
             peakCoords.forEach((coord) => bounds.extend(coord));
             map.fitBounds(bounds, {
-                padding: { top: 100, bottom: heights.halfway + 20, left: 50, right: 50 },
                 maxZoom: 12,
             });
         }
-    }, [challengePeaks, map, heights.halfway]);
+    }, [challengePeaks, map]);
 
     const handleToggleFavorite = useCallback(() => {
         if (!challengeId) return;
@@ -782,6 +848,9 @@ const ExploreTabContent = ({ isActive }: ExploreTabContentProps) => {
                     <ChallengeDetailsMobile
                         challenge={challenge}
                         peaks={challengePeaks}
+                        progress={challengeProgress}
+                        nextPeakSuggestion={nextPeakSuggestion}
+                        communityActivity={communityActivity}
                         isFavorited={isFavorited}
                         onClose={handleClose}
                         onToggleFavorite={handleToggleFavorite}

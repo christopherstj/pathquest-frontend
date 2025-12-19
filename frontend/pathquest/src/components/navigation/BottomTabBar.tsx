@@ -1,9 +1,10 @@
 "use client";
 
-import React from "react";
+import React, { useMemo } from "react";
+import { useRouter, usePathname } from "next/navigation";
 import { Home, Compass, User } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useTabStore, TabType } from "@/store/tabStore";
+import { useTabStore, type TabType } from "@/store/tabStore";
 
 interface TabButtonProps {
     tab: TabType;
@@ -47,19 +48,59 @@ interface BottomTabBarProps {
     className?: string;
 }
 
+// Check if a path is an Explore detail route (not just /explore)
+const isExploreDetailPath = (path: string): boolean => {
+    return (
+        path.startsWith("/peaks/") ||
+        path.startsWith("/challenges/") ||
+        path.startsWith("/activities/") ||
+        path.startsWith("/users/")
+    );
+};
+
 const BottomTabBar = ({ className }: BottomTabBarProps) => {
-    const activeTab = useTabStore((state) => state.activeTab);
-    const setActiveTab = useTabStore((state) => state.setActiveTab);
-    const clearExploreHistory = useTabStore((state) => state.clearExploreHistory);
+    const router = useRouter();
+    const pathname = usePathname();
+    
+    // Tab memory: remember last Explore detail path
+    const lastExplorePath = useTabStore((state) => state.lastExplorePath);
+    const setLastExplorePath = useTabStore((state) => state.setLastExplorePath);
+
+    // Derive active tab from URL - URL is the source of truth
+    const activeTab: TabType = useMemo(() => {
+        if (pathname === "/profile") return "profile";
+        if (pathname === "/explore" || isExploreDetailPath(pathname)) {
+            return "explore";
+        }
+        return "home";
+    }, [pathname]);
 
     const handleTabChange = (tab: TabType) => {
-        if (tab !== activeTab) {
-            // Clear explore history when switching tabs
-            if (activeTab === "explore") {
-                clearExploreHistory();
+        // If leaving Explore, save the current path (or clear if on discovery mode)
+        if (activeTab === "explore" && tab !== "explore") {
+            if (isExploreDetailPath(pathname)) {
+                // Save detail path for later restoration
+                setLastExplorePath(pathname);
+            } else {
+                // On discovery mode (/explore), clear any saved path
+                setLastExplorePath(null);
             }
-            setActiveTab(tab);
         }
+        
+        // Determine where to navigate
+        let targetUrl: string;
+        if (tab === "explore" && lastExplorePath) {
+            // Restore saved Explore path
+            targetUrl = lastExplorePath;
+        } else if (tab === "home") {
+            targetUrl = "/";
+        } else if (tab === "profile") {
+            targetUrl = "/profile";
+        } else {
+            targetUrl = "/explore";
+        }
+        
+        router.push(targetUrl);
     };
 
     return (

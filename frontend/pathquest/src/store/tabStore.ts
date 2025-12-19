@@ -1,9 +1,10 @@
 import { createStore } from "zustand/vanilla";
 import { useStore } from "zustand";
 
+// TabType is still exported for use in components that derive it from URL
 export type TabType = "home" | "explore" | "profile";
 
-export type ProfileSubTab = "peaks" | "journal" | "challenges" | "review";
+export type ProfileSubTab = "stats" | "peaks" | "journal" | "challenges" | "review";
 
 export type ExploreSubTab = 
     | "discovery" 
@@ -15,37 +16,42 @@ export type ExploreSubTab =
     | "summits" 
     | "analytics";
 
+// Note: activeTab is no longer stored here - it's derived from URL in MobileNavLayout/BottomTabBar
+// The store now only manages sub-tab state within each tab
+export type DrawerHeight = "collapsed" | "halfway" | "expanded";
+
 export type TabState = {
-    activeTab: TabType;
     profileSubTab: ProfileSubTab;
     exploreSubTab: ExploreSubTab;
     exploreBackStack: string[]; // Track navigation history within Explore (URLs)
+    lastExplorePath: string | null; // Remember last Explore detail path for tab memory
+    drawerHeight: DrawerHeight; // Current drawer height for map padding
 };
 
 export type TabActions = {
-    setActiveTab: (tab: TabType) => void;
     setProfileSubTab: (subTab: ProfileSubTab) => void;
     setExploreSubTab: (subTab: ExploreSubTab) => void;
     pushExploreHistory: (url: string) => void;
     popExploreHistory: () => string | null;
     clearExploreHistory: () => void;
+    setLastExplorePath: (path: string | null) => void;
+    setDrawerHeight: (height: DrawerHeight) => void;
 };
 
 export type TabStore = TabState & TabActions;
 
 const defaultState: TabState = {
-    activeTab: "home",
-    profileSubTab: "peaks",
+    profileSubTab: "stats",
     exploreSubTab: "discovery",
     exploreBackStack: [],
+    lastExplorePath: null,
+    drawerHeight: "halfway",
 };
 
 export const createTabStore = (preloadedState: Partial<TabState> = {}) => {
     return createStore<TabStore>((set, get) => ({
         ...defaultState,
         ...preloadedState,
-        
-        setActiveTab: (activeTab) => set({ activeTab }),
         
         setProfileSubTab: (profileSubTab) => set({ profileSubTab }),
         
@@ -65,6 +71,10 @@ export const createTabStore = (preloadedState: Partial<TabState> = {}) => {
         },
         
         clearExploreHistory: () => set({ exploreBackStack: [] }),
+        
+        setLastExplorePath: (lastExplorePath) => set({ lastExplorePath }),
+        
+        setDrawerHeight: (drawerHeight) => set({ drawerHeight }),
     }));
 };
 

@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import { useRouter } from "next/navigation";
 import { PenLine, ChevronRight, Users, Clock } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useSummitReportStore } from "@/providers/SummitReportProvider";
@@ -8,7 +9,6 @@ import metersToFt from "@/helpers/metersToFt";
 import dayjs from "@/helpers/dayjs";
 import ManualPeakSummit from "@/typeDefs/ManualPeakSummit";
 import Peak from "@/typeDefs/Peak";
-import { useTabStore } from "@/store/tabStore";
 
 interface UnreviewedSummitsQueueProps {
     summits: (Peak & ManualPeakSummit)[];
@@ -16,8 +16,8 @@ interface UnreviewedSummitsQueueProps {
 }
 
 const UnreviewedSummitsQueue = ({ summits, className }: UnreviewedSummitsQueueProps) => {
+    const router = useRouter();
     const openSummitReport = useSummitReportStore((state) => state.openSummitReport);
-    const setActiveTab = useTabStore((state) => state.setActiveTab);
 
     // Filter to show only summits without reports that are older than 72 hours
     const unreviewedSummits = React.useMemo(() => {
@@ -49,8 +49,8 @@ const UnreviewedSummitsQueue = ({ summits, className }: UnreviewedSummitsQueuePr
     };
 
     const handleViewAll = () => {
-        // Navigate to Profile tab with Review sub-tab
-        setActiveTab("profile");
+        // Navigate to Profile page
+        router.push("/profile");
     };
 
     if (unreviewedSummits.length === 0) {

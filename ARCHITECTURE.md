@@ -280,9 +280,9 @@ For static ISR pages (`/peaks/[id]`, `/challenges/[id]`), always use the "Public
 
 ##### Mobile Overlays (`components/overlays/mobile/`)
 - `peak-details-mobile.tsx` - Mobile-optimized peak detail view extracted from DetailBottomSheet
-- `challenge-details-mobile.tsx` - Mobile-optimized challenge detail view. Shows stats, progress bar, and action buttons. Peaks list is shown in separate Challenge Peaks tab.
+- `challenge-details-mobile.tsx` - Mobile-optimized challenge detail view. Shows stats, progress bar, momentum messaging (% complete, last progress), next peak suggestions (closest + easiest unclimbed), community activity indicator, and action buttons. Peaks list is shown in separate Challenge Peaks tab.
 - `discovery-content-mobile.tsx` - Mobile-optimized discovery content using shared discovery components
-- `activity-details-mobile.tsx` - Mobile-optimized activity detail view with Details/Summits/Analytics tabs
+- `activity-details-mobile.tsx` - Mobile-optimized activity detail view with Details/Summits/Analytics tabs. Shows activity highlight callouts (multi-summit day badge, summit count, weather conditions at summit time).
 - `profile-details-mobile.tsx` - Mobile-optimized profile detail view with stats and highest peak. Accepted challenges are displayed in the Challenges tab of DetailBottomSheet.
 
 ##### Dashboard Components (`components/dashboard/`)
@@ -292,6 +292,12 @@ Action-oriented dashboard components (December 2024):
 - `UnreviewedSummitsQueue.tsx` - List of summits older than 72 hours without reports. Shows up to 5 items with quick "Add Report" buttons. Includes community message footer. Links to Profile tab for full backlog.
 - `UnconfirmedSummitsCard.tsx` - Card showing summits needing user review (low confidence auto-detections). Shows up to 3 items with inline confirm/deny buttons and "View Activity" links. Navigates to Profile → Review tab for full backlog.
 - `ProcessingToast.tsx` - Dismissible toast notification showing activity processing status. Renders via portal to document.body.
+
+##### Journal Components (`components/journal/`)
+Optimized journal system (December 2024) for viewing summit history:
+- `JournalEntryCard.tsx` - Compact/expandable card for individual summit entries. Shows summit number, peak name, date, elevation, condition tags. Expands to show weather data, notes, activity link, and edit button. Uses condition tag pills with color coding.
+- `JournalFilterBar.tsx` - Filter controls for journal view. Includes search input (peak name), year dropdown, hasReport toggle (All/Has Report/Needs Report), clear filters button, and result count display.
+- `index.ts` - Export barrel for journal components.
 - `index.ts` - Export barrel for dashboard components
 
 ##### Mobile Navigation (`components/navigation/`)
@@ -305,7 +311,8 @@ New mobile navigation system (December 2024) with fixed 3-tab navigation:
   - Detail mode: Shows peak/challenge/activity/user detail views with sub-tabs
   - Sub-tabs vary by content type (Peak: Community/Journal; Challenge: Progress/Peaks; Activity: Details/Summits/Analytics; Profile: Peaks/Journal/Challenges)
   - Maintains back stack for navigation within Explore tab
-- `ProfileTabContent.tsx` - Profile tab content for viewing YOUR data. Sub-tabs: Peaks, Journal, Challenges, Review. Note: Other users' profiles are viewed in the Explore tab.
+- `ProfileTabContent.tsx` - Profile tab content for viewing YOUR data. Sub-tabs: Stats (default), Peaks, Journal, Challenges, Review. Note: Other users' profiles are viewed in the Explore tab.
+- `ProfileStatsContent.tsx` - Stats sub-tab content showing highlight reel with: highest peak, climbing streak (monthly consecutive), geographic diversity (states/countries), peak type breakdown (14ers, 13ers, etc.), total elevation, challenges completed, year-over-year comparison.
 - `ProfileReviewContent.tsx` - Review sub-tab content showing all unconfirmed summits. Features "Confirm All" bulk action, individual confirm/deny buttons per summit, "View Activity" links, and refresh button. Empty state when all summits are reviewed.
 - `index.ts` - Export barrel for navigation components
 
@@ -316,7 +323,7 @@ New mobile navigation system (December 2024) with fixed 3-tab navigation:
 - `StravaLoginButton.tsx` - Strava OAuth button component (used by AuthModal)
 
 ##### Map (`components/map/`)
-- `MapBackground.tsx` - Main Mapbox map component with persistent background. Handles map initialization, 3D terrain, satellite mode, peak/challenge data loading, and URL state synchronization.
+- `MapBackground.tsx` - Main Mapbox map component with persistent background. Handles map initialization, 3D terrain, satellite mode, peak/challenge data loading, URL state synchronization, and **map padding based on drawer height** (mobile only). Uses `getTrueMapCenter()` to calculate the true geographic center accounting for padding when updating URL state.
 
 ##### Peaks (`components/app/peaks/`)
 - `CurrentConditions.tsx` - Live weather display for peak detail panels. Fetches from `/api/weather` route (Open-Meteo). Shows temperature, feels like, conditions, wind, humidity.
@@ -336,6 +343,11 @@ New mobile navigation system (December 2024) with fixed 3-tab navigation:
   - Works with both `Summit` and `SummitWithPeak` types
   - Optional peak header for activity context (`showPeakHeader` prop)
   - Hover callbacks (`onHoverStart`, `onHoverEnd`) for map marker highlighting
+  - Visual highlighting for unreported summits when `isOwner=true` (dashed border, tinted background) to encourage trip reports
+  - Edit/delete buttons only visible when `isOwner` is true; "Add Trip Report" button for unreported summits
+
+##### Challenges (`components/challenges/`)
+- `ChallengeActivityIndicator.tsx` - Shows community activity for a challenge. Displays weekly active users, weekly summit count, and recent completions (with user links). Used in challenge detail views to show social proof and engagement.
   - Weather conditions (temperature, weather code, wind speed, humidity) with muted primary green icons (`text-primary/60`)
   - Difficulty badge (easy/moderate/hard/expert) displayed as pill-style chips with colored borders
   - `isOwner` prop controls visibility of edit/delete buttons (only shown to owner)
@@ -410,6 +422,7 @@ Utility functions for common operations.
 - `getDistanceString.ts` - Formats distance strings
 - `getElevationString.ts` - Formats elevation strings
 - `getMapStateFromURL.ts` - Extracts map state from URL (center lat/lng, zoom, pitch, bearing, is3D, isSatellite)
+- `getTrueMapCenter.ts` - Calculates the true geographic center of the map accounting for padding. When map padding is applied (e.g., for bottom drawer), Mapbox's `getCenter()` returns the center of the padded viewport. This helper uses `project()`/`unproject()` to calculate what the center would be without padding, preventing map jumps when navigating between routes.
 - `navigateWithMapState.ts` - Helpers for navigating while preserving map state URL params (`pushWithMapState`, `replaceWithMapState`, `buildUrlWithMapState`)
 - `getAuthHeaders.ts` - Gets authentication headers (Bearer token + x-user-* headers) for backend API calls
 - `getNewData.ts` - Data fetching helper
@@ -474,12 +487,13 @@ Zustand state management stores:
   - `summitHistoryPeakId` - When set, DiscoveryDrawer shows SummitHistoryPanel instead of discovery content (desktop drill-down)
   - `selectedChallengeData` - Challenge peaks data shared between ChallengeDetailPanel and DiscoveryDrawer (challengeId, challengeName, peaks)
   - `hoveredPeakId` - ID of peak being hovered over in summit list, used for map marker highlighting with amber accent color
-- `tabStore.ts` - Mobile navigation tab state (vanilla Zustand with React hook). State includes:
-  - `activeTab` - Current active tab ('home' | 'explore' | 'profile')
+- `tabStore.ts` - Mobile navigation sub-tab state (vanilla Zustand with React hook). Note: `activeTab` is derived from URL in MobileNavLayout/BottomTabBar, not stored in state. State includes:
+  - `profileSubTab` - Active sub-tab within Profile tab ("stats" | "peaks" | "journal" | "challenges" | "review")
   - `profileSubTab` - Active sub-tab within Profile tab ('peaks' | 'journal' | 'challenges' | 'review')
   - `exploreSubTab` - Active sub-tab within Explore tab (varies by content type)
   - `exploreBackStack` - Navigation history within Explore tab for back navigation
-  - Actions: `setActiveTab`, `setProfileSubTab`, `setExploreSubTab`, `pushExploreHistory`, `popExploreHistory`, `clearExploreHistory`
+  - `lastExplorePath` - Remembers last Explore detail path for "tab memory" (so clicking Explore restores where you were)
+  - Actions: `setProfileSubTab`, `setExploreSubTab`, `pushExploreHistory`, `popExploreHistory`, `clearExploreHistory`, `setLastExplorePath`
 - `userStore.tsx` - User data store (vanilla Zustand)
 - `authModalStore.ts` - Auth modal state (isOpen, mode, redirectAction)
 - `dashboardStore.ts` - Dashboard panel state (isOpen, toggle)
@@ -525,12 +539,13 @@ Next.js middleware for legacy route redirects:
 - `useRequireAuth.ts` - Hook for auth-gated actions. Opens auth modal if not logged in, otherwise executes action.
 - `useIsAuthenticated.ts` (exported from useRequireAuth) - Returns auth state and user info
 - `use-mobile.ts` - Mobile detection hook using `window.matchMedia` (default breakpoint 768px). Exports `useIsMobile` function. Used by components for responsive behavior.
+- `use-user-location.ts` - Hook for getting user location. Priority: browser geolocation → profile location_coords → default (center of US). Used for challenge next peak suggestions.
 
 #### Map Hooks
 - `use-map-source.ts` - Hook to manage Mapbox GeoJSON source data with retry logic. Handles waiting for source availability and cleanup on unmount.
 - `use-peak-map-effects.ts` - Hook to handle map effects when viewing a peak detail. Sets selected peak marker, displays activity GPX lines, and provides flyTo functionality.
 - `use-challenge-map-effects.ts` - Hook to handle map effects when viewing a challenge. Disables general peaks search, shows challenge peaks on map (with conditional styling for summited peaks), and fits map to challenge bounds (only once on initial load to prevent zoom/pan issues).
-- `use-activity-map-effects.ts` - Hook to handle map effects when viewing an activity. Displays GPX line, shows peak markers for summitted peaks, handles hover marker from elevation profile chart, handles hover highlighting of peaks from summit list via mapStore.hoveredPeakId (uses Mapbox feature-state for amber accent color), fits map to activity bounds, and resets map padding on unmount.
+- `use-activity-map-effects.ts` - Hook to handle map effects when viewing an activity. Displays GPX line, shows peak markers for summitted peaks, handles hover marker from elevation profile chart, handles hover highlighting of peaks from summit list via mapStore.hoveredPeakId (uses Mapbox feature-state for amber accent color), and fits map to activity bounds. Note: Map padding is NOT managed by this hook - it's controlled centrally by `MapBackground` based on drawer height.
 - `use-peak-hover-map-effects.ts` - Hook to handle map hover effects when hovering over peak rows in discovery lists. Creates/updates a `peakHover` map source and layer to show a bright green dot marker at peak coordinates. Used by DiscoveryDrawer to show a visual indicator on the map when hovering over peak rows.
 - `use-drawer-height.ts` - Hook to manage draggable drawer height with snap points (collapsed/halfway/expanded). Used by DetailBottomSheet for mobile UI.
 
@@ -625,16 +640,22 @@ Next.js middleware for legacy route redirects:
     - **New (December 2024)**: `MobileNavLayout` with fixed 3-tab navigation:
       - Fixed `BottomTabBar` always visible at bottom: Home, Explore, Profile
       - `ContentSheet` draggable sheet positioned above tab bar
-      - **Home Tab**: Dashboard content (recent summits, challenges, queue status)
-      - **Explore Tab**: Discovery mode OR detail views with contextual sub-tabs
-      - **Profile Tab**: Your aggregated data with sub-tabs (Peaks, Journal, Challenges, Review)
+      - **Home Tab** (`/`): Dashboard content (recent summits, challenges, queue status)
+      - **Explore Tab** (`/explore`): Discovery mode OR detail views with contextual sub-tabs
+      - **Profile Tab** (`/profile`): Your aggregated data with sub-tabs (Peaks, Journal, Challenges, Review)
+    - **URL-based tab routing**: Each tab has its own URL:
+      - `/` → Home tab
+      - `/explore` → Explore tab (discovery mode)
+      - `/profile` → Profile tab
+      - `/peaks/[id]`, `/challenges/[id]`, `/activities/[id]`, `/users/[id]` → Explore tab (detail mode)
+    - Active tab is derived from URL, not stored in state (URL is source of truth)
+    - Browser back/forward navigation works naturally between tabs
     - Draggable content sheet with 3 snap heights:
       - **Collapsed** (~60px): Just the drag handle visible
       - **Halfway** (~45vh): Default state, map partially visible
       - **Expanded** (~100vh - 140px): Full screen content (accounting for tab bar)
     - Supports swipe gestures with velocity detection
-    - Back stack navigation within Explore tab
-    - URL-driven tab switching (e.g., `/peaks/abc` → Explore tab with peak detail)
+    - Back stack navigation within Explore tab for detail-to-detail navigation
     - **Legacy**: `DetailBottomSheet` has been deprecated but kept for reference
   - `GlobalNavigation`: Adapts padding and visibility of elements (logo hidden on mobile) to preserve space.
 - **Hooks**: Uses `useIsMobile` hook (based on `window.matchMedia`, default breakpoint 768px, 1024px for layout changes) for programmatic layout adaptations.

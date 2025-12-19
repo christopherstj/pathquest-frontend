@@ -9,6 +9,10 @@ import {
     FileText,
     Check,
     X,
+    Mountain,
+    Sparkles,
+    Cloud,
+    Thermometer,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Activity from "@/typeDefs/Activity";
@@ -72,6 +76,43 @@ const formatTime = (timestamp: string, timezone?: string) => {
     });
 };
 
+// Weather code to description mapping (WMO codes)
+const getWeatherDescription = (code: number | undefined): string => {
+    if (code === undefined) return "";
+    const descriptions: Record<number, string> = {
+        0: "Clear sky",
+        1: "Mainly clear",
+        2: "Partly cloudy",
+        3: "Overcast",
+        45: "Foggy",
+        48: "Rime fog",
+        51: "Light drizzle",
+        53: "Drizzle",
+        55: "Dense drizzle",
+        61: "Light rain",
+        63: "Rain",
+        65: "Heavy rain",
+        71: "Light snow",
+        73: "Snow",
+        75: "Heavy snow",
+        77: "Snow grains",
+        80: "Light showers",
+        81: "Showers",
+        82: "Heavy showers",
+        85: "Light snow showers",
+        86: "Heavy snow showers",
+        95: "Thunderstorm",
+        96: "T-storm w/ hail",
+        99: "T-storm heavy hail",
+    };
+    return descriptions[code] || "Unknown";
+};
+
+// Convert Celsius to Fahrenheit
+const celsiusToFahrenheit = (celsius: number): number => {
+    return (celsius * 9) / 5 + 32;
+};
+
 const ActivityDetailsMobile = ({
     activity,
     summits,
@@ -88,6 +129,19 @@ const ActivityDetailsMobile = ({
     const duration = activity?.time_stream && activity.time_stream.length > 0
         ? activity.time_stream[activity.time_stream.length - 1]
         : null;
+
+    // Activity highlight callouts
+    const isMultiSummitDay = summits.length >= 2;
+    
+    // Get weather from first summit (if available)
+    const summitWeather = useMemo(() => {
+        const summitWithWeather = summits.find(s => s.temperature !== undefined || s.weather_code !== undefined);
+        if (!summitWithWeather) return null;
+        return {
+            temperature: summitWithWeather.temperature,
+            weatherCode: summitWithWeather.weather_code,
+        };
+    }, [summits]);
 
     const handleViewOnStrava = () => {
         window.open(`https://www.strava.com/activities/${activity.id}`, "_blank");
@@ -135,6 +189,52 @@ const ActivityDetailsMobile = ({
                     <span>•</span>
                     <span>{formatTime(activity.start_time, activity.timezone)}</span>
                 </div>
+
+                {/* Activity Highlight Callouts */}
+                {(isMultiSummitDay || summitWeather || summits.length > 0) && (
+                    <div className="mt-3 flex flex-wrap gap-2">
+                        {/* Multi-summit callout */}
+                        {isMultiSummitDay && (
+                            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-gradient-to-r from-amber-500/20 to-orange-500/20 border border-amber-500/30">
+                                <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+                                <span className="text-xs font-medium text-amber-600 dark:text-amber-400">
+                                    Multi-summit day! 🎉
+                                </span>
+                            </div>
+                        )}
+                        {/* Summit count pill */}
+                        {summits.length > 0 && (
+                            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-summited/10 border border-summited/30">
+                                <Mountain className="w-3.5 h-3.5 text-summited" />
+                                <span className="text-xs font-medium text-summited">
+                                    {summits.length} summit{summits.length !== 1 ? "s" : ""}
+                                </span>
+                            </div>
+                        )}
+                        {/* Weather conditions */}
+                        {summitWeather && (
+                            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-sky-500/10 border border-sky-500/30">
+                                {summitWeather.temperature !== undefined && (
+                                    <>
+                                        <Thermometer className="w-3.5 h-3.5 text-sky-500" />
+                                        <span className="text-xs font-medium text-sky-600 dark:text-sky-400">
+                                            {Math.round(celsiusToFahrenheit(summitWeather.temperature))}°F
+                                        </span>
+                                    </>
+                                )}
+                                {summitWeather.weatherCode !== undefined && (
+                                    <>
+                                        {summitWeather.temperature !== undefined && <span className="text-sky-400">•</span>}
+                                        <Cloud className="w-3.5 h-3.5 text-sky-500" />
+                                        <span className="text-xs font-medium text-sky-600 dark:text-sky-400">
+                                            {getWeatherDescription(summitWeather.weatherCode)}
+                                        </span>
+                                    </>
+                                )}
+                            </div>
+                        )}
+                    </div>
+                )}
             </div>
 
             {/* Content */}

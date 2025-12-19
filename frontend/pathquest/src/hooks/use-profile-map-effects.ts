@@ -10,16 +10,10 @@ import mapboxgl from "mapbox-gl";
 interface UseProfileMapEffectsOptions {
     userId: string | null | undefined;
     peaks?: Peak[] | null;
-    padding?: { top: number; bottom: number; left: number; right: number };
 }
 
 const MAX_ATTEMPTS = 10;
 const RETRY_DELAY = 300;
-
-// Default padding values (stable reference to avoid re-renders)
-// Left padding accounts for DiscoveryDrawer width (320px) + left margin (20px) + buffer (20px) = 360px
-// Right padding accounts for ProfileDetailPanel width (340px) + right margin (20px) = 360px
-const DEFAULT_PADDING = { top: 100, bottom: 100, left: 360, right: 360 };
 
 /**
  * Hook to handle map effects when viewing a user profile.
@@ -27,12 +21,11 @@ const DEFAULT_PADDING = { top: 100, bottom: 100, left: 360, right: 360 };
  * - Shows all user's summited peaks on the map
  * - Fits map to bounds of all peaks
  * 
- * Based on useChallengeMapEffects pattern.
+ * Note: Map padding is controlled by MapBackground based on drawer height, not here.
  */
 export function useProfileMapEffects({
     userId,
     peaks,
-    padding = DEFAULT_PADDING,
 }: UseProfileMapEffectsOptions) {
     const map = useMapStore((state) => state.map);
     const setDisablePeaksSearch = useMapStore((state) => state.setDisablePeaksSearch);
@@ -85,9 +78,9 @@ export function useProfileMapEffects({
             setPeaksSearchDisabled(false);
             setDisablePeaksSearch(false);
 
-            // Reset map padding and trigger peaks refresh when panel closes
+            // Trigger peaks refresh when panel closes
+            // Note: Don't reset map padding here - it's controlled by MapBackground based on drawer height
             if (map) {
-                map.setPadding({ top: 0, bottom: 0, left: 0, right: 0 });
                 setTimeout(() => {
                     map.fire("moveend");
                 }, 50);
@@ -112,7 +105,6 @@ export function useProfileMapEffects({
                         north !== south && east !== west
                     ) {
                         map.fitBounds(bounds, {
-                            padding,
                             maxZoom: 10,
                         });
                     }
@@ -121,7 +113,7 @@ export function useProfileMapEffects({
                 console.debug("Failed to fit bounds:", error);
             }
         }
-    }, [bounds, map, padding]);
+    }, [bounds, map]);
 
     // Show user peaks on the map
     useEffect(() => {
@@ -184,7 +176,6 @@ export function useProfileMapEffects({
                         north !== south && east !== west
                     ) {
                         map.fitBounds(bounds, {
-                            padding,
                             maxZoom: 10,
                         });
                     }
@@ -193,7 +184,7 @@ export function useProfileMapEffects({
                 console.debug("Failed to fit bounds:", error);
             }
         }
-    }, [bounds, map, padding]);
+    }, [bounds, map]);
 
     return { bounds, showOnMap };
 }

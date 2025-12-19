@@ -62,7 +62,7 @@ const ActivitySummitsList = ({ summits, activityId, onSummitHover, isOwner = fal
             </div>
 
             <div className="space-y-3">
-                {summits.map((summit) => (
+                {summits.map((summit, idx) => (
                     <SummitItem 
                         key={summit.id} 
                         summit={summit} 
@@ -71,6 +71,7 @@ const ActivitySummitsList = ({ summits, activityId, onSummitHover, isOwner = fal
                         onHoverEnd={onSummitHover ? () => onSummitHover(null) : undefined}
                         isOwner={isOwner}
                         onDeleted={onSummitDeleted}
+                        index={idx + 1}
                     />
                 ))}
             </div>

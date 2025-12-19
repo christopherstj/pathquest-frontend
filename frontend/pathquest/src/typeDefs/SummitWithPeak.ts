@@ -1,4 +1,4 @@
-import { Difficulty, ExperienceRating } from "./Summit";
+import { Difficulty, ExperienceRating, ConditionTag } from "./Summit";
 
 export default interface SummitWithPeak {
     id: string;
@@ -9,6 +9,7 @@ export default interface SummitWithPeak {
     is_public?: boolean;
     difficulty?: Difficulty;
     experience_rating?: ExperienceRating;
+    condition_tags?: ConditionTag[];
     temperature?: number;
     weather_code?: number;
     precipitation?: number;

@@ -40,7 +40,12 @@ const getActivityDetails = async (
     const data = await res.json();
 
     // Determine if current user is the owner of this activity
-    const isOwner = Boolean(userId && data.activity?.user_id === userId);
+    // Convert both to strings for reliable comparison
+    const isOwner = Boolean(
+        userId && 
+        data.activity?.user_id && 
+        String(data.activity.user_id) === String(userId)
+    );
 
     return {
         ...data,

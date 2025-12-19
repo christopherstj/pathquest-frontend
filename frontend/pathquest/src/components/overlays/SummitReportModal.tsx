@@ -25,6 +25,7 @@ import { useSummitReportStore } from "@/providers/SummitReportProvider";
 import updateAscent from "@/actions/peaks/updateAscent";
 import { useQueryClient } from "@tanstack/react-query";
 import { ConditionTag, Difficulty, ExperienceRating } from "@/typeDefs/Summit";
+import { useIsAuthenticated } from "@/hooks/useRequireAuth";
 
 const DIFFICULTY_OPTIONS: {
     value: Difficulty;
@@ -122,6 +123,7 @@ const SummitReportModal = () => {
         (state) => state.closeSummitReport
     );
     const queryClient = useQueryClient();
+    const { user } = useIsAuthenticated();
 
     const [notes, setNotes] = useState("");
     const [difficulty, setDifficulty] = useState<Difficulty | undefined>(
@@ -192,6 +194,18 @@ const SummitReportModal = () => {
             queryClient.invalidateQueries({
                 queryKey: ["recentSummits"],
             });
+            
+            // Invalidate peak journal (peak-specific user activity)
+            queryClient.invalidateQueries({
+                queryKey: ["peakUserData", data.peakId],
+            });
+            
+            // Invalidate profile journal (all user summits)
+            if (user?.id) {
+                queryClient.invalidateQueries({
+                    queryKey: ["userJournal", String(user.id)],
+                });
+            }
 
             // Close modal after brief celebration
             setTimeout(() => {

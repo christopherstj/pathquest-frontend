@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { motion, useAnimation, PanInfo } from "framer-motion";
 import { cn } from "@/lib/utils";
+import { useTabStore } from "@/store/tabStore";
 
 export type DrawerHeight = "collapsed" | "halfway" | "expanded";
 
@@ -30,10 +31,17 @@ const ContentSheet = ({
     bottomPadding = 56, // Tab bar height (matches BottomTabBar min-h)
 }: ContentSheetProps) => {
     const controls = useAnimation();
-    const [drawerHeight, setDrawerHeight] = useState<DrawerHeight>(initialHeight);
+    const drawerHeight = useTabStore((state) => state.drawerHeight);
+    const setDrawerHeight = useTabStore((state) => state.setDrawerHeight);
     // Use static SSR-safe defaults to avoid hydration mismatch
     const [heights, setHeights] = useState(SSR_SAFE_HEIGHTS);
     const [isHydrated, setIsHydrated] = useState(false);
+    
+    // Initialize drawer height in store on mount only
+    useEffect(() => {
+        setDrawerHeight(initialHeight);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []); // Only run on mount
 
     // Update heights on mount and window resize (client-only)
     useEffect(() => {

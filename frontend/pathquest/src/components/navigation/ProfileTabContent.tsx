@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { Mountain, BookOpen, Trophy, ClipboardCheck } from "lucide-react";
+import { Mountain, BookOpen, Trophy, ClipboardCheck, BarChart3 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useTabStore, ProfileSubTab } from "@/store/tabStore";
 import { useIsAuthenticated } from "@/hooks/useRequireAuth";
@@ -9,6 +9,7 @@ import ProfileSummitsList from "@/components/overlays/ProfileSummitsList";
 import ProfileJournal from "@/components/overlays/ProfileJournal";
 import ProfileChallenges from "@/components/overlays/ProfileChallenges";
 import ProfileReviewContent from "./ProfileReviewContent";
+import ProfileStatsContent from "./ProfileStatsContent";
 
 interface SubTabButtonProps {
     tab: ProfileSubTab;
@@ -23,7 +24,7 @@ const SubTabButton = ({ tab, icon, label, isActive, onClick }: SubTabButtonProps
         <button
             onClick={onClick}
             className={cn(
-                "flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all",
+                "flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all whitespace-nowrap flex-shrink-0",
                 isActive
                     ? "bg-background text-foreground shadow-sm"
                     : "text-muted-foreground hover:text-foreground"
@@ -44,7 +45,7 @@ interface ProfileTabContentProps {
 
 /**
  * Profile tab content - shows the current user's aggregate data.
- * Sub-tabs: Peaks, Journal, Challenges, Review
+ * Sub-tabs: Stats, Peaks, Journal, Challenges, Review
  * 
  * Note: This is for YOUR profile. Other users' profiles are viewed
  * in the Explore tab via /users/[id] routes.
@@ -80,41 +81,53 @@ const ProfileTabContent = ({ isActive }: ProfileTabContentProps) => {
     return (
         <div className="flex flex-col h-full">
             {/* Sub-tab bar */}
-            <div className="px-4 py-2 border-b border-border/60 shrink-0">
-                <div className="flex gap-0.5 bg-muted/50 p-0.5 rounded-lg">
-                    <SubTabButton
-                        tab="peaks"
-                        icon={<Mountain className="w-3.5 h-3.5" />}
-                        label="Peaks"
-                        isActive={activeSubTab === "peaks"}
-                        onClick={() => setProfileSubTab("peaks")}
-                    />
-                    <SubTabButton
-                        tab="journal"
-                        icon={<BookOpen className="w-3.5 h-3.5" />}
-                        label="Journal"
-                        isActive={activeSubTab === "journal"}
-                        onClick={() => setProfileSubTab("journal")}
-                    />
-                    <SubTabButton
-                        tab="challenges"
-                        icon={<Trophy className="w-3.5 h-3.5" />}
-                        label="Challenges"
-                        isActive={activeSubTab === "challenges"}
-                        onClick={() => setProfileSubTab("challenges")}
-                    />
-                    <SubTabButton
-                        tab="review"
-                        icon={<ClipboardCheck className="w-3.5 h-3.5" />}
-                        label="Review"
-                        isActive={activeSubTab === "review"}
-                        onClick={() => setProfileSubTab("review")}
-                    />
+            <div className="py-2 border-b border-border/60 shrink-0">
+                <div className="overflow-x-auto px-4 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+                    <div className="flex gap-0.5 bg-muted/50 p-0.5 rounded-lg w-fit min-w-full">
+                        <SubTabButton
+                            tab="stats"
+                            icon={<BarChart3 className="w-3.5 h-3.5" />}
+                            label="Stats"
+                            isActive={activeSubTab === "stats"}
+                            onClick={() => setProfileSubTab("stats")}
+                        />
+                        <SubTabButton
+                            tab="peaks"
+                            icon={<Mountain className="w-3.5 h-3.5" />}
+                            label="Peaks"
+                            isActive={activeSubTab === "peaks"}
+                            onClick={() => setProfileSubTab("peaks")}
+                        />
+                        <SubTabButton
+                            tab="journal"
+                            icon={<BookOpen className="w-3.5 h-3.5" />}
+                            label="Journal"
+                            isActive={activeSubTab === "journal"}
+                            onClick={() => setProfileSubTab("journal")}
+                        />
+                        <SubTabButton
+                            tab="challenges"
+                            icon={<Trophy className="w-3.5 h-3.5" />}
+                            label="Challenges"
+                            isActive={activeSubTab === "challenges"}
+                            onClick={() => setProfileSubTab("challenges")}
+                        />
+                        <SubTabButton
+                            tab="review"
+                            icon={<ClipboardCheck className="w-3.5 h-3.5" />}
+                            label="Review"
+                            isActive={activeSubTab === "review"}
+                            onClick={() => setProfileSubTab("review")}
+                        />
+                    </div>
                 </div>
             </div>
 
             {/* Content based on active sub-tab */}
             <div className="flex-1 overflow-y-auto">
+                {activeSubTab === "stats" && (
+                    <ProfileStatsContent userId={userId} />
+                )}
                 {activeSubTab === "peaks" && (
                     <ProfileSummitsList userId={userId} compact={true} />
                 )}

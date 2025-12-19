@@ -8,11 +8,19 @@ import Peak from "@/typeDefs/Peak";
 
 const backendUrl = getBackendUrl();
 
+export interface ChallengeProgressInfo {
+    total: number;
+    completed: number;
+    lastProgressDate: string | null;
+    lastProgressCount: number;
+}
+
 const getChallengeDetails = async (
     challengeId: string
 ): Promise<{
     challenge: Challenge;
     peaks: Peak[];
+    progress: ChallengeProgressInfo;
     activityCoords: {
         id: string;
         coords: Activity["coords"];
@@ -35,6 +43,7 @@ const getChallengeDetails = async (
         return null;
     }
 
+    const userId = session?.user?.id;
     const peaksUrl = `${backendUrl}/challenges/${challengeId}/details`;
 
     const peaksRes = await fetch(peaksUrl, {
@@ -42,6 +51,8 @@ const getChallengeDetails = async (
         headers: {
             "Content-Type": "application/json",
             ...(token ? { Authorization: `Bearer ${token}` } : {}),
+            // Send user ID header for backend to identify user (works in all environments)
+            ...(userId ? { "x-user-id": String(userId) } : {}),
         },
     });
 
