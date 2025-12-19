@@ -20,8 +20,9 @@ import {
     Flame,
 } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { JournalEntry } from "@/typeDefs/JournalEntry";
-import { useMapStore } from "@/providers/MapProvider";
+import { ConditionTag } from "@/typeDefs/Summit";
 import { useSummitReportStore } from "@/providers/SummitReportProvider";
 import { cn } from "@/lib/utils";
 import deleteAscent from "@/actions/peaks/deleteAscent";
@@ -115,11 +116,11 @@ const weatherCodeDescriptions: Record<number, string> = {
 const JournalEntryCard = ({ entry, isOwner, onDeleted }: JournalEntryCardProps) => {
     const [isExpanded, setIsExpanded] = useState(false);
     const [isDeleting, setIsDeleting] = useState(false);
-    const setSelectedPeakId = useMapStore((state) => state.setSelectedPeakId);
+    const router = useRouter();
     const openSummitReport = useSummitReportStore((state) => state.openSummitReport);
 
     const handlePeakClick = () => {
-        setSelectedPeakId(entry.peak.id);
+        router.push(`/peaks/${entry.peak.id}`);
     };
 
     const hasTags = 
@@ -145,7 +146,7 @@ const JournalEntryCard = ({ entry, isOwner, onDeleted }: JournalEntryCardProps) 
                 notes: entry.notes,
                 difficulty: entry.difficulty,
                 experience_rating: entry.experienceRating,
-                condition_tags: entry.conditionTags,
+                condition_tags: entry.conditionTags as ConditionTag[] | undefined,
                 temperature: entry.temperature,
                 weather_code: entry.weatherCode,
                 cloud_cover: entry.cloudCover,

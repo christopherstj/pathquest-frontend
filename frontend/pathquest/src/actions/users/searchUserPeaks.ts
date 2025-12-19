@@ -7,6 +7,17 @@ import ServerActionResult  from "@/typeDefs/ServerActionResult";
 
 const backendUrl = getBackendUrl();
 
+export type PeakSortBy = "summits" | "elevation" | "recent" | "oldest" | "name";
+
+export interface SearchUserPeaksFilters {
+    search?: string;
+    state?: string;
+    minElevation?: number; // in meters
+    maxElevation?: number; // in meters
+    hasMultipleSummits?: boolean;
+    sortBy?: PeakSortBy;
+}
+
 export interface SearchUserPeaksResult {
     peaks: UserPeakWithSummitCount[];
     totalCount: number;
@@ -14,7 +25,7 @@ export interface SearchUserPeaksResult {
 
 const searchUserPeaks = async (
     userId: string,
-    search?: string,
+    filters: SearchUserPeaksFilters = {},
     page: number = 1,
     pageSize: number = 50
 ): Promise<ServerActionResult<SearchUserPeaksResult>> => {
@@ -23,7 +34,12 @@ const searchUserPeaks = async (
     const token = await getGoogleIdToken().catch(() => null);
 
     const params = new URLSearchParams();
-    if (search) params.set("search", search);
+    if (filters.search) params.set("search", filters.search);
+    if (filters.state) params.set("state", filters.state);
+    if (filters.minElevation !== undefined) params.set("minElevation", String(filters.minElevation));
+    if (filters.maxElevation !== undefined) params.set("maxElevation", String(filters.maxElevation));
+    if (filters.hasMultipleSummits) params.set("hasMultipleSummits", "true");
+    if (filters.sortBy) params.set("sortBy", filters.sortBy);
     params.set("page", String(page));
     params.set("pageSize", String(pageSize));
 
@@ -57,4 +73,3 @@ const searchUserPeaks = async (
 };
 
 export default searchUserPeaks;
-

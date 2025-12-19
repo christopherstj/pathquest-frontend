@@ -178,48 +178,25 @@ const PeakCommunity = () => {
                     {sortedSummits.map((summit, idx) => {
                         const hasActivity = Boolean(summit.activity_id);
                         
-                        // User section - separate to avoid nested links
+                        // User section - no link to profile (profiles don't exist yet)
                         const userSection = (
                             <div className="flex items-start justify-between mb-3">
-                                {summit.user_id ? (
-                                    <Link 
-                                        href={`/users/${summit.user_id}`}
-                                        className="flex items-center gap-2 group"
-                                        onClick={(e) => e.stopPropagation()}
-                                    >
-                                        <div className="w-8 h-8 rounded-full bg-secondary/10 flex items-center justify-center group-hover:bg-secondary/20 transition-colors">
-                                            <User className="w-4 h-4 text-secondary" />
-                                        </div>
-                                        <div>
-                                            <p className="font-medium text-foreground text-sm group-hover:text-primary transition-colors">
-                                                {summit.user_name || "Anonymous Hiker"}
-                                            </p>
-                                            <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                                                <Calendar className="w-3 h-3" />
-                                                <span>{formatDate(summit.timestamp, summit.timezone)}</span>
-                                                <span className="opacity-50">•</span>
-                                                <span>{formatTime(summit.timestamp, summit.timezone)}</span>
-                                            </div>
-                                        </div>
-                                    </Link>
-                                ) : (
-                                    <div className="flex items-center gap-2">
-                                        <div className="w-8 h-8 rounded-full bg-secondary/10 flex items-center justify-center">
-                                            <User className="w-4 h-4 text-secondary" />
-                                        </div>
-                                        <div>
-                                            <p className="font-medium text-foreground text-sm">
-                                                {summit.user_name || "Anonymous Hiker"}
-                                            </p>
-                                            <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                                                <Calendar className="w-3 h-3" />
-                                                <span>{formatDate(summit.timestamp, summit.timezone)}</span>
-                                                <span className="opacity-50">•</span>
-                                                <span>{formatTime(summit.timestamp, summit.timezone)}</span>
-                                            </div>
+                                <div className="flex items-center gap-2">
+                                    <div className="w-8 h-8 rounded-full bg-secondary/10 flex items-center justify-center">
+                                        <User className="w-4 h-4 text-secondary" />
+                                    </div>
+                                    <div>
+                                        <p className="font-medium text-foreground text-sm">
+                                            {summit.user_name || "Anonymous Hiker"}
+                                        </p>
+                                        <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                                            <Calendar className="w-3 h-3" />
+                                            <span>{formatDate(summit.timestamp, summit.timezone)}</span>
+                                            <span className="opacity-50">•</span>
+                                            <span>{formatTime(summit.timestamp, summit.timezone)}</span>
                                         </div>
                                     </div>
-                                )}
+                                </div>
                                 {hasActivity && (
                                     <div className="text-muted-foreground">
                                         <ExternalLink className="w-3.5 h-3.5" />

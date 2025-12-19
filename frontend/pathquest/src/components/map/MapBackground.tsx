@@ -14,12 +14,17 @@ import getTrueMapCenter from "@/helpers/getTrueMapCenter";
 import { getMapboxToken } from "@/lib/map/getMapboxToken";
 import { useTabStore, type DrawerHeight } from "@/store/tabStore";
 
-// Heights for drawer (same as ContentSheet) - used for map padding
+// Heights for drawer (same as ContentSheet) - used for map padding on mobile
 const DRAWER_HEIGHTS = {
     collapsed: 60,
     halfway: typeof window !== "undefined" ? window.innerHeight * 0.45 : 400,
     expanded: typeof window !== "undefined" ? window.innerHeight - 140 : 600,
 };
+
+// Desktop panel widths (same as DesktopNavLayout) - used for map padding on desktop
+const DESKTOP_PANEL_WIDTH_EXPANDED = 380;
+const DESKTOP_PANEL_WIDTH_COLLAPSED = 64;
+const DESKTOP_PANEL_MARGIN = 16; // left margin of panel (left-4 = 16px)
 
 // Debounce utility function
 const debounce = <T extends (...args: any[]) => any>(
@@ -58,6 +63,7 @@ const MapBackground = () => {
     const isInitialStyleSet = useRef(false);
     const isUserInteraction = useRef(true);
     const drawerHeight = useTabStore((state) => state.drawerHeight);
+    const isDesktopPanelCollapsed = useTabStore((state) => state.isDesktopPanelCollapsed);
     
     // Use refs for callbacks to avoid them being dependencies
     const routerRef = useRef(router);
@@ -118,29 +124,46 @@ const MapBackground = () => {
         );
     }, [isSatellite, map]);
 
-    // Set map padding based on drawer height (mobile only)
+    // Set map padding based on UI layout
+    // Mobile: bottom padding for drawer
+    // Desktop: left padding for side panel
     // This is the ONLY place that should control map padding
     useEffect(() => {
-        if (!map || !isMobile) return;
+        if (!map) return;
         
-        // Calculate drawer pixel height (same calculation as ContentSheet)
-        const getDrawerPixelHeight = (height: DrawerHeight): number => {
-            if (typeof window === "undefined") return DRAWER_HEIGHTS[height];
-            switch (height) {
-                case "collapsed": return 60;
-                case "halfway": return window.innerHeight * 0.45;
-                case "expanded": return window.innerHeight - 140;
-            }
-        };
-        
-        const bottomPadding = getDrawerPixelHeight(drawerHeight) + 20; // Add small buffer
-        map.setPadding({
-            top: 20,
-            bottom: bottomPadding,
-            left: 0,
-            right: 0,
-        });
-    }, [map, isMobile, drawerHeight]);
+        if (isMobile) {
+            // Mobile: bottom padding for drawer
+            const getDrawerPixelHeight = (height: DrawerHeight): number => {
+                if (typeof window === "undefined") return DRAWER_HEIGHTS[height];
+                switch (height) {
+                    case "collapsed": return 60;
+                    case "halfway": return window.innerHeight * 0.45;
+                    case "expanded": return window.innerHeight - 140;
+                }
+            };
+            
+            const bottomPadding = getDrawerPixelHeight(drawerHeight) + 20; // Add small buffer
+            map.setPadding({
+                top: 20,
+                bottom: bottomPadding,
+                left: 0,
+                right: 0,
+            });
+        } else {
+            // Desktop: left padding for side panel
+            const panelWidth = isDesktopPanelCollapsed 
+                ? DESKTOP_PANEL_WIDTH_COLLAPSED 
+                : DESKTOP_PANEL_WIDTH_EXPANDED;
+            const leftPadding = panelWidth + DESKTOP_PANEL_MARGIN + 20; // panel + margin + buffer
+            
+            map.setPadding({
+                top: 20,
+                bottom: 20,
+                left: leftPadding,
+                right: 20,
+            });
+        }
+    }, [map, isMobile, drawerHeight, isDesktopPanelCollapsed]);
 
     const fetchPeaks = useCallback(async () => {
         if (!map) return;

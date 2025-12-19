@@ -186,14 +186,12 @@ const DetailBottomSheet = ({ peakId, challengeId, activityId, userId, onClose }:
         peakSummits: activityPeakSummits,
         hoverCoords: activityHoverCoords,
         flyToOnLoad: true,
-        padding: { top: 100, bottom: heights.halfway + 50, left: 50, right: 50 },
     });
 
     // Profile map effects
     const { showOnMap: showProfileOnMap } = useProfileMapEffects({
         userId,
         peaks: profilePeaksForMap,
-        padding: { top: 100, bottom: heights.halfway + 50, left: 50, right: 50 },
     });
 
     // Fetch sync status (only when authenticated and on dashboard tab)

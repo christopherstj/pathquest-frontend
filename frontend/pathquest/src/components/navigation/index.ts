@@ -5,4 +5,5 @@ export { default as HomeTabContent } from "./HomeTabContent";
 export { default as ExploreTabContent } from "./ExploreTabContent";
 export { default as ProfileTabContent } from "./ProfileTabContent";
 export { default as MobileNavLayout } from "./MobileNavLayout";
+export { default as DesktopNavLayout } from "./DesktopNavLayout";
 

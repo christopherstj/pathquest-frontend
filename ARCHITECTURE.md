@@ -204,7 +204,8 @@ For static ISR pages (`/peaks/[id]`, `/challenges/[id]`), always use the "Public
 - `getUser.ts` - Gets user profile
 - `getUserProfile.ts` - Gets aggregated profile data (stats, accepted challenges, peaks for map)
 - `processHistoricalData.ts` - Initiates historical data processing
-- `searchUserPeaks.ts` - Searches user's summited peaks with counts and pagination
+- `searchUserPeaks.ts` - Searches user's summited peaks with advanced filtering (state, elevation range, multiple summits), sorting (summits, elevation, recent, oldest, name), and pagination
+- `getUserSummitStates.ts` - Gets list of states where user has summited peaks (for filter dropdown)
 - `searchUserSummits.ts` - Searches user's individual summit entries with pagination
 - `updateUser.ts` - Updates user profile. Supports: `name`, `email`, `pic`, `city`, `state`, `country`, `location_coords`, `update_description`, `is_public`
 
@@ -226,13 +227,11 @@ For static ISR pages (`/peaks/[id]`, `/challenges/[id]`), always use the "Public
 - `Logo.tsx` - SVG logo component with topographic contour-line mountain design. Uses currentColor for theming, supports size prop.
 
 ##### Overlays (`components/overlays/`)
-- `UrlOverlayManager.tsx` - Central overlay orchestrator. On desktop, renders DiscoveryDrawer (left panel) plus PeakDetailPanel/ChallengeDetailPanel/ActivityDetailPanel/ProfileDetailPanel (right panel). On mobile (< 1024px), renders `MobileNavLayout` with fixed 3-tab navigation (Home, Explore, Profile). Routes handled: `/peaks/[id]`, `/challenges/[id]`, `/activities/[id]`, `/users/[userId]`.
-- `DiscoveryDrawer.tsx` - Desktop left panel for discovering peaks and challenges. Supports multiple modes:
-  - Default: Discovery content showing visible peaks and challenges
-  - Peak selected: Shows discovery content (peak tabs moved to PeakDetailPanel right panel as of December 2024)
-  - Activity selected: Summits tab showing activity summits
-  - Profile selected: Peaks, Journal, and Challenges tabs (hides Explore tab)
-  - Challenge selected: Peaks tab showing challenge peaks list with PeakRow components (hides Explore tab)
+- `UrlOverlayManager.tsx` - Central overlay orchestrator. Renders platform-specific navigation layout:
+  - Desktop (≥ 1024px): `DesktopNavLayout` - Collapsible side panel with same 3-tab structure as mobile
+  - Mobile (< 1024px): `MobileNavLayout` - Fixed 3-tab bottom navigation with draggable content sheet
+  - Both layouts use the same content components (HomeTabContent, ExploreTabContent, ProfileTabContent)
+- `DiscoveryDrawer.tsx` - **DEPRECATED (December 2024)**: Replaced by unified `DesktopNavLayout`. Kept for reference.
 - `DetailBottomSheet.tsx` - **DEPRECATED (December 2024)**: Legacy mobile bottom sheet with dynamic tabbed interface. Replaced by `MobileNavLayout` with fixed 3-tab navigation. Kept for reference during migration. Original functionality: Used extracted mobile components, managed drawer height with snap points, dynamic tabs based on context.
 - `SummitHistoryPanel.tsx` - Full summit history list for a peak. Shows all public summits with user names, dates, and weather conditions at summit time. Used inside DiscoveryDrawer (desktop) or DetailBottomSheet (mobile).
 - `PeakDetailPanel.tsx` - Desktop right panel for peak details (redesigned December 2024). Features:
@@ -274,7 +273,11 @@ For static ISR pages (`/peaks/[id]`, `/challenges/[id]`), always use the "Public
 - `ActivityDetailPanel.tsx` - Desktop right panel for activity details. Shows Details/Summits/Analytics tabs, GPX route on map, elevation profile with hover interaction.
 - `ProfileDetailPanel.tsx` - Desktop right panel for user profile details. Shows profile stats and action buttons. Accepted challenges are displayed in the Challenges tab of the left pane (DiscoveryDrawer). Uses useProfileMapEffects hook.
 - `ProfileDetailContent.tsx` - Profile detail content with SSR data (used by static pages). Uses shared UI components.
-- `ProfileSummitsList.tsx` - User's peaks list with search. When `compact` prop is true, hides internal tabs (tabs are in DiscoveryDrawer). Supports ordering by summit count descending.
+- `ProfileSummitsList.tsx` - User's peaks list with advanced filtering and sorting. Features:
+  - **Filter Bar**: State dropdown, elevation presets (14ers/13ers/12ers), repeat peaks toggle
+  - **Sort Options**: Most summits, highest elevation, most recent, first climbed, A-Z
+  - **Show All on Map**: Button to zoom map to fit all summited peaks
+  - When `compact` prop is true, hides internal tabs (tabs are in DiscoveryDrawer). Uses infinite scroll for pagination.
 - `ProfileJournal.tsx` - User's summit journal grouped by activity. Fetches all summits via `searchUserSummits`, groups by activity_id, fetches activity details, and renders `ActivityWithSummits` and `OrphanSummitCard` components. Similar to PeakUserActivity but for all peaks. Detects ownership via `useIsAuthenticated` hook and passes `isOwner` prop to child components to control edit/delete button visibility. Invalidates query cache when summits are deleted.
 - `ProfileChallenges.tsx` - User's accepted challenges list. Fetches user profile data and displays accepted challenges with progress bars. Used in the Challenges tab of the left pane (DiscoveryDrawer) when viewing a user profile. Shows challenge name, completion count (completed/total), and progress bar. Each challenge links to its detail page.
 
@@ -300,11 +303,22 @@ Optimized journal system (December 2024) for viewing summit history:
 - `index.ts` - Export barrel for journal components.
 - `index.ts` - Export barrel for dashboard components
 
-##### Mobile Navigation (`components/navigation/`)
-New mobile navigation system (December 2024) with fixed 3-tab navigation:
+##### Navigation (`components/navigation/`)
+Unified navigation system (December 2024) with fixed 3-tab structure for both mobile and desktop:
+
+**Desktop Components:**
+- `DesktopNavLayout.tsx` - Desktop side panel layout. Collapsible (380px expanded, 64px collapsed) with:
+  - Same 3 tabs as mobile: Home, Explore, Profile (horizontal at top of panel)
+  - Collapse toggle button (also Cmd/Ctrl+B keyboard shortcut)
+  - Collapse state persisted in localStorage
+  - Same content components as mobile (HomeTabContent, ExploreTabContent, ProfileTabContent)
+
+**Mobile Components:**
 - `BottomTabBar.tsx` - Fixed bottom navigation bar with 3 tabs: Home, Explore, Profile. Always visible, never changes based on context. Uses Zustand tab store for state management.
 - `ContentSheet.tsx` - Reusable draggable sheet component extracted from DetailBottomSheet. Supports 3 snap heights (collapsed, halfway, expanded) with swipe gestures and velocity detection. Positions above the bottom tab bar.
-- `MobileNavLayout.tsx` - Main layout orchestrator for mobile. Manages tab switching, URL-driven tab activation, and content sheet rendering. Replaces the old DetailBottomSheet-based mobile UI.
+- `MobileNavLayout.tsx` - Main layout orchestrator for mobile. Manages tab switching, URL-driven tab activation, and content sheet rendering.
+
+**Shared Content Components:**
 - `HomeTabContent.tsx` - Home tab content wrapper. Renders DashboardContent for authenticated users.
 - `ExploreTabContent.tsx` - Explore tab content with two modes:
   - Discovery mode: Shows visible peaks/challenges when no detail is selected
@@ -330,6 +344,7 @@ New mobile navigation system (December 2024) with fixed 3-tab navigation:
 
 ##### Peak Components (`components/peaks/`)
 - `PeakActivityIndicator.tsx` - Shows recent summit activity on a peak. Fetches from `/api/peaks/[id]/activity`. Displays fire icon + "X this week" or trending icon + "X this month". Shows "Be the first this week!" when no recent activity. Supports `compact` prop for inline display.
+- `PeaksFilterBar.tsx` - Reusable filter bar component for profile peaks list. Features state dropdown, elevation presets (14ers/13ers/12ers/All), repeat peaks toggle, sort dropdown, and "Show All on Map" button.
 - `index.ts` - Export barrel for peak components
 
 ##### Activities (`components/app/activities/`)
@@ -487,13 +502,14 @@ Zustand state management stores:
   - `summitHistoryPeakId` - When set, DiscoveryDrawer shows SummitHistoryPanel instead of discovery content (desktop drill-down)
   - `selectedChallengeData` - Challenge peaks data shared between ChallengeDetailPanel and DiscoveryDrawer (challengeId, challengeName, peaks)
   - `hoveredPeakId` - ID of peak being hovered over in summit list, used for map marker highlighting with amber accent color
-- `tabStore.ts` - Mobile navigation sub-tab state (vanilla Zustand with React hook). Note: `activeTab` is derived from URL in MobileNavLayout/BottomTabBar, not stored in state. State includes:
+- `tabStore.ts` - Navigation state (vanilla Zustand with React hook). Note: `activeTab` is derived from URL in MobileNavLayout/DesktopNavLayout, not stored in state. State includes:
   - `profileSubTab` - Active sub-tab within Profile tab ("stats" | "peaks" | "journal" | "challenges" | "review")
-  - `profileSubTab` - Active sub-tab within Profile tab ('peaks' | 'journal' | 'challenges' | 'review')
   - `exploreSubTab` - Active sub-tab within Explore tab (varies by content type)
   - `exploreBackStack` - Navigation history within Explore tab for back navigation
   - `lastExplorePath` - Remembers last Explore detail path for "tab memory" (so clicking Explore restores where you were)
-  - Actions: `setProfileSubTab`, `setExploreSubTab`, `pushExploreHistory`, `popExploreHistory`, `clearExploreHistory`, `setLastExplorePath`
+  - `drawerHeight` - Current mobile drawer height for map padding ("collapsed" | "halfway" | "expanded")
+  - `isDesktopPanelCollapsed` - Desktop panel collapse state for map padding
+  - Actions: `setProfileSubTab`, `setExploreSubTab`, `pushExploreHistory`, `popExploreHistory`, `clearExploreHistory`, `setLastExplorePath`, `setDrawerHeight`, `setDesktopPanelCollapsed`
 - `userStore.tsx` - User data store (vanilla Zustand)
 - `authModalStore.ts` - Auth modal state (isOpen, mode, redirectAction)
 - `dashboardStore.ts` - Dashboard panel state (isOpen, toggle)
@@ -631,22 +647,27 @@ Next.js middleware for legacy route redirects:
 
 ### Responsive Layout
 - **Mobile First**: Application is designed to be fully functional on mobile devices. The `useIsMobile` hook defaults to `true` during SSR and initial render for mobile-first experience.
-- **Adaptive Components**: 
+- **Unified Navigation Architecture (Phase 5B)**: Both mobile and desktop share the same navigation structure and content components:
   - **Desktop (≥ 1024px)**: 
-    - `DiscoveryDrawer` on left side for discovering peaks/challenges
-    - `PeakDetailPanel`/`ChallengeDetailPanel` on right side for details
-    - Summit history drill-down replaces discovery content in left panel
+    - `DesktopNavLayout`: Collapsible side panel (~380px expanded, ~64px collapsed) on the left
+    - Same 3-tab structure as mobile: Home, Explore, Profile
+    - Tabs displayed horizontally at top of side panel
+    - Collapse toggle button (also accessible via Cmd/Ctrl+B keyboard shortcut)
+    - Collapse state persisted in localStorage
+    - Map padding adjusts based on panel width (left padding)
   - **Mobile (< 1024px)**: 
-    - **New (December 2024)**: `MobileNavLayout` with fixed 3-tab navigation:
+    - `MobileNavLayout` with fixed 3-tab bottom navigation:
       - Fixed `BottomTabBar` always visible at bottom: Home, Explore, Profile
       - `ContentSheet` draggable sheet positioned above tab bar
-      - **Home Tab** (`/`): Dashboard content (recent summits, challenges, queue status)
-      - **Explore Tab** (`/explore`): Discovery mode OR detail views with contextual sub-tabs
-      - **Profile Tab** (`/profile`): Your aggregated data with sub-tabs (Peaks, Journal, Challenges, Review)
-    - **URL-based tab routing**: Each tab has its own URL:
-      - `/` → Home tab
-      - `/explore` → Explore tab (discovery mode)
-      - `/profile` → Profile tab
+    - Map padding adjusts based on drawer height (bottom padding)
+  - **Shared Content Components** (used by both mobile and desktop):
+    - `HomeTabContent`: Dashboard content (recent summits, challenges, queue status)
+    - `ExploreTabContent`: Discovery mode OR detail views (peak, challenge, activity, user profile) with contextual sub-tabs
+    - `ProfileTabContent`: Your aggregated data with sub-tabs (Stats, Peaks, Journal, Challenges, Review)
+  - **URL-based tab routing**: Each tab has its own URL:
+    - `/` → Home tab
+    - `/explore` → Explore tab (discovery mode)
+    - `/profile` → Profile tab
       - `/peaks/[id]`, `/challenges/[id]`, `/activities/[id]`, `/users/[id]` → Explore tab (detail mode)
     - Active tab is derived from URL, not stored in state (URL is source of truth)
     - Browser back/forward navigation works naturally between tabs

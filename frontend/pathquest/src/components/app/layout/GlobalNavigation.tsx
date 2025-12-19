@@ -1,13 +1,12 @@
 "use client";
 
 import React, { Suspense } from "react";
-import Omnibar from "@/components/search/Omnibar";
-import { User, LayoutDashboard, LogIn, LogOut, Settings } from "lucide-react";
 import Link from "next/link";
+import Omnibar from "@/components/search/Omnibar";
+import { User, LogIn, LogOut, Settings } from "lucide-react";
 import Logo from "@/components/brand/Logo";
 import { useIsAuthenticated } from "@/hooks/useRequireAuth";
 import { useAuthModalStore } from "@/providers/AuthModalProvider";
-import { useDashboardStore } from "@/providers/DashboardProvider";
 import { useUserManagementStore } from "@/providers/UserManagementProvider";
 import {
     Tooltip,
@@ -26,16 +25,10 @@ import { signOut } from "next-auth/react";
 const GlobalNavigation = () => {
     const { isAuthenticated, user } = useIsAuthenticated();
     const openLoginModal = useAuthModalStore((state) => state.openLoginModal);
-    const toggleDashboard = useDashboardStore((state) => state.toggleDashboard);
-    const isDashboardOpen = useDashboardStore((state) => state.isOpen);
     const openUserManagement = useUserManagementStore((state) => state.openModal);
 
     const handleLoginClick = () => {
         openLoginModal();
-    };
-
-    const handleDashboardClick = () => {
-        toggleDashboard();
     };
 
     const handleSettingsClick = () => {
@@ -74,34 +67,6 @@ const GlobalNavigation = () => {
             <div className="pointer-events-auto flex items-center gap-2">
                 {isAuthenticated ? (
                     <>
-                        {/* Dashboard Button - hidden on mobile since dashboard is in bottom sheet tabs */}
-                        <Tooltip>
-                            <TooltipTrigger asChild>
-                                <button
-                                    onClick={handleDashboardClick}
-                                    className={`hidden lg:flex items-center justify-center w-10 h-10 rounded-full bg-card/80 backdrop-blur border transition-all shadow-lg ${
-                                        isDashboardOpen
-                                            ? "border-primary bg-primary/10"
-                                            : "border-border hover:bg-card hover:border-primary/50"
-                                    }`}
-                                    aria-label="Open dashboard"
-                                    aria-expanded={isDashboardOpen}
-                                    tabIndex={0}
-                                >
-                                    <LayoutDashboard
-                                        className={`w-5 h-5 ${
-                                            isDashboardOpen
-                                                ? "text-primary"
-                                                : "text-muted-foreground"
-                                        }`}
-                                    />
-                                </button>
-                            </TooltipTrigger>
-                            <TooltipContent side="bottom">
-                                <p>Your Dashboard</p>
-                            </TooltipContent>
-                        </Tooltip>
-
                         {/* User Avatar with Dropdown */}
                         <DropdownMenu>
                             <DropdownMenuTrigger asChild>
@@ -126,12 +91,6 @@ const GlobalNavigation = () => {
                                     {user?.name || "User"}
                                 </div>
                                 <DropdownMenuSeparator />
-                                <DropdownMenuItem asChild>
-                                    <Link href={`/users/${user?.id}`} className="flex items-center gap-2 cursor-pointer">
-                                        <User className="w-4 h-4" />
-                                        <span>Profile</span>
-                                    </Link>
-                                </DropdownMenuItem>
                                 <DropdownMenuItem
                                     onClick={handleSettingsClick}
                                     className="flex items-center gap-2 cursor-pointer"

@@ -1,3 +1,9 @@
+/**
+ * @deprecated This component is deprecated as of Phase 5B.
+ * Desktop now uses DesktopNavLayout which reuses the same content components as mobile.
+ * This file is kept for reference but is no longer imported anywhere.
+ * Safe to delete after verifying the new desktop layout is working properly.
+ */
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";

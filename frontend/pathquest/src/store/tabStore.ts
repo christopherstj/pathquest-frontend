@@ -10,6 +10,7 @@ export type ExploreSubTab =
     | "discovery" 
     | "community" 
     | "myActivity" 
+    | "conditions"
     | "progress" 
     | "peaks" 
     | "details" 
@@ -26,6 +27,7 @@ export type TabState = {
     exploreBackStack: string[]; // Track navigation history within Explore (URLs)
     lastExplorePath: string | null; // Remember last Explore detail path for tab memory
     drawerHeight: DrawerHeight; // Current drawer height for map padding
+    isDesktopPanelCollapsed: boolean; // Desktop panel collapsed state
 };
 
 export type TabActions = {
@@ -36,6 +38,7 @@ export type TabActions = {
     clearExploreHistory: () => void;
     setLastExplorePath: (path: string | null) => void;
     setDrawerHeight: (height: DrawerHeight) => void;
+    setDesktopPanelCollapsed: (collapsed: boolean) => void;
 };
 
 export type TabStore = TabState & TabActions;
@@ -46,6 +49,7 @@ const defaultState: TabState = {
     exploreBackStack: [],
     lastExplorePath: null,
     drawerHeight: "halfway",
+    isDesktopPanelCollapsed: false,
 };
 
 export const createTabStore = (preloadedState: Partial<TabState> = {}) => {
@@ -75,6 +79,8 @@ export const createTabStore = (preloadedState: Partial<TabState> = {}) => {
         setLastExplorePath: (lastExplorePath) => set({ lastExplorePath }),
         
         setDrawerHeight: (drawerHeight) => set({ drawerHeight }),
+        
+        setDesktopPanelCollapsed: (isDesktopPanelCollapsed) => set({ isDesktopPanelCollapsed }),
     }));
 };
 

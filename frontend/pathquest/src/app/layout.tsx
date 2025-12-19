@@ -40,7 +40,6 @@ import MapBackground from "@/components/map/MapBackground";
 import GlobalNavigation from "@/components/app/layout/GlobalNavigation";
 import UrlOverlayManager from "@/components/overlays/UrlOverlayManager";
 import AuthModal from "@/components/auth/AuthModal";
-import DashboardPanel from "@/components/overlays/DashboardPanel";
 import SummitReportModal from "@/components/overlays/SummitReportModal";
 import AddManualSummitModal from "@/components/overlays/AddManualSummitModal";
 import UserManagementModal from "@/components/overlays/UserManagementModal";
@@ -84,8 +83,6 @@ const layout = ({ children }: Props) => {
                                                         </div>
                                                         {/* Auth modal - triggered by useRequireAuth hook */}
                                                         <AuthModal />
-                                                        {/* Dashboard panel - for logged in users */}
-                                                        <DashboardPanel />
                                                         {/* Summit report modal - for editing summit experiences */}
                                                         <SummitReportModal />
                                                         {/* Manual summit modal - for logging new summits */}

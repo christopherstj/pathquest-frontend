@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { Mountain, Users, Route, Trophy, BarChart3, BookOpen, ArrowLeft, Compass, CheckCircle, LogIn, Plus } from "lucide-react";
+import { Mountain, Users, Route, Trophy, BarChart3, BookOpen, ArrowLeft, Compass, CheckCircle, LogIn, Plus, Cloud } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMapStore } from "@/providers/MapProvider";
@@ -35,6 +35,7 @@ import DiscoveryContentMobile from "@/components/overlays/mobile/discovery-conte
 // Content components
 import PeakUserActivity from "@/components/overlays/PeakUserActivity";
 import PeakCommunity from "@/components/overlays/PeakCommunity";
+import CurrentConditions from "@/components/app/peaks/CurrentConditions";
 import ProfileSummitsList from "@/components/overlays/ProfileSummitsList";
 import ProfileJournal from "@/components/overlays/ProfileJournal";
 import ProfileChallenges from "@/components/overlays/ProfileChallenges";
@@ -612,9 +613,15 @@ const ExploreTabContent = ({ isActive }: ExploreTabContentProps) => {
                     />
                     <SubTabButton
                         icon={<BookOpen className="w-3.5 h-3.5" />}
-                        label="My Journal"
+                        label="Journal"
                         isActive={exploreSubTab === "myActivity"}
                         onClick={() => setExploreSubTab("myActivity")}
+                    />
+                    <SubTabButton
+                        icon={<Cloud className="w-3.5 h-3.5" />}
+                        label="Conditions"
+                        isActive={exploreSubTab === "conditions"}
+                        onClick={() => setExploreSubTab("conditions")}
                     />
                 </div>
             );
@@ -791,6 +798,18 @@ const ExploreTabContent = ({ isActive }: ExploreTabContentProps) => {
                                         <LogIn className="w-4 h-4" />
                                         Log In
                                     </Button>
+                                </div>
+                            )
+                        ) : exploreSubTab === "conditions" ? (
+                            peak?.location_coords ? (
+                                <CurrentConditions
+                                    lat={peak.location_coords[1]}
+                                    lng={peak.location_coords[0]}
+                                />
+                            ) : (
+                                <div className="text-center py-10 text-muted-foreground">
+                                    <Cloud className="w-10 h-10 mx-auto mb-3 opacity-50" />
+                                    <p className="text-sm">Weather data unavailable for this peak</p>
                                 </div>
                             )
                         ) : (

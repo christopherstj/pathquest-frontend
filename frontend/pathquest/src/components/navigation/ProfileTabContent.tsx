@@ -129,7 +129,11 @@ const ProfileTabContent = ({ isActive }: ProfileTabContentProps) => {
                     <ProfileStatsContent userId={userId} />
                 )}
                 {activeSubTab === "peaks" && (
-                    <ProfileSummitsList userId={userId} compact={true} />
+                    <ProfileSummitsList 
+                        userId={userId} 
+                        compact={true} 
+                        isActive={isActive}
+                    />
                 )}
                 {activeSubTab === "journal" && (
                     <ProfileJournal userId={userId} />

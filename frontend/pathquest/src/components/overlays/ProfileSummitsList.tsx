@@ -1,43 +1,96 @@
 "use client";
 
-import React, { useState, useCallback, useRef, useEffect } from "react";
-import { Search, Mountain, ChevronRight, Calendar, Loader2 } from "lucide-react";
+import React, { useState, useCallback, useRef, useEffect, useMemo } from "react";
+import { Mountain, ChevronRight, Calendar, Loader2 } from "lucide-react";
 import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import { useMapStore } from "@/providers/MapProvider";
-import searchUserPeaks from "@/actions/users/searchUserPeaks";
+import searchUserPeaks, { SearchUserPeaksFilters } from "@/actions/users/searchUserPeaks";
 import searchUserSummits from "@/actions/users/searchUserSummits";
+import getUserSummitStates from "@/actions/users/getUserSummitStates";
 import SummitItem from "@/components/app/summits/SummitItem";
+import { PeaksFilterBar, ELEVATION_PRESETS, type PeaksFilters } from "@/components/peaks";
+import { useProfilePeaksMapEffects } from "@/hooks/use-profile-peaks-map-effects";
 import metersToFt from "@/helpers/metersToFt";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
+import mapboxgl from "mapbox-gl";
 
 type Tab = "peaks" | "summits";
 
 interface ProfileSummitsListProps {
     userId: string;
     compact?: boolean;
+    isActive?: boolean; // Whether the Profile Peaks tab is currently active
 }
 
 const PAGE_SIZE = 50;
 
-const ProfileSummitsList = ({ userId, compact = false }: ProfileSummitsListProps) => {
+const ProfileSummitsList = ({ userId, compact = false, isActive = true }: ProfileSummitsListProps) => {
     // When compact, force peaks tab only (no tabs shown, tabs are in DiscoveryDrawer)
     const [activeTab, setActiveTab] = useState<Tab>("peaks");
     const effectiveTab = compact ? "peaks" : activeTab;
-    const [search, setSearch] = useState("");
-    const [debouncedSearch, setDebouncedSearch] = useState("");
     const setHoveredPeakId = useMapStore((state) => state.setHoveredPeakId);
+    const map = useMapStore((state) => state.map);
     const scrollRef = useRef<HTMLDivElement>(null);
 
-    // Debounce search
+    // Filter state
+    const [filters, setFilters] = useState<PeaksFilters>({
+        search: "",
+        state: "",
+        elevationPreset: null,
+        hasMultipleSummits: false,
+        sortBy: "summits",
+    });
+
+    // Debounced search
+    const [debouncedSearch, setDebouncedSearch] = useState("");
     useEffect(() => {
         const timer = setTimeout(() => {
-            setDebouncedSearch(search);
+            setDebouncedSearch(filters.search);
         }, 300);
         return () => clearTimeout(timer);
-    }, [search]);
+    }, [filters.search]);
 
-    // Infinite query for peaks
+    // Convert filters to API format
+    const apiFilters: SearchUserPeaksFilters = useMemo(() => {
+        const preset = filters.elevationPreset !== null ? ELEVATION_PRESETS[filters.elevationPreset] : null;
+        return {
+            search: debouncedSearch || undefined,
+            state: filters.state || undefined,
+            minElevation: preset?.minElevation,
+            maxElevation: preset?.maxElevation,
+            hasMultipleSummits: filters.hasMultipleSummits || undefined,
+            sortBy: filters.sortBy,
+        };
+    }, [debouncedSearch, filters.state, filters.elevationPreset, filters.hasMultipleSummits, filters.sortBy]);
+
+    // Query for states (for dropdown)
+    const { data: statesData, isLoading: statesLoading } = useQuery({
+        queryKey: ["userSummitStates", userId],
+        queryFn: async () => {
+            const res = await getUserSummitStates(userId);
+            return res.success && res.data ? res.data.states : [];
+        },
+        staleTime: 1000 * 60 * 5, // 5 minutes
+    });
+
+    // Determine if we should show peaks on map
+    const shouldShowPeaksOnMap = effectiveTab === "peaks" && isActive;
+
+    // Query to fetch ALL peaks for map display (no pagination)
+    // We fetch all peaks upfront since there typically aren't too many
+    const { data: allPeaksData } = useQuery({
+        queryKey: ["userPeaksAll", userId, apiFilters],
+        queryFn: async () => {
+            // Fetch with a very large pageSize to get all peaks at once
+            const res = await searchUserPeaks(userId, apiFilters, 1, 10000);
+            return res.success && res.data ? res.data.peaks : [];
+        },
+        enabled: shouldShowPeaksOnMap,
+        staleTime: 1000 * 60 * 5, // 5 minutes
+    });
+
+    // Infinite query for peaks (for list display with pagination)
     const {
         data: peaksData,
         fetchNextPage: fetchNextPeaksPage,
@@ -45,13 +98,13 @@ const ProfileSummitsList = ({ userId, compact = false }: ProfileSummitsListProps
         isFetchingNextPage: isFetchingNextPeaksPage,
         isLoading: peaksLoading,
     } = useInfiniteQuery({
-        queryKey: ["userPeaks", userId, debouncedSearch],
+        queryKey: ["userPeaks", userId, apiFilters],
         queryFn: async ({ pageParam = 1 }) => {
-            const res = await searchUserPeaks(userId, debouncedSearch || undefined, pageParam, PAGE_SIZE);
+            const res = await searchUserPeaks(userId, apiFilters, pageParam, PAGE_SIZE);
             return res.success ? { ...res.data, page: pageParam } : null;
         },
         getNextPageParam: (lastPage) => {
-            if (!lastPage) return undefined;
+            if (!lastPage || !lastPage.totalCount) return undefined;
             const totalPages = Math.ceil(lastPage.totalCount / PAGE_SIZE);
             return lastPage.page < totalPages ? lastPage.page + 1 : undefined;
         },
@@ -98,26 +151,60 @@ const ProfileSummitsList = ({ userId, compact = false }: ProfileSummitsListProps
         return () => element.removeEventListener("scroll", handleScroll);
     }, [handleScroll]);
 
-    const isLoading = effectiveTab === "peaks" ? peaksLoading : summitsLoading;
-    
     // Flatten all peaks from all pages
     const peaks = peaksData?.pages.flatMap((page) => page?.peaks ?? []) ?? [];
     const peaksTotalCount = peaksData?.pages[0]?.totalCount ?? 0;
     const summits = summitsData?.summits || [];
 
+    const isLoading = effectiveTab === "peaks" ? peaksLoading : summitsLoading;
+
+    // Use all peaks for map display, but paginated peaks for list display
+    const peaksForMap = shouldShowPeaksOnMap ? (allPeaksData || peaks) : null;
+    useProfilePeaksMapEffects({
+        peaks: peaksForMap,
+        isActive: shouldShowPeaksOnMap,
+    });
+
+    // Show all peaks on map
+    const handleShowAllOnMap = useCallback(() => {
+        if (!map || peaks.length === 0) return;
+
+        // Get all peak coordinates
+        const coords = peaks
+            .filter((p) => p.location_coords)
+            .map((p) => p.location_coords as [number, number]);
+
+        if (coords.length === 0) return;
+
+        // Calculate bounds
+        const bounds = coords.reduce(
+            (acc, coord) => {
+                return acc.extend(coord as [number, number]);
+            },
+            new mapboxgl.LngLatBounds(coords[0], coords[0])
+        );
+
+        // Fit map to bounds
+        map.fitBounds(bounds, {
+            padding: { top: 50, bottom: 200, left: 50, right: 50 },
+            maxZoom: 10,
+            duration: 1000,
+        });
+    }, [map, peaks]);
+
     return (
-        <div className={cn("flex flex-col h-full", compact ? "gap-2 pt-4" : "gap-4")}>
-            {/* Search Input */}
-            <div className="relative px-4">
-                <Search className="absolute left-7 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                <input
-                    type="text"
-                    value={search}
-                    onChange={(e) => setSearch(e.target.value)}
-                    placeholder="Search peaks..."
-                    className="w-full pl-9 pr-4 py-2 bg-card border border-border rounded-lg text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+        <div className={cn("flex flex-col h-full", compact ? "gap-2 pt-2" : "gap-4")}>
+            {/* Filter Bar - only show in peaks tab */}
+            {effectiveTab === "peaks" && (
+                <PeaksFilterBar
+                    filters={filters}
+                    onFiltersChange={setFilters}
+                    states={statesData ?? []}
+                    statesLoading={statesLoading}
+                    totalCount={peaksTotalCount}
+                    onShowAllOnMap={peaks.length > 0 ? handleShowAllOnMap : undefined}
                 />
-            </div>
+            )}
 
             {/* Tabs - only show when not compact (tabs are in DiscoveryDrawer in compact mode) */}
             {!compact && (
@@ -174,28 +261,34 @@ const ProfileSummitsList = ({ userId, compact = false }: ProfileSummitsListProps
                                         onMouseEnter={() => handlePeakHoverStart(peak.id)}
                                         onMouseLeave={handlePeakHoverEnd}
                                     >
-                                        <div className="flex items-center gap-3">
-                                            <div className="w-8 h-8 rounded-full bg-summited/10 flex items-center justify-center">
+                                        <div className="flex items-center gap-3 min-w-0">
+                                            <div className="w-8 h-8 rounded-full bg-summited/10 flex items-center justify-center flex-shrink-0">
                                                 <Mountain className="w-4 h-4 text-summited" />
                                             </div>
-                                            <div>
-                                                <span className="text-sm font-medium text-foreground block">
+                                            <div className="min-w-0">
+                                                <span className="text-sm font-medium text-foreground block truncate">
                                                     {peak.name}
                                                 </span>
                                                 <div className="flex items-center gap-2 text-xs text-muted-foreground">
                                                     <span>
                                                         {peak.elevation ? Math.round(metersToFt(peak.elevation)).toLocaleString() : 0} ft
                                                     </span>
+                                                    {peak.state && (
+                                                        <>
+                                                            <span>•</span>
+                                                            <span>{peak.state}</span>
+                                                        </>
+                                                    )}
                                                     {peak.summit_count > 1 && (
                                                         <>
                                                             <span>•</span>
-                                                            <span>{peak.summit_count} summits</span>
+                                                            <span>{peak.summit_count}×</span>
                                                         </>
                                                     )}
                                                 </div>
                                             </div>
                                         </div>
-                                        <ChevronRight className="w-4 h-4 text-muted-foreground" />
+                                        <ChevronRight className="w-4 h-4 text-muted-foreground flex-shrink-0" />
                                     </Link>
                                 ))}
                             </div>
@@ -211,7 +304,7 @@ const ProfileSummitsList = ({ userId, compact = false }: ProfileSummitsListProps
                             {/* End of List */}
                             {!hasNextPeaksPage && peaks.length > 0 && (
                                 <div className="text-center py-4 text-xs text-muted-foreground">
-                                    {peaks.length} of {peaksTotalCount} peaks
+                                    Showing all {peaks.length} peak{peaks.length !== 1 ? "s" : ""}
                                 </div>
                             )}
                         </>
@@ -219,7 +312,9 @@ const ProfileSummitsList = ({ userId, compact = false }: ProfileSummitsListProps
                         <div className="flex flex-col items-center justify-center py-12 text-center">
                             <Mountain className="w-12 h-12 text-muted-foreground/50 mb-3" />
                             <p className="text-sm text-muted-foreground">
-                                {debouncedSearch ? "No peaks match your search" : "No peaks summited yet"}
+                                {debouncedSearch || filters.state || filters.elevationPreset !== null || filters.hasMultipleSummits
+                                    ? "No peaks match your filters"
+                                    : "No peaks summited yet"}
                             </p>
                         </div>
                     )
@@ -263,4 +358,3 @@ const ProfileSummitsList = ({ userId, compact = false }: ProfileSummitsListProps
 };
 
 export default ProfileSummitsList;
-

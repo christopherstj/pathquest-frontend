@@ -1,3 +1,10 @@
+/**
+ * @deprecated This component is deprecated as of Phase 5B.
+ * Desktop now uses DesktopNavLayout which renders ExploreTabContent for all detail views.
+ * Profile details are now handled by ProfileDetailsMobile inside ExploreTabContent.
+ * This file is kept for reference but is no longer imported anywhere.
+ * Safe to delete after verifying the new desktop layout is working properly.
+ */
 "use client";
 
 import React from "react";
