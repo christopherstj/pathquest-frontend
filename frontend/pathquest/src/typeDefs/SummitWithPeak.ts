@@ -10,6 +10,7 @@ export default interface SummitWithPeak {
     difficulty?: Difficulty;
     experience_rating?: ExperienceRating;
     condition_tags?: ConditionTag[];
+    custom_condition_tags?: string[];
     temperature?: number;
     weather_code?: number;
     precipitation?: number;

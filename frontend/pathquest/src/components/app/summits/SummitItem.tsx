@@ -50,9 +50,13 @@ const CONDITION_TAG_CONFIG: Record<ConditionTag, { bgColor: string; textColor: s
     wet: { bgColor: "bg-blue-500/20", textColor: "text-blue-600 dark:text-blue-400" },
     windy: { bgColor: "bg-slate-500/20", textColor: "text-slate-600 dark:text-slate-400" },
     foggy: { bgColor: "bg-gray-500/20", textColor: "text-gray-600 dark:text-gray-400" },
-    icy: { bgColor: "bg-indigo-500/20", textColor: "text-indigo-600 dark:text-indigo-400" },
     postholing: { bgColor: "bg-purple-500/20", textColor: "text-purple-600 dark:text-purple-400" },
     clear: { bgColor: "bg-emerald-500/20", textColor: "text-emerald-600 dark:text-emerald-400" },
+    rocky: { bgColor: "bg-stone-500/20", textColor: "text-stone-600 dark:text-stone-400" },
+    slippery: { bgColor: "bg-rose-500/20", textColor: "text-rose-600 dark:text-rose-400" },
+    overgrown: { bgColor: "bg-green-600/20", textColor: "text-green-700 dark:text-green-500" },
+    bushwhack: { bgColor: "bg-lime-600/20", textColor: "text-lime-700 dark:text-lime-500" },
+    exposed: { bgColor: "bg-red-500/20", textColor: "text-red-600 dark:text-red-400" },
 };
 
 // Weather code to description mapping (WMO codes)
@@ -145,7 +149,8 @@ const SummitItem = ({ summit, peakId, peakName, showPeakHeader = false, onHoverS
         summit.wind_speed !== undefined;
     const hasRatings = summit.difficulty || summit.experience_rating;
     const hasConditionTags = summit.condition_tags && summit.condition_tags.length > 0;
-    const hasReport = hasNotes || hasRatings || hasConditionTags;
+    const hasCustomTags = summit.custom_condition_tags && summit.custom_condition_tags.length > 0;
+    const hasReport = hasNotes || hasRatings || hasConditionTags || hasCustomTags;
 
     // Convert SummitWithPeak to Summit type for the report store
     const summitForReport: Summit = isSummitWithPeak(summit) 
@@ -165,6 +170,7 @@ const SummitItem = ({ summit, peakId, peakName, showPeakHeader = false, onHoverS
             difficulty: summit.difficulty,
             experience_rating: summit.experience_rating,
             condition_tags: summit.condition_tags,
+            custom_condition_tags: summit.custom_condition_tags,
           }
         : summit;
 
@@ -344,9 +350,9 @@ const SummitItem = ({ summit, peakId, peakName, showPeakHeader = false, onHoverS
             )}
 
             {/* Condition Tags */}
-            {hasConditionTags && (
+            {(hasConditionTags || hasCustomTags) && (
                 <div className="mb-2 flex flex-wrap gap-1.5">
-                    {summit.condition_tags!.map((tag) => {
+                    {summit.condition_tags?.map((tag) => {
                         const config = CONDITION_TAG_CONFIG[tag];
                         return (
                             <span
@@ -357,6 +363,14 @@ const SummitItem = ({ summit, peakId, peakName, showPeakHeader = false, onHoverS
                             </span>
                         );
                     })}
+                    {summit.custom_condition_tags?.map((tag) => (
+                        <span
+                            key={`custom-${tag}`}
+                            className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-primary/20 text-primary"
+                        >
+                            {tag}
+                        </span>
+                    ))}
                 </div>
             )}
 

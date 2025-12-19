@@ -5,6 +5,7 @@ export interface JournalEntry {
     difficulty?: "easy" | "moderate" | "hard" | "expert";
     experienceRating?: "amazing" | "good" | "tough" | "epic";
     conditionTags?: string[];
+    customConditionTags?: string[];
     isPublic?: boolean;
     timezone?: string;
     hasReport: boolean;

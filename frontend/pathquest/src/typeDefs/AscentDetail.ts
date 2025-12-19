@@ -11,4 +11,5 @@ export default interface AscentDetail {
     difficulty?: Difficulty;
     experience_rating?: ExperienceRating;
     condition_tags?: ConditionTag[];
+    custom_condition_tags?: string[];
 }

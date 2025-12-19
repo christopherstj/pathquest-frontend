@@ -42,9 +42,13 @@ const conditionTagColors: Record<string, string> = {
     wet: "bg-blue-500/20 text-blue-600 dark:text-blue-400",
     windy: "bg-slate-500/20 text-slate-600 dark:text-slate-400",
     foggy: "bg-gray-500/20 text-gray-600 dark:text-gray-400",
-    icy: "bg-indigo-500/20 text-indigo-600 dark:text-indigo-400",
     postholing: "bg-purple-500/20 text-purple-600 dark:text-purple-400",
     clear: "bg-emerald-500/20 text-emerald-600 dark:text-emerald-400",
+    rocky: "bg-stone-500/20 text-stone-600 dark:text-stone-400",
+    slippery: "bg-rose-500/20 text-rose-600 dark:text-rose-400",
+    overgrown: "bg-green-600/20 text-green-700 dark:text-green-500",
+    bushwhack: "bg-lime-600/20 text-lime-700 dark:text-lime-500",
+    exposed: "bg-red-500/20 text-red-600 dark:text-red-400",
 };
 
 // Difficulty display config
@@ -125,6 +129,7 @@ const JournalEntryCard = ({ entry, isOwner, onDeleted }: JournalEntryCardProps) 
 
     const hasTags = 
         (entry.conditionTags && entry.conditionTags.length > 0) ||
+        (entry.customConditionTags && entry.customConditionTags.length > 0) ||
         entry.difficulty ||
         entry.experienceRating;
 
@@ -147,6 +152,7 @@ const JournalEntryCard = ({ entry, isOwner, onDeleted }: JournalEntryCardProps) 
                 difficulty: entry.difficulty,
                 experience_rating: entry.experienceRating,
                 condition_tags: entry.conditionTags as ConditionTag[] | undefined,
+                custom_condition_tags: entry.customConditionTags,
                 temperature: entry.temperature,
                 weather_code: entry.weatherCode,
                 cloud_cover: entry.cloudCover,
@@ -313,6 +319,15 @@ const JournalEntryCard = ({ entry, isOwner, onDeleted }: JournalEntryCardProps) 
                                 "px-2 py-0.5 rounded-full text-[10px] font-medium capitalize",
                                 conditionTagColors[tag] || "bg-muted text-muted-foreground"
                             )}
+                        >
+                            {tag}
+                        </span>
+                    ))}
+                    {/* Custom Condition Tags */}
+                    {entry.customConditionTags?.map((tag) => (
+                        <span
+                            key={`custom-${tag}`}
+                            className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-primary/20 text-primary"
                         >
                             {tag}
                         </span>

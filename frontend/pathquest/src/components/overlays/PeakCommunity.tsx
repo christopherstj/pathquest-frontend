@@ -42,13 +42,17 @@ const CONDITION_CONFIG: Record<ConditionTag, { label: string; color: string; bor
     clear: { label: "Clear", color: "text-sky-500", borderColor: "border-sky-500/30", bgColor: "bg-sky-500/5" },
     dry: { label: "Dry", color: "text-amber-500", borderColor: "border-amber-500/30", bgColor: "bg-amber-500/5" },
     wet: { label: "Wet", color: "text-blue-500", borderColor: "border-blue-500/30", bgColor: "bg-blue-500/5" },
-    mud: { label: "Mud", color: "text-orange-700", borderColor: "border-orange-700/30", bgColor: "bg-orange-700/5" },
+    mud: { label: "Muddy", color: "text-orange-700", borderColor: "border-orange-700/30", bgColor: "bg-orange-700/5" },
     snow: { label: "Snow", color: "text-slate-400", borderColor: "border-slate-400/30", bgColor: "bg-slate-400/5" },
-    ice: { label: "Ice", color: "text-cyan-400", borderColor: "border-cyan-400/30", bgColor: "bg-cyan-400/5" },
-    icy: { label: "Icy", color: "text-cyan-500", borderColor: "border-cyan-500/30", bgColor: "bg-cyan-500/5" },
+    ice: { label: "Icy", color: "text-cyan-400", borderColor: "border-cyan-400/30", bgColor: "bg-cyan-400/5" },
     postholing: { label: "Postholing", color: "text-indigo-400", borderColor: "border-indigo-400/30", bgColor: "bg-indigo-400/5" },
     windy: { label: "Windy", color: "text-teal-500", borderColor: "border-teal-500/30", bgColor: "bg-teal-500/5" },
     foggy: { label: "Foggy", color: "text-gray-400", borderColor: "border-gray-400/30", bgColor: "bg-gray-400/5" },
+    rocky: { label: "Rocky", color: "text-stone-500", borderColor: "border-stone-500/30", bgColor: "bg-stone-500/5" },
+    slippery: { label: "Slippery", color: "text-rose-400", borderColor: "border-rose-400/30", bgColor: "bg-rose-400/5" },
+    overgrown: { label: "Overgrown", color: "text-green-600", borderColor: "border-green-600/30", bgColor: "bg-green-600/5" },
+    bushwhack: { label: "Bushwhack", color: "text-lime-600", borderColor: "border-lime-600/30", bgColor: "bg-lime-600/5" },
+    exposed: { label: "Exposed", color: "text-red-400", borderColor: "border-red-400/30", bgColor: "bg-red-400/5" },
 };
 
 // Extended summit type that includes user info from the API
@@ -227,9 +231,9 @@ const PeakCommunity = () => {
                                 )}
 
                                 {/* Condition Tags (if available) */}
-                                {summit.condition_tags && summit.condition_tags.length > 0 && (
+                                {((summit.condition_tags && summit.condition_tags.length > 0) || (summit.custom_condition_tags && summit.custom_condition_tags.length > 0)) && (
                                     <div className="flex flex-wrap gap-1.5 mt-2">
-                                        {summit.condition_tags.map((tag) => {
+                                        {summit.condition_tags?.map((tag) => {
                                             const config = CONDITION_CONFIG[tag];
                                             if (!config) return null;
                                             return (
@@ -241,6 +245,14 @@ const PeakCommunity = () => {
                                                 </span>
                                             );
                                         })}
+                                        {summit.custom_condition_tags?.map((tag) => (
+                                            <span
+                                                key={`custom-${tag}`}
+                                                className="inline-flex px-2 py-0.5 rounded-full border text-[10px] font-medium bg-primary/10 text-primary border-primary/30"
+                                            >
+                                                {tag}
+                                            </span>
+                                        ))}
                                     </div>
                                 )}
 

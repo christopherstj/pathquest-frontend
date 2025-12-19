@@ -11,6 +11,7 @@ import {
     Loader2,
     Check,
     X,
+    Plus,
 } from "lucide-react";
 import {
     Dialog,
@@ -21,6 +22,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
 import { useSummitReportStore } from "@/providers/SummitReportProvider";
 import updateAscent from "@/actions/peaks/updateAscent";
 import { useQueryClient } from "@tanstack/react-query";
@@ -99,13 +101,17 @@ const CONDITION_OPTIONS: {
     { value: "clear", label: "Clear", color: "text-sky-500 border-sky-500/30 bg-sky-500/10" },
     { value: "dry", label: "Dry", color: "text-amber-500 border-amber-500/30 bg-amber-500/10" },
     { value: "wet", label: "Wet", color: "text-blue-500 border-blue-500/30 bg-blue-500/10" },
-    { value: "mud", label: "Mud", color: "text-orange-700 border-orange-700/30 bg-orange-700/10" },
+    { value: "mud", label: "Muddy", color: "text-orange-700 border-orange-700/30 bg-orange-700/10" },
     { value: "snow", label: "Snow", color: "text-slate-400 border-slate-400/30 bg-slate-400/10" },
-    { value: "ice", label: "Ice", color: "text-cyan-400 border-cyan-400/30 bg-cyan-400/10" },
-    { value: "icy", label: "Icy", color: "text-cyan-500 border-cyan-500/30 bg-cyan-500/10" },
+    { value: "ice", label: "Icy", color: "text-cyan-400 border-cyan-400/30 bg-cyan-400/10" },
     { value: "postholing", label: "Postholing", color: "text-indigo-400 border-indigo-400/30 bg-indigo-400/10" },
     { value: "windy", label: "Windy", color: "text-teal-500 border-teal-500/30 bg-teal-500/10" },
     { value: "foggy", label: "Foggy", color: "text-gray-400 border-gray-400/30 bg-gray-400/10" },
+    { value: "rocky", label: "Rocky", color: "text-stone-500 border-stone-500/30 bg-stone-500/10" },
+    { value: "slippery", label: "Slippery", color: "text-rose-400 border-rose-400/30 bg-rose-400/10" },
+    { value: "overgrown", label: "Overgrown", color: "text-green-600 border-green-600/30 bg-green-600/10" },
+    { value: "bushwhack", label: "Bushwhack", color: "text-lime-600 border-lime-600/30 bg-lime-600/10" },
+    { value: "exposed", label: "Exposed", color: "text-red-400 border-red-400/30 bg-red-400/10" },
 ];
 
 const PLACEHOLDER_PROMPTS = [
@@ -133,6 +139,8 @@ const SummitReportModal = () => {
         undefined
     );
     const [conditionTags, setConditionTags] = useState<ConditionTag[]>([]);
+    const [customTags, setCustomTags] = useState<string[]>([]);
+    const [customTagInput, setCustomTagInput] = useState("");
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [showSuccess, setShowSuccess] = useState(false);
     const [placeholder, setPlaceholder] = useState(PLACEHOLDER_PROMPTS[0]);
@@ -144,6 +152,8 @@ const SummitReportModal = () => {
             setDifficulty(data.summit.difficulty);
             setExperience(data.summit.experience_rating);
             setConditionTags(data.summit.condition_tags || []);
+            setCustomTags(data.summit.custom_condition_tags || []);
+            setCustomTagInput("");
             setIsSubmitting(false);
             setShowSuccess(false);
             // Pick a random placeholder
@@ -163,6 +173,20 @@ const SummitReportModal = () => {
         );
     };
 
+    const addCustomTag = () => {
+        if (customTagInput.trim()) {
+            const tag = customTagInput.trim().toLowerCase();
+            if (!customTags.includes(tag)) {
+                setCustomTags([...customTags, tag]);
+            }
+            setCustomTagInput("");
+        }
+    };
+
+    const removeCustomTag = (tag: string) => {
+        setCustomTags(customTags.filter((t) => t !== tag));
+    };
+
     const handleSubmit = async () => {
         if (!data?.summit || !data?.peakId) return;
 
@@ -179,6 +203,7 @@ const SummitReportModal = () => {
             difficulty,
             experience_rating: experience,
             condition_tags: conditionTags,
+            custom_condition_tags: customTags,
         });
 
         if (result.success) {
@@ -349,6 +374,56 @@ const SummitReportModal = () => {
                                                 disabled={isSubmitting}
                                             />
                                         ))}
+                                    </div>
+                                    
+                                    {/* Custom Tags Input */}
+                                    <div className="mt-3 space-y-2">
+                                        <div className="flex gap-2">
+                                            <Input
+                                                placeholder="Add custom tag..."
+                                                value={customTagInput}
+                                                onChange={(e) => setCustomTagInput(e.target.value)}
+                                                onKeyDown={(e) => {
+                                                    if (e.key === "Enter" && customTagInput.trim()) {
+                                                        e.preventDefault();
+                                                        addCustomTag();
+                                                    }
+                                                }}
+                                                className="flex-1 h-8 text-xs"
+                                                disabled={isSubmitting}
+                                            />
+                                            <Button
+                                                type="button"
+                                                size="sm"
+                                                variant="outline"
+                                                onClick={addCustomTag}
+                                                disabled={isSubmitting || !customTagInput.trim()}
+                                                className="h-8 px-3"
+                                            >
+                                                <Plus className="w-3 h-3" />
+                                            </Button>
+                                        </div>
+                                        {/* Display custom tags */}
+                                        {customTags.length > 0 && (
+                                            <div className="flex flex-wrap gap-2">
+                                                {customTags.map((tag) => (
+                                                    <span
+                                                        key={tag}
+                                                        className="px-3 py-1.5 rounded-full border-2 text-xs font-medium bg-primary/10 text-primary border-primary/30 flex items-center gap-1"
+                                                    >
+                                                        {tag}
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => removeCustomTag(tag)}
+                                                            className="hover:text-primary/70 ml-1"
+                                                            disabled={isSubmitting}
+                                                        >
+                                                            <X className="w-3 h-3" />
+                                                        </button>
+                                                    </span>
+                                                ))}
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
                             </div>

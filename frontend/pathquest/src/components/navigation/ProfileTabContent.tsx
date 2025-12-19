@@ -77,7 +77,7 @@ const ProfileTabContent = ({ isActive }: ProfileTabContentProps) => {
                     Track your peaks, summit journal, and challenges
                 </p>
                 <button
-                    onClick={openLoginModal}
+                    onClick={() => openLoginModal()}
                     className="mt-4 inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-primary-foreground font-medium text-sm hover:bg-primary/90 transition-colors"
                 >
                     <LogIn className="w-4 h-4" />

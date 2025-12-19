@@ -45,9 +45,13 @@ const conditionTagColors: Record<string, string> = {
     wet: "bg-blue-500/20 text-blue-600 dark:text-blue-400",
     windy: "bg-slate-500/20 text-slate-600 dark:text-slate-400",
     foggy: "bg-gray-500/20 text-gray-600 dark:text-gray-400",
-    icy: "bg-indigo-500/20 text-indigo-600 dark:text-indigo-400",
     postholing: "bg-purple-500/20 text-purple-600 dark:text-purple-400",
     clear: "bg-emerald-500/20 text-emerald-600 dark:text-emerald-400",
+    rocky: "bg-stone-500/20 text-stone-600 dark:text-stone-400",
+    slippery: "bg-rose-500/20 text-rose-600 dark:text-rose-400",
+    overgrown: "bg-green-600/20 text-green-700 dark:text-green-500",
+    bushwhack: "bg-lime-600/20 text-lime-700 dark:text-lime-500",
+    exposed: "bg-red-500/20 text-red-600 dark:text-red-400",
 };
 
 // Difficulty display config
@@ -143,6 +147,7 @@ const PeakJournalCard = ({ summit, peakId, peakName, activityTitle, isOwner, onD
 
     const hasTags = 
         (summit.condition_tags && summit.condition_tags.length > 0) ||
+        (summit.custom_condition_tags && summit.custom_condition_tags.length > 0) ||
         summit.difficulty ||
         summit.experience_rating;
 
@@ -302,6 +307,15 @@ const PeakJournalCard = ({ summit, peakId, peakName, activityTitle, isOwner, onD
                                 "px-2 py-0.5 rounded-full text-[10px] font-medium capitalize",
                                 conditionTagColors[tag] || "bg-muted text-muted-foreground"
                             )}
+                        >
+                            {tag}
+                        </span>
+                    ))}
+                    {/* Custom Condition Tags */}
+                    {summit.custom_condition_tags?.map((tag) => (
+                        <span
+                            key={`custom-${tag}`}
+                            className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-primary/20 text-primary"
                         >
                             {tag}
                         </span>

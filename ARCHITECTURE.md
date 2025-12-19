@@ -242,8 +242,9 @@ For static ISR pages (`/peaks/[id]`, `/challenges/[id]`), always use the "Public
   - "Share Your Experience" CTA in Community tab (for users with unreported summits)
   - "Log Summit" CTA in My Journal tab
 - `PeakDetailContent.tsx` - Peak detail content with SSR data (used by static pages). Uses shared UI components.
-- `PeakCommunity.tsx` - Community summit history display component. Shows public summits with user names (linking to profile pages when user_id is available), weather conditions, difficulty/experience ratings as pill-style chips, and condition tags (dry, snow, ice, etc.) as small pills. User avatar and name are clickable links to `/users/[user_id]`.
+- `PeakCommunity.tsx` - Community summit history display component. Shows public summits with user names (linking to profile pages when user_id is available), weather conditions, difficulty/experience ratings as pill-style chips, and condition tags as small pills. User avatar and name are clickable links to `/users/[user_id]`.
 - `PeakUserActivity.tsx` - User's activity display for a peak (shows user's ascents, activities, and allows editing). Activity cards link to `/activities/[id]` detail pages. Uses shared `ActivityWithSummits` and `OrphanSummitCard` components.
+- `PeakDetailsTab.tsx` - Peak details tab content showing current weather conditions and challenges the peak belongs to. Used in the "Details" sub-tab of peak detail views. Shows challenge progress bars for authenticated users.
 - `ChallengeDetailPanel.tsx` - Desktop right panel for challenge details. Uses shared components and useChallengeMapEffects hook. Shows challenge progress for authenticated users. Peaks list is displayed in DiscoveryDrawer (left pane) instead of this panel. Shares challenge data with mapStore via `selectedChallengeData`.
 - `ChallengeDetailContent.tsx` - Challenge detail content with SSR data (used by static pages). Uses shared UI components.
 - `DashboardPanel.tsx` - User dashboard panel (authenticated only). Wrapper component that renders DashboardContent.
@@ -259,8 +260,9 @@ For static ISR pages (`/peaks/[id]`, `/challenges/[id]`), always use the "Public
   - Trip notes textarea with random placeholder prompts
   - Difficulty selection (easy/moderate/hard/expert) with pill buttons
   - Experience rating (tough/good/amazing/epic) with pill buttons
-  - Condition tags multi-select (clear, dry, wet, mud, snow, ice, icy, postholing, windy, foggy) with color-coded pills
-  - Saves condition_tags to backend
+  - Condition tags multi-select (clear, dry, wet, muddy, snow, icy, postholing, windy, foggy, rocky, slippery, overgrown, bushwhack, exposed) with color-coded pills
+  - Custom tags input for free-form condition tags (primary green colored pills with remove button)
+  - Saves condition_tags and custom_condition_tags to backend
 - `UserManagementModal.tsx` - Modal for account settings. Features:
   - Location search using Mapbox Search Box (`@mapbox/search-js-react`) configured for places/regions
   - Small Mapbox GL map preview (300x200px) showing user's location with marker
@@ -539,8 +541,8 @@ TypeScript type definitions:
 - `ProductDisplay.ts` - Stripe product display
 - `ServerActionResult.ts` - Server action result wrapper
 - `StravaCreds.ts` - Strava OAuth credentials
-- `Summit.ts` - Summit data structure with difficulty, experience rating, and condition_tags. Includes ConditionTag type: "dry" | "snow" | "ice" | "mud" | "wet" | "windy" | "foggy" | "icy" | "postholing" | "clear"
-- `SummitWithPeak.ts` - Individual summit entry with nested peak data. Used by activity detail API response. Includes all summit fields (notes, weather, difficulty, experience rating, condition_tags) plus peak info.
+- `Summit.ts` - Summit data structure with difficulty, experience rating, condition_tags, and custom_condition_tags. ConditionTag type: "dry" | "snow" | "ice" | "mud" | "wet" | "windy" | "foggy" | "postholing" | "clear" | "rocky" | "slippery" | "overgrown" | "bushwhack" | "exposed". custom_condition_tags is a string array for free-form user-defined tags.
+- `SummitWithPeak.ts` - Individual summit entry with nested peak data. Used by activity detail API response. Includes all summit fields (notes, weather, difficulty, experience rating, condition_tags, custom_condition_tags) plus peak info.
 - `PeakActivity.ts` - Peak activity statistics (summitsThisWeek, summitsThisMonth, lastSummitDate). Used by PeakActivityIndicator.
 - `ProfileStats.ts` - User profile statistics (peaks summited, total summits, highest peak, challenges completed, elevation gained, states/countries, year stats, peak type breakdown)
 - `UserPeakWithSummitCount.ts` - Peak with summit count and first/last summit dates for user profile search results
