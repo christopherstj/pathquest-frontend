@@ -838,7 +838,23 @@ const ExploreTabContent = ({ isActive }: ExploreTabContentProps) => {
         }
 
         // Challenge detail
-        if (contentType === "challenge" && challenge) {
+        if (contentType === "challenge") {
+            // Show error state if challenge not found
+            if (!challenge) {
+                return (
+                    <div className="text-center py-10 px-4">
+                        <Trophy className="w-12 h-12 text-muted-foreground mx-auto mb-3 opacity-50" />
+                        <p className="text-foreground font-medium">Challenge Not Found</p>
+                        <p className="text-sm text-muted-foreground mt-1 mb-4">
+                            This challenge doesn&apos;t exist.
+                        </p>
+                        <Button variant="outline" onClick={handleBack}>
+                            Go Back
+                        </Button>
+                    </div>
+                );
+            }
+
             if (exploreSubTab === "peaks" && challengePeaks) {
                 return (
                     <div className="p-4 space-y-4">
@@ -883,7 +899,23 @@ const ExploreTabContent = ({ isActive }: ExploreTabContentProps) => {
         }
 
         // Activity detail
-        if (contentType === "activity" && activity) {
+        if (contentType === "activity") {
+            // Show error state if activity not found (404/unauthorized)
+            if (!activity) {
+                return (
+                    <div className="text-center py-10 px-4">
+                        <Route className="w-12 h-12 text-muted-foreground mx-auto mb-3 opacity-50" />
+                        <p className="text-foreground font-medium">Activity Not Found</p>
+                        <p className="text-sm text-muted-foreground mt-1 mb-4">
+                            This activity may be private or doesn&apos;t exist.
+                        </p>
+                        <Button variant="outline" onClick={handleBack}>
+                            Go Back
+                        </Button>
+                    </div>
+                );
+            }
+
             if (exploreSubTab === "summits") {
                 return (
                     <div className="p-4">
@@ -918,7 +950,23 @@ const ExploreTabContent = ({ isActive }: ExploreTabContentProps) => {
         }
 
         // Profile detail (other users)
-        if (contentType === "profile" && profileUser && profileStats) {
+        if (contentType === "profile") {
+            // Show error state if profile not found (404/private)
+            if (!profileUser || !profileStats) {
+                return (
+                    <div className="text-center py-10 px-4">
+                        <Users className="w-12 h-12 text-muted-foreground mx-auto mb-3 opacity-50" />
+                        <p className="text-foreground font-medium">Profile Not Found</p>
+                        <p className="text-sm text-muted-foreground mt-1 mb-4">
+                            This profile may be private or doesn&apos;t exist.
+                        </p>
+                        <Button variant="outline" onClick={handleBack}>
+                            Go Back
+                        </Button>
+                    </div>
+                );
+            }
+
             if (exploreSubTab === "peaks") {
                 return <ProfileSummitsList userId={userId!} compact />;
             }

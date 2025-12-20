@@ -15,10 +15,8 @@ import {
     Smile,
     Zap,
     Flame,
-    ExternalLink,
 } from "lucide-react";
 import { useMapStore } from "@/providers/MapProvider";
-import Link from "next/link";
 import Summit, { ConditionTag, Difficulty, ExperienceRating } from "@/typeDefs/Summit";
 
 // Difficulty display config
@@ -180,9 +178,9 @@ const PeakCommunity = () => {
             ) : (
                 <div className="space-y-3">
                     {sortedSummits.map((summit, idx) => {
-                        const hasActivity = Boolean(summit.activity_id);
-                        
                         // User section - no link to profile (profiles don't exist yet)
+                        // Note: activity_id is intentionally not exposed in public summit responses
+                        // per Strava API guidelines (user data can only be shown to that user)
                         const userSection = (
                             <div className="flex items-start justify-between mb-3">
                                 <div className="flex items-center gap-2">
@@ -201,11 +199,6 @@ const PeakCommunity = () => {
                                         </div>
                                     </div>
                                 </div>
-                                {hasActivity && (
-                                    <div className="text-muted-foreground">
-                                        <ExternalLink className="w-3.5 h-3.5" />
-                                    </div>
-                                )}
                             </div>
                         );
 
@@ -313,20 +306,7 @@ const PeakCommunity = () => {
                             </>
                         );
 
-                        return hasActivity ? (
-                            <div
-                                key={summit.id || idx}
-                                className="p-4 rounded-xl bg-card border border-border/70 hover:border-primary/50 transition-colors"
-                            >
-                                {userSection}
-                                <Link
-                                    href={`/activities/${summit.activity_id}`}
-                                    className="block"
-                                >
-                                    {cardContent}
-                                </Link>
-                            </div>
-                        ) : (
+                        return (
                             <div
                                 key={summit.id || idx}
                                 className="p-4 rounded-xl bg-card border border-border/70"

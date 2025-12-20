@@ -20,7 +20,9 @@ export default interface Summit {
     id: string;
     timestamp: string;
     timezone?: string;
-    activity_id: string;
+    // activity_id is optional because public summit responses don't include it
+    // per Strava API guidelines (user data can only be shown to that user)
+    activity_id?: string;
     notes?: string;
     temperature?: number;
     precipitation?: number;
