@@ -137,6 +137,7 @@ src/app/
 - `favorite-challenges/route.ts` - Fetches user's favorite challenges (in-progress/not-started only). Now includes `lastProgressDate` and `lastProgressCount` fields.
 - `recent-summits/route.ts` - Fetches user's recent summits. Now includes `hasReport` and `summitNumber` fields.
 - `queue-status/route.ts` - Fetches count of activities waiting to be processed from event queue
+- `import-status/route.ts` - Fetches detailed import progress: totalActivities, processedActivities, pendingActivities, summitsFound, percentComplete, estimatedHoursRemaining, status, message. Used by ImportProgressCard.
 - `stats/route.ts` - Fetches dashboard quick stats (total peaks, elevation gained, summits this/last month, primary challenge progress)
 - All routes require authentication and use `getGoogleIdToken` for backend auth
 
@@ -256,6 +257,7 @@ For static ISR pages (`/peaks/[id]`, `/challenges/[id]`), always use the "Public
 - `DashboardPanel.tsx` - User dashboard panel (authenticated only). Wrapper component that renders DashboardContent.
 - `DashboardContent.tsx` - Dashboard content component (refactored December 2024). Shows login CTA button when not authenticated. When authenticated, shows:
   - Queue status indicator (when activities are processing) - polls `/api/dashboard/queue-status` every 10s when items in queue
+  - **Import Progress Card** - Detailed import progress when historical data is being processed. Shows progress bar, summits found, ETA. Polls every 15s.
   - **Quick Stats Bar** - 4-metric horizontal bar (total peaks, elevation gained, summits this month with trend, primary challenge progress)
   - **Hero Summit Card** - Celebratory card for most recent unreviewed summit with "Add Trip Report" CTA
   - **Unreviewed Summits Queue** - List of summits older than 72 hours without reports (max 5 items)
@@ -303,6 +305,7 @@ Action-oriented dashboard components (December 2024):
 - `UnreviewedSummitsQueue.tsx` - List of summits older than 72 hours without reports. Shows up to 5 items with quick "Add Report" buttons. Includes community message footer. Links to Profile tab for full backlog.
 - `UnconfirmedSummitsCard.tsx` - Card showing summits needing user review (low confidence auto-detections). Shows up to 3 items with inline confirm/deny buttons and "View Activity" links. Navigates to Profile → Review tab for full backlog.
 - `ProcessingToast.tsx` - Dismissible toast notification showing activity processing status. Renders via portal to document.body.
+- `ImportProgressCard.tsx` - Progress card for historical Strava import. Shows animated progress bar, summits found so far, estimated time remaining, and user-friendly status message. Polls `/api/dashboard/import-status` every 15 seconds when importing. Priority-based processing shows biggest adventures first.
 
 ##### Journal Components (`components/journal/`)
 Optimized journal system (December 2024) for viewing summit history:

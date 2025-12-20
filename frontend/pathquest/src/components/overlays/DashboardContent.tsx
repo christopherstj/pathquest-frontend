@@ -18,7 +18,7 @@ import Peak from "@/typeDefs/Peak";
 import ChallengeProgress from "@/typeDefs/ChallengeProgress";
 import DashboardStats from "@/typeDefs/DashboardStats";
 import UnconfirmedSummit from "@/typeDefs/UnconfirmedSummit";
-import { QuickStatsBar, HeroSummitCard, UnreviewedSummitsQueue, ProcessingToast, UnconfirmedSummitsCard } from "@/components/dashboard";
+import { QuickStatsBar, HeroSummitCard, UnreviewedSummitsQueue, ProcessingToast, UnconfirmedSummitsCard, ImportProgressCard, ImportStatus } from "@/components/dashboard";
 
 // Fetch recent summits from API route instead of server action
 const fetchRecentSummits = async (): Promise<(Peak & ManualPeakSummit)[] | null> => {
@@ -52,6 +52,18 @@ const fetchQueueStatus = async (): Promise<{ numProcessing: number }> => {
     if (!res.ok) {
         console.error("Failed to fetch queue status:", res.status);
         return { numProcessing: 0 };
+    }
+    return res.json();
+};
+
+// Fetch import status (detailed progress for historical import)
+const fetchImportStatus = async (): Promise<ImportStatus | null> => {
+    const res = await fetch("/api/dashboard/import-status", {
+        credentials: "include",
+    });
+    if (!res.ok) {
+        console.error("Failed to fetch import status:", res.status);
+        return null;
     }
     return res.json();
 };
@@ -123,6 +135,19 @@ const DashboardContent = ({ isActive = true, showHeader = false }: DashboardCont
             // Poll every 10 seconds if there are activities processing
             const numProcessing = query.state.data?.numProcessing ?? 0;
             return numProcessing > 0 ? 10000 : 30000;
+        },
+    });
+
+    // Import status with polling - detailed progress for historical imports
+    const { data: importStatus } = useQuery({
+        queryKey: ["importStatus"],
+        queryFn: fetchImportStatus,
+        enabled: shouldFetch,
+        staleTime: 10000,
+        refetchInterval: (query) => {
+            // Poll every 15 seconds if there are activities being imported
+            const status = query.state.data?.status;
+            return status === "processing" ? 15000 : 60000;
         },
     });
 
@@ -201,6 +226,11 @@ const DashboardContent = ({ isActive = true, showHeader = false }: DashboardCont
 
             {/* Processing Toast (fixed position, doesn't take up layout space) */}
             <ProcessingToast count={queueStatus?.numProcessing ?? 0} />
+
+            {/* Import Progress Card (shows when importing historical data) */}
+            {importStatus && importStatus.status === "processing" && (
+                <ImportProgressCard status={importStatus} />
+            )}
 
             {/* Quick Stats Bar */}
             <QuickStatsBar stats={dashboardStats ?? null} isLoading={statsLoading} />
