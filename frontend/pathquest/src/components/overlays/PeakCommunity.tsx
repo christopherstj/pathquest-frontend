@@ -16,7 +16,9 @@ import {
     Zap,
     Flame,
 } from "lucide-react";
+import Link from "next/link";
 import { useMapStore } from "@/providers/MapProvider";
+import { useIsAuthenticated } from "@/hooks/useRequireAuth";
 import Summit, { ConditionTag, Difficulty, ExperienceRating } from "@/typeDefs/Summit";
 
 // Difficulty display config
@@ -132,6 +134,7 @@ const formatTime = (timestamp: string, timezone?: string) => {
 
 const PeakCommunity = () => {
     const selectedPeakCommunityData = useMapStore((state) => state.selectedPeakCommunityData);
+    const { user: currentUser } = useIsAuthenticated();
 
     if (!selectedPeakCommunityData) {
         return (
@@ -178,27 +181,44 @@ const PeakCommunity = () => {
             ) : (
                 <div className="space-y-3">
                     {sortedSummits.map((summit, idx) => {
-                        // User section - no link to profile (profiles don't exist yet)
+                        // User section with link to profile
                         // Note: activity_id is intentionally not exposed in public summit responses
                         // per Strava API guidelines (user data can only be shown to that user)
-                        const userSection = (
-                            <div className="flex items-start justify-between mb-3">
-                                <div className="flex items-center gap-2">
-                                    <div className="w-8 h-8 rounded-full bg-secondary/10 flex items-center justify-center">
-                                        <User className="w-4 h-4 text-secondary" />
-                                    </div>
-                                    <div>
-                                        <p className="font-medium text-foreground text-sm">
-                                            {summit.user_name || "Anonymous Hiker"}
-                                        </p>
-                                        <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                                            <Calendar className="w-3 h-3" />
-                                            <span>{formatDate(summit.timestamp, summit.timezone)}</span>
-                                            <span className="opacity-50">•</span>
-                                            <span>{formatTime(summit.timestamp, summit.timezone)}</span>
-                                        </div>
+                        const userInfo = (
+                            <div className="flex items-center gap-2">
+                                <div className="w-8 h-8 rounded-full bg-secondary/10 flex items-center justify-center">
+                                    <User className="w-4 h-4 text-secondary" />
+                                </div>
+                                <div>
+                                    <p className="font-medium text-foreground text-sm group-hover:text-primary transition-colors">
+                                        {summit.user_name || "Anonymous Hiker"}
+                                    </p>
+                                    <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                                        <Calendar className="w-3 h-3" />
+                                        <span>{formatDate(summit.timestamp, summit.timezone)}</span>
+                                        <span className="opacity-50">•</span>
+                                        <span>{formatTime(summit.timestamp, summit.timezone)}</span>
                                     </div>
                                 </div>
+                            </div>
+                        );
+
+                        // Determine the profile link - use /profile for self, /users/:id for others
+                        const isCurrentUser = currentUser?.id && String(currentUser.id) === String(summit.user_id);
+                        const profileHref = isCurrentUser ? "/profile" : `/users/${summit.user_id}`;
+
+                        const userSection = (
+                            <div className="flex items-start justify-between mb-3">
+                                {summit.user_id ? (
+                                    <Link 
+                                        href={profileHref}
+                                        className="group"
+                                    >
+                                        {userInfo}
+                                    </Link>
+                                ) : (
+                                    userInfo
+                                )}
                             </div>
                         );
 

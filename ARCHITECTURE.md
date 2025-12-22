@@ -210,6 +210,7 @@ For static ISR pages (`/peaks/[id]`, `/challenges/[id]`), always use the "Public
 - `getIsUserSubscribed.ts` - Checks subscription status
 - `getUser.ts` - Gets user profile
 - `getUserProfile.ts` - Gets aggregated profile data (stats, accepted challenges, peaks for map)
+- `getUserChallengeProgress.ts` - Gets a user's progress on a specific challenge. Returns challenge details, progress info, peaks with summit status, and user info. Used by `/users/:userId/challenges/:challengeId` page.
 - `processHistoricalData.ts` - Initiates historical data processing
 - `searchUserPeaks.ts` - Searches user's summited peaks with advanced filtering (state, elevation range, multiple summits), sorting (summits, elevation, recent, oldest, name), and pagination
 - `getUserSummitStates.ts` - Gets list of states where user has summited peaks (for filter dropdown)
@@ -289,7 +290,7 @@ For static ISR pages (`/peaks/[id]`, `/challenges/[id]`), always use the "Public
   - **Show All on Map**: Button to zoom map to fit all summited peaks
   - When `compact` prop is true, hides internal tabs (tabs are in DiscoveryDrawer). Uses infinite scroll for pagination.
 - `ProfileJournal.tsx` - User's summit journal grouped by activity. Fetches all summits via `searchUserSummits`, groups by activity_id, fetches activity details, and renders `ActivityWithSummits` and `OrphanSummitCard` components. Similar to PeakUserActivity but for all peaks. Detects ownership via `useIsAuthenticated` hook and passes `isOwner` prop to child components to control edit/delete button visibility. Invalidates query cache when summits are deleted.
-- `ProfileChallenges.tsx` - User's accepted challenges list. Fetches user profile data and displays accepted challenges with progress bars. Used in the Challenges tab of the left pane (DiscoveryDrawer) when viewing a user profile. Shows challenge name, completion count (completed/total), and progress bar. Each challenge links to its detail page.
+- `ProfileChallenges.tsx` - User's accepted challenges list. Fetches user profile data and displays favorited challenges split into two sections: "In Progress" (sorted by progress percentage) and "Completed" (sorted by name). Completed challenges are styled with sky blue accent and checkmark icon. Each challenge shows name, completion count (completed/total), progress bar. Links to `/users/:userId/challenges/:challengeId` when viewing another user's profile, or `/challenges/:challengeId` when viewing your own. Uses `is_completed` flag from API when available.
 
 ##### Mobile Overlays (`components/overlays/mobile/`)
 - `peak-details-mobile.tsx` - Mobile-optimized peak detail view extracted from DetailBottomSheet
@@ -334,8 +335,10 @@ Unified navigation system (December 2024) with fixed 3-tab structure for both mo
 - `HomeTabContent.tsx` - Home tab content wrapper. Renders DashboardContent for authenticated users.
 - `ExploreTabContent.tsx` - Explore tab content with two modes:
   - Discovery mode: Shows visible peaks/challenges when no detail is selected
-  - Detail mode: Shows peak/challenge/activity/user detail views with sub-tabs
-  - Sub-tabs vary by content type (Peak: Community/Journal; Challenge: Progress/Peaks; Activity: Details/Summits/Analytics; Profile: Peaks/Journal/Challenges)
+  - Detail mode: Shows peak/challenge/activity/user/userChallenge detail views with sub-tabs
+  - Sub-tabs vary by content type (Peak: Community/Journal/Details; Challenge: Progress/Peaks; Activity: Details/Summits/Analytics; Profile: Stats/Peaks/Journal/Challenges; UserChallenge: Progress/Peaks)
+  - Profile views include a user header with avatar, name, and location
+  - UserChallenge view (`/users/:userId/challenges/:challengeId`) shows another user's progress on a challenge with peaks list indicating summited status
   - Maintains back stack for navigation within Explore tab
 - `ProfileTabContent.tsx` - Profile tab content for viewing YOUR data. Sub-tabs: Stats (default), Peaks, Journal, Challenges, Review. Note: Other users' profiles are viewed in the Explore tab. Shows login CTA button when not authenticated.
 - `ProfileStatsContent.tsx` - Stats sub-tab content showing highlight reel with: highest peak, climbing streak (monthly consecutive), geographic diversity (states/countries), peak type breakdown (14ers, 13ers, etc.), total elevation, challenges completed, year-over-year comparison.

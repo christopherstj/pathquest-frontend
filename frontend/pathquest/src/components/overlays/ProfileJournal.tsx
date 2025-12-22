@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useRef, useEffect, useCallback } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { motion } from "framer-motion";
 import { BookOpen, Loader2 } from "lucide-react";
 import { useInfiniteQuery, useQueryClient } from "@tanstack/react-query";
@@ -40,7 +40,7 @@ const ProfileJournal = ({ userId }: ProfileJournalProps) => {
     const [year, setYear] = useState<number | undefined>(undefined);
     const [hasReport, setHasReport] = useState<boolean | undefined>(undefined);
     
-    const scrollRef = useRef<HTMLDivElement>(null);
+    const loadMoreRef = useRef<HTMLDivElement>(null);
     const queryClient = useQueryClient();
     
     // Determine if current user is the owner of this profile
@@ -77,26 +77,23 @@ const ProfileJournal = ({ userId }: ProfileJournalProps) => {
     const allEntries = data?.pages.flatMap((page) => page.entries) ?? [];
     const totalCount = data?.pages[0]?.totalCount ?? 0;
 
-    // Load more when scrolling near the bottom
-    const handleScroll = useCallback(() => {
-        if (!scrollRef.current) return;
-        
-        const { scrollTop, scrollHeight, clientHeight } = scrollRef.current;
-        const scrolledToBottom = scrollTop + clientHeight >= scrollHeight - 200;
-        
-        if (scrolledToBottom && hasNextPage && !isFetchingNextPage) {
-            fetchNextPage();
-        }
-    }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
-
-    // Attach scroll listener
+    // Use IntersectionObserver to load more when sentinel element is visible
     useEffect(() => {
-        const element = scrollRef.current;
+        const element = loadMoreRef.current;
         if (!element) return;
-        
-        element.addEventListener("scroll", handleScroll);
-        return () => element.removeEventListener("scroll", handleScroll);
-    }, [handleScroll]);
+
+        const observer = new IntersectionObserver(
+            (entries) => {
+                if (entries[0].isIntersecting && hasNextPage && !isFetchingNextPage) {
+                    fetchNextPage();
+                }
+            },
+            { threshold: 0.1, rootMargin: "200px" }
+        );
+
+        observer.observe(element);
+        return () => observer.disconnect();
+    }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
 
     // Handle summit deletion - invalidate query to refresh
     const handleDeleted = () => {
@@ -117,10 +114,7 @@ const ProfileJournal = ({ userId }: ProfileJournalProps) => {
             />
 
             {/* Content */}
-            <div 
-                ref={scrollRef}
-                className="flex-1 overflow-y-auto px-4 pb-4 custom-scrollbar"
-            >
+            <div className="px-4 pb-4">
                 {isLoading ? (
                     <div className="flex items-center justify-center py-12">
                         <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
@@ -167,6 +161,9 @@ const ProfileJournal = ({ userId }: ProfileJournalProps) => {
                         ))}
                     </motion.div>
                 )}
+
+                {/* Sentinel element for infinite scroll */}
+                <div ref={loadMoreRef} className="h-1" />
 
                 {/* Loading More Indicator */}
                 {isFetchingNextPage && (

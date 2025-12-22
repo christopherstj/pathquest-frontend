@@ -2,8 +2,9 @@
 
 import React, { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { usePathname, useRouter } from "next/navigation";
+import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
-import { Mountain, Users, Route, Trophy, BarChart3, BookOpen, ArrowLeft, Compass, CheckCircle, LogIn, Plus, Info } from "lucide-react";
+import { Mountain, Users, Route, Trophy, BarChart3, BookOpen, ArrowLeft, Compass, CheckCircle, LogIn, Plus, Info, User, MapPin } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMapStore } from "@/providers/MapProvider";
@@ -19,6 +20,7 @@ import getNextPeakSuggestion from "@/actions/challenges/getNextPeakSuggestion";
 import getChallengeActivity from "@/actions/challenges/getChallengeActivity";
 import getActivityDetails from "@/actions/activities/getActivityDetails";
 import getUserProfile from "@/actions/users/getUserProfile";
+import getUserChallengeProgress from "@/actions/users/getUserChallengeProgress";
 import addChallengeFavorite from "@/actions/challenges/addChallengeFavorite";
 import deleteChallengeFavorite from "@/actions/challenges/deleteChallengeFavorite";
 
@@ -39,6 +41,7 @@ import PeakDetailsTab from "@/components/overlays/PeakDetailsTab";
 import ProfileSummitsList from "@/components/overlays/ProfileSummitsList";
 import ProfileJournal from "@/components/overlays/ProfileJournal";
 import ProfileChallenges from "@/components/overlays/ProfileChallenges";
+import ProfileStatsContent from "@/components/navigation/ProfileStatsContent";
 import ActivitySummitsList from "@/components/app/activities/ActivitySummitsList";
 import ActivityAnalytics from "@/components/app/activities/ActivityAnalytics";
 import PeakRow from "@/components/lists/peak-row";
@@ -70,7 +73,7 @@ const SubTabButton = ({ icon, label, isActive, onClick }: SubTabButtonProps) => 
         <button
             onClick={onClick}
             className={cn(
-                "flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all",
+                "flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all whitespace-nowrap flex-shrink-0",
                 isActive
                     ? "bg-background text-foreground shadow-sm"
                     : "text-muted-foreground hover:text-foreground"
@@ -128,6 +131,8 @@ const ExploreTabContent = ({ isActive }: ExploreTabContentProps) => {
     const [activityHoverCoords, setActivityHoverCoords] = useState<[number, number] | null>(null);
     const hasChallengeFitBoundsRef = useRef(false);
     const lastChallengeIdRef = useRef<number | null>(null);
+    const hasUserChallengeFitBoundsRef = useRef(false);
+    const lastUserChallengeKeyRef = useRef<string | null>(null);
 
     // Peak hover effects
     usePeakHoverMapEffects({ hoverCoords: hoveredPeakCoords });
@@ -142,30 +147,40 @@ const ExploreTabContent = ({ isActive }: ExploreTabContentProps) => {
     const challengeMatch = pathname.match(/^\/challenges\/([^\/]+)$/);
     const activityMatch = pathname.match(/^\/activities\/([^\/]+)$/);
     const userMatch = pathname.match(/^\/users\/([^\/]+)$/);
+    const userChallengeMatch = pathname.match(/^\/users\/([^\/]+)\/challenges\/([^\/]+)$/);
 
     const peakId = peakMatch?.[1] ?? null;
     const challengeId = challengeMatch?.[1] ? parseInt(challengeMatch[1], 10) : null;
     const activityId = activityMatch?.[1] ?? null;
     const userId = userMatch?.[1] ?? null;
+    
+    // User challenge page: /users/:userId/challenges/:challengeId
+    const userChallengeUserId = userChallengeMatch?.[1] ?? null;
+    const userChallengeChallengeId = userChallengeMatch?.[2] ?? null;
 
-    const hasDetail = Boolean(peakId || challengeId || activityId || userId);
-    const contentType = peakId ? "peak" : challengeId ? "challenge" : activityId ? "activity" : userId ? "profile" : "discovery";
+    const hasDetail = Boolean(peakId || challengeId || activityId || userId || userChallengeUserId);
+    const contentType = peakId ? "peak" 
+        : challengeId ? "challenge" 
+        : activityId ? "activity" 
+        : userChallengeUserId ? "userChallenge"
+        : userId ? "profile" 
+        : "discovery";
 
     // Set appropriate default sub-tab when content type changes
     // Community is now the default for peaks (core value prop)
     useEffect(() => {
         if (contentType === "peak") {
             setExploreSubTab("community");
-        } else if (contentType === "challenge") {
+        } else if (contentType === "challenge" || contentType === "userChallenge") {
             setExploreSubTab("progress");
         } else if (contentType === "activity") {
             setExploreSubTab("details");
         } else if (contentType === "profile") {
-            setExploreSubTab("peaks");
+            setExploreSubTab("stats");
         } else {
             setExploreSubTab("discovery");
         }
-    }, [contentType, peakId, challengeId, activityId, userId, setExploreSubTab]);
+    }, [contentType, peakId, challengeId, activityId, userId, userChallengeUserId, setExploreSubTab]);
 
     // Data fetching queries
     // placeholderData keeps previous data visible while refetching
@@ -247,6 +262,17 @@ const ExploreTabContent = ({ isActive }: ExploreTabContentProps) => {
         placeholderData: (previousData) => previousData,
     });
 
+    // User challenge progress query (for /users/:userId/challenges/:challengeId)
+    const { data: userChallengeData, isLoading: userChallengeLoading } = useQuery({
+        queryKey: ["userChallengeProgress", userChallengeUserId, userChallengeChallengeId],
+        queryFn: async () => {
+            if (!userChallengeUserId || !userChallengeChallengeId) return null;
+            return await getUserChallengeProgress(userChallengeUserId, userChallengeChallengeId);
+        },
+        enabled: Boolean(userChallengeUserId && userChallengeChallengeId) && isActive,
+        placeholderData: (previousData) => previousData,
+    });
+
     // Refetch queries when tab becomes active again
     // This ensures data is fresh when returning to the Explore tab
     useEffect(() => {
@@ -265,7 +291,10 @@ const ExploreTabContent = ({ isActive }: ExploreTabContentProps) => {
         if (userId) {
             queryClient.refetchQueries({ queryKey: ["userProfile", userId] });
         }
-    }, [isActive, peakId, challengeId, activityId, userId, queryClient]);
+        if (userChallengeUserId && userChallengeChallengeId) {
+            queryClient.refetchQueries({ queryKey: ["userChallengeProgress", userChallengeUserId, userChallengeChallengeId] });
+        }
+    }, [isActive, peakId, challengeId, activityId, userId, userChallengeUserId, userChallengeChallengeId, queryClient]);
 
     // Extract data from queries
     const peak = peakData?.success ? peakData.data?.peak : null;
@@ -290,6 +319,13 @@ const ExploreTabContent = ({ isActive }: ExploreTabContentProps) => {
     const profileStats = profileResult?.stats ?? null;
     const profilePeaksForMap = profileResult?.peaksForMap ?? [];
 
+    // User challenge data
+    const userChallengeResult = userChallengeData?.success ? userChallengeData.data : null;
+    const userChallengeChallenge = userChallengeResult?.challenge ?? null;
+    const userChallengeProgress = userChallengeResult?.progress ?? null;
+    const userChallengePeaks = userChallengeResult?.peaks ?? [];
+    const userChallengeUser = userChallengeResult?.user ?? null;
+
     // Activity map effects
     // Note: padding is now controlled by MapBackground based on drawer height
     const { flyToActivity } = useActivityMapEffects({
@@ -301,9 +337,11 @@ const ExploreTabContent = ({ isActive }: ExploreTabContentProps) => {
 
     // Profile map effects
     // Note: padding is now controlled by MapBackground based on drawer height
+    // Only show peaks on map when on the "peaks" subtab
     const { showOnMap: showProfileOnMap } = useProfileMapEffects({
         userId,
         peaks: profilePeaksForMap,
+        showPeaksOnMap: contentType === "profile" && exploreSubTab === "peaks",
     });
 
     // Share user's ascents and activities with map store for peak details
@@ -514,6 +552,71 @@ const ExploreTabContent = ({ isActive }: ExploreTabContentProps) => {
         };
     }, [map, challengePeaks, challengeId]);
 
+    // Set user challenge peaks on map (with summited peaks marked)
+    useEffect(() => {
+        if (!map || !userChallengePeaks || userChallengePeaks.length === 0 || contentType !== "userChallenge") return;
+
+        const userChallengeKey = `${userChallengeUserId}-${userChallengeChallengeId}`;
+        if (userChallengeKey !== lastUserChallengeKeyRef.current) {
+            hasUserChallengeFitBoundsRef.current = false;
+            lastUserChallengeKeyRef.current = userChallengeKey;
+        }
+
+        const setUserChallengePeaksOnMap = async () => {
+            let selectedPeaksSource = map.getSource("selectedPeaks") as mapboxgl.GeoJSONSource | undefined;
+            let attempts = 0;
+            const maxAttempts = 5;
+
+            while (!selectedPeaksSource && attempts < maxAttempts) {
+                attempts++;
+                await new Promise((resolve) => setTimeout(resolve, 300));
+                selectedPeaksSource = map.getSource("selectedPeaks") as mapboxgl.GeoJSONSource | undefined;
+            }
+
+            if (selectedPeaksSource) {
+                // Convert peaks with summits property set based on is_summited
+                const peaksForMap = userChallengePeaks.map(p => ({
+                    ...p,
+                    summits: p.is_summited ? 1 : 0,
+                }));
+                selectedPeaksSource.setData(convertPeaksToGeoJSON(peaksForMap));
+            }
+
+            if (map.getLayer("selectedPeaks")) {
+                map.moveLayer("selectedPeaks");
+            }
+        };
+
+        setUserChallengePeaksOnMap();
+
+        if (!hasUserChallengeFitBoundsRef.current) {
+            const peakCoords = userChallengePeaks
+                .filter((p) => p.location_coords)
+                .map((p) => p.location_coords as [number, number]);
+
+            if (peakCoords.length > 0) {
+                hasUserChallengeFitBoundsRef.current = true;
+                const bounds = new mapboxgl.LngLatBounds();
+                peakCoords.forEach((coord) => bounds.extend(coord));
+                map.fitBounds(bounds, {
+                    maxZoom: 12,
+                });
+            }
+        }
+
+        return () => {
+            if (!map || contentType !== "userChallenge") return;
+            try {
+                const selectedPeaksSource = map.getSource("selectedPeaks") as mapboxgl.GeoJSONSource | undefined;
+                if (selectedPeaksSource) {
+                    selectedPeaksSource.setData({ type: "FeatureCollection", features: [] });
+                }
+            } catch (error) {
+                console.debug("Failed to cleanup selectedPeaks map source:", error);
+            }
+        };
+    }, [map, userChallengePeaks, userChallengeUserId, userChallengeChallengeId, contentType]);
+
     // Navigation handlers
     const handlePeakClick = useCallback((id: string, coords?: [number, number]) => {
         if (pathname !== "/") {
@@ -600,7 +703,7 @@ const ExploreTabContent = ({ isActive }: ExploreTabContentProps) => {
         });
     }, [challengeId, isFavorited, requireAuth, queryClient]);
 
-    const isLoading = (peakId && peakLoading) || (challengeId && challengeLoading) || (activityId && activityLoading) || (userId && profileLoading);
+    const isLoading = (peakId && peakLoading) || (challengeId && challengeLoading) || (activityId && activityLoading) || (userId && profileLoading) || (userChallengeUserId && userChallengeLoading);
 
     // Render sub-tabs based on content type
     const renderSubTabs = () => {
@@ -648,6 +751,25 @@ const ExploreTabContent = ({ isActive }: ExploreTabContentProps) => {
             );
         }
 
+        if (contentType === "userChallenge") {
+            return (
+                <div className="flex gap-0.5 bg-muted/50 p-0.5 rounded-lg">
+                    <SubTabButton
+                        icon={<Trophy className="w-3.5 h-3.5" />}
+                        label="Progress"
+                        isActive={exploreSubTab === "progress"}
+                        onClick={() => setExploreSubTab("progress")}
+                    />
+                    <SubTabButton
+                        icon={<Mountain className="w-3.5 h-3.5" />}
+                        label="Peaks"
+                        isActive={exploreSubTab === "peaks"}
+                        onClick={() => setExploreSubTab("peaks")}
+                    />
+                </div>
+            );
+        }
+
         if (contentType === "activity") {
             return (
                 <div className="flex gap-0.5 bg-muted/50 p-0.5 rounded-lg">
@@ -675,7 +797,13 @@ const ExploreTabContent = ({ isActive }: ExploreTabContentProps) => {
 
         if (contentType === "profile") {
             return (
-                <div className="flex gap-0.5 bg-muted/50 p-0.5 rounded-lg">
+                <div className="flex gap-0.5 bg-muted/50 p-0.5 rounded-lg overflow-x-auto scrollbar-none">
+                    <SubTabButton
+                        icon={<BarChart3 className="w-3.5 h-3.5" />}
+                        label="Stats"
+                        isActive={exploreSubTab === "stats"}
+                        onClick={() => setExploreSubTab("stats")}
+                    />
                     <SubTabButton
                         icon={<Mountain className="w-3.5 h-3.5" />}
                         label="Peaks"
@@ -898,6 +1026,179 @@ const ExploreTabContent = ({ isActive }: ExploreTabContentProps) => {
             );
         }
 
+        // User challenge detail (viewing another user's progress)
+        if (contentType === "userChallenge") {
+            // Show error state if challenge or user not found
+            if (!userChallengeChallenge || !userChallengeUser) {
+                return (
+                    <div className="text-center py-10 px-4">
+                        <Trophy className="w-12 h-12 text-muted-foreground mx-auto mb-3 opacity-50" />
+                        <p className="text-foreground font-medium">Challenge Progress Not Found</p>
+                        <p className="text-sm text-muted-foreground mt-1 mb-4">
+                            This user or challenge doesn&apos;t exist.
+                        </p>
+                        <Button variant="outline" onClick={handleBack}>
+                            Go Back
+                        </Button>
+                    </div>
+                );
+            }
+
+            if (exploreSubTab === "peaks" && userChallengePeaks) {
+                // Sort peaks: summited first, then by elevation
+                const sortedPeaks = [...userChallengePeaks].sort((a, b) => {
+                    // Summited peaks first
+                    if (a.is_summited && !b.is_summited) return -1;
+                    if (!a.is_summited && b.is_summited) return 1;
+                    // Then by elevation
+                    return (b.elevation || 0) - (a.elevation || 0);
+                });
+
+                return (
+                    <div className="p-4 space-y-4">
+                        {/* User header */}
+                        <div className="flex items-center gap-3 p-3 rounded-xl bg-gradient-to-r from-secondary/10 to-primary/10 border border-secondary/20">
+                            <div className="w-10 h-10 rounded-full bg-secondary/20 border border-secondary/30 flex items-center justify-center overflow-hidden flex-shrink-0">
+                                {userChallengeUser?.pic ? (
+                                    <img
+                                        src={userChallengeUser.pic}
+                                        alt={userChallengeUser.name}
+                                        className="w-full h-full object-cover"
+                                    />
+                                ) : (
+                                    <User className="w-5 h-5 text-secondary" />
+                                )}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                                <p className="text-sm font-semibold text-foreground truncate">
+                                    {userChallengeUser?.name}&apos;s Progress
+                                </p>
+                                <p className="text-xs text-muted-foreground">
+                                    on {userChallengeChallenge?.name}
+                                </p>
+                            </div>
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                            <Mountain className="w-4 h-4 text-secondary" />
+                            <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+                                {userChallengePeaks.length} Peaks
+                            </h2>
+                        </div>
+                        <div className="space-y-1">
+                            {sortedPeaks.map((p) => (
+                                <PeakRow
+                                    key={p.id}
+                                    peak={{
+                                        ...p,
+                                        summits: p.is_summited ? 1 : 0,
+                                    }}
+                                    onPeakClick={handlePeakClick}
+                                    onHoverStart={handlePeakHoverStart}
+                                    onHoverEnd={handlePeakHoverEnd}
+                                />
+                            ))}
+                        </div>
+                    </div>
+                );
+            }
+
+            // Default to progress view - reuse ChallengeDetailsMobile but hide favorite button
+            const progressPercent = userChallengeProgress && userChallengeProgress.total > 0 
+                ? Math.round((userChallengeProgress.completed / userChallengeProgress.total) * 100) 
+                : 0;
+
+            return (
+                <div className="p-4 space-y-5">
+                    {/* User header */}
+                    <div className="flex items-center gap-3 p-3 rounded-xl bg-gradient-to-r from-secondary/10 to-primary/10 border border-secondary/20">
+                        <div className="w-10 h-10 rounded-full bg-secondary/20 border border-secondary/30 flex items-center justify-center overflow-hidden flex-shrink-0">
+                            {userChallengeUser.pic ? (
+                                <img
+                                    src={userChallengeUser.pic}
+                                    alt={userChallengeUser.name}
+                                    className="w-full h-full object-cover"
+                                />
+                            ) : (
+                                <User className="w-5 h-5 text-secondary" />
+                            )}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                            <p className="text-sm font-semibold text-foreground truncate">
+                                {userChallengeUser.name}&apos;s Progress
+                            </p>
+                            <p className="text-xs text-muted-foreground">
+                                on {userChallengeChallenge.name}
+                            </p>
+                        </div>
+                    </div>
+
+                    {/* Stats */}
+                    <div className="grid grid-cols-2 gap-2">
+                        <div className="p-3 rounded-xl bg-card border border-border/70">
+                            <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-0.5">
+                                Total Peaks
+                            </p>
+                            <p className="text-lg font-mono text-foreground">
+                                {userChallengeProgress?.total ?? userChallengePeaks.length}
+                            </p>
+                        </div>
+                        <div className="p-3 rounded-xl bg-card border border-border/70">
+                            <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-0.5">
+                                Summited
+                            </p>
+                            <p className="text-lg font-mono text-foreground">
+                                {userChallengeProgress?.completed ?? 0}
+                                <span className="text-xs text-muted-foreground ml-1">
+                                    ({progressPercent}%)
+                                </span>
+                            </p>
+                        </div>
+                    </div>
+
+                    {/* Progress Bar */}
+                    <div className="space-y-1.5">
+                        <div className="flex justify-between text-xs text-muted-foreground">
+                            <span>Progress</span>
+                            <span>
+                                {userChallengeProgress?.completed ?? 0} / {userChallengeProgress?.total ?? userChallengePeaks.length}
+                            </span>
+                        </div>
+                        <div className="h-1.5 bg-muted rounded-full overflow-hidden">
+                            <div
+                                className="h-full bg-secondary rounded-full transition-all duration-500"
+                                style={{ width: `${progressPercent}%` }}
+                            />
+                        </div>
+                        {progressPercent === 100 && (
+                            <div className="flex items-center gap-2 text-sm text-summited">
+                                <CheckCircle className="w-4 h-4" />
+                                <span>Challenge complete!</span>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Last progress */}
+                    {userChallengeProgress?.lastProgressDate && (
+                        <div className="text-xs text-muted-foreground">
+                            Last progress: {new Date(userChallengeProgress.lastProgressDate).toLocaleDateString()}
+                        </div>
+                    )}
+
+                    {/* My Progress button - show for logged in users */}
+                    {isAuthenticated && userChallengeChallengeId && (
+                        <Link
+                            href={`/challenges/${userChallengeChallengeId}`}
+                            className="flex items-center justify-center gap-2 w-full py-2.5 px-4 rounded-lg bg-secondary/10 hover:bg-secondary/20 border border-secondary/30 text-secondary font-medium text-sm transition-colors"
+                        >
+                            <User className="w-4 h-4" />
+                            My Progress
+                        </Link>
+                    )}
+                </div>
+            );
+        }
+
         // Activity detail
         if (contentType === "activity") {
             // Show error state if activity not found (404/unauthorized)
@@ -967,6 +1268,9 @@ const ExploreTabContent = ({ isActive }: ExploreTabContentProps) => {
                 );
             }
 
+            if (exploreSubTab === "stats") {
+                return <ProfileStatsContent userId={userId!} />;
+            }
             if (exploreSubTab === "peaks") {
                 return <ProfileSummitsList userId={userId!} compact />;
             }
@@ -976,17 +1280,8 @@ const ExploreTabContent = ({ isActive }: ExploreTabContentProps) => {
             if (exploreSubTab === "summits") {
                 return <ProfileChallenges userId={userId!} />;
             }
-            // Default to profile view
-            return (
-                <div className="p-4">
-                    <ProfileDetailsMobile
-                        user={profileUser}
-                        stats={profileStats}
-                        onClose={handleClose}
-                        onShowOnMap={showProfileOnMap}
-                    />
-                </div>
-            );
+            // Default to stats view
+            return <ProfileStatsContent userId={userId!} />;
         }
 
         return (
@@ -1000,8 +1295,55 @@ const ExploreTabContent = ({ isActive }: ExploreTabContentProps) => {
         );
     };
 
+    // Render profile header for public profiles
+    const renderProfileHeader = () => {
+        if (contentType !== "profile" || !profileUser) return null;
+
+        const location = [profileUser.city, profileUser.state, profileUser.country]
+            .filter(Boolean)
+            .join(", ");
+
+        return (
+            <div className="px-4 py-3 border-b border-border/60 bg-gradient-to-b from-primary/5 to-transparent">
+                <div className="flex items-center gap-3">
+                    {/* Avatar */}
+                    <div className="w-12 h-12 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center overflow-hidden flex-shrink-0">
+                        {profileUser.pic ? (
+                            <img
+                                src={profileUser.pic}
+                                alt={profileUser.name || "User"}
+                                className="w-full h-full object-cover"
+                            />
+                        ) : (
+                            <User className="w-6 h-6 text-primary" />
+                        )}
+                    </div>
+                    
+                    {/* Name and location */}
+                    <div className="flex-1 min-w-0">
+                        <h1 
+                            className="text-lg font-bold text-foreground truncate"
+                            style={{ fontFamily: "var(--font-display)" }}
+                        >
+                            {profileUser.name || "Anonymous"}
+                        </h1>
+                        {location && (
+                            <div className="flex items-center gap-1 text-sm text-muted-foreground">
+                                <MapPin className="w-3 h-3 flex-shrink-0" />
+                                <span className="truncate">{location}</span>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            </div>
+        );
+    };
+
     return (
         <div className="flex flex-col h-full">
+            {/* Profile header (only for profile views) */}
+            {renderProfileHeader()}
+
             {/* Sub-tab bar (only show when detail is open) */}
             {hasDetail && (
                 <div className="px-4 py-2 border-b border-border/60 shrink-0 flex items-center gap-2">

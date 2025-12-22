@@ -10,6 +10,8 @@ import mapboxgl from "mapbox-gl";
 interface UseProfileMapEffectsOptions {
     userId: string | null | undefined;
     peaks?: Peak[] | null;
+    /** Only show peaks on map when this is true (e.g., on the Peaks subtab) */
+    showPeaksOnMap?: boolean;
 }
 
 const MAX_ATTEMPTS = 10;
@@ -26,6 +28,7 @@ const RETRY_DELAY = 300;
 export function useProfileMapEffects({
     userId,
     peaks,
+    showPeaksOnMap = false,
 }: UseProfileMapEffectsOptions) {
     const map = useMapStore((state) => state.map);
     const setDisablePeaksSearch = useMapStore((state) => state.setDisablePeaksSearch);
@@ -88,67 +91,80 @@ export function useProfileMapEffects({
         };
     }, [userId, setDisablePeaksSearch, map]);
 
-    // Fit map to peaks bounds
+    // Fit map to peaks bounds (only when showing peaks)
     useEffect(() => {
-        if (bounds && map) {
-            try {
-                // Check if bounds are valid before calling fitBounds
-                if (bounds.getNorth && bounds.getSouth && bounds.getEast && bounds.getWest) {
-                    const north = bounds.getNorth();
-                    const south = bounds.getSouth();
-                    const east = bounds.getEast();
-                    const west = bounds.getWest();
-                    
-                    // Ensure bounds are valid (not NaN and have valid range)
-                    if (
-                        !isNaN(north) && !isNaN(south) && !isNaN(east) && !isNaN(west) &&
-                        north !== south && east !== west
-                    ) {
-                        map.fitBounds(bounds, {
-                            maxZoom: 10,
-                        });
-                    }
+        if (!showPeaksOnMap || !bounds || !map) return;
+        
+        try {
+            // Check if bounds are valid before calling fitBounds
+            if (bounds.getNorth && bounds.getSouth && bounds.getEast && bounds.getWest) {
+                const north = bounds.getNorth();
+                const south = bounds.getSouth();
+                const east = bounds.getEast();
+                const west = bounds.getWest();
+                
+                // Ensure bounds are valid (not NaN and have valid range)
+                if (
+                    !isNaN(north) && !isNaN(south) && !isNaN(east) && !isNaN(west) &&
+                    north !== south && east !== west
+                ) {
+                    map.fitBounds(bounds, {
+                        maxZoom: 10,
+                    });
                 }
-            } catch (error) {
-                console.debug("Failed to fit bounds:", error);
+            }
+        } catch (error) {
+            console.debug("Failed to fit bounds:", error);
+        }
+    }, [bounds, map, showPeaksOnMap]);
+
+    // Show user peaks on the map (only when showPeaksOnMap is true)
+    useEffect(() => {
+        if (!map || !userId) return;
+
+        const selectedPeaksSource = map.getSource("selectedPeaks") as mapboxgl.GeoJSONSource | undefined;
+        
+        if (showPeaksOnMap && peaks && peaks.length > 0) {
+            // Show peaks on map
+            const setUserPeaksOnMap = async () => {
+                let source = selectedPeaksSource;
+                let attempts = 0;
+
+                while (!source && attempts < MAX_ATTEMPTS) {
+                    attempts++;
+                    await new Promise((resolve) => setTimeout(resolve, RETRY_DELAY));
+                    source = map.getSource("selectedPeaks") as mapboxgl.GeoJSONSource | undefined;
+                }
+
+                if (source) {
+                    source.setData(convertPeaksToGeoJSON(peaks));
+                }
+
+                // Move selectedPeaks layer to the top
+                if (map.getLayer("selectedPeaks")) {
+                    map.moveLayer("selectedPeaks");
+                }
+            };
+
+            setUserPeaksOnMap();
+        } else {
+            // Clear peaks from map when not on peaks tab
+            if (selectedPeaksSource) {
+                selectedPeaksSource.setData({
+                    type: "FeatureCollection",
+                    features: [],
+                });
             }
         }
-    }, [bounds, map]);
 
-    // Show user peaks on the map
-    useEffect(() => {
-        if (!map || !peaks || peaks.length === 0) return;
-
-        const setUserPeaksOnMap = async () => {
-            let selectedPeaksSource = map.getSource("selectedPeaks") as mapboxgl.GeoJSONSource | undefined;
-            let attempts = 0;
-
-            while (!selectedPeaksSource && attempts < MAX_ATTEMPTS) {
-                attempts++;
-                await new Promise((resolve) => setTimeout(resolve, RETRY_DELAY));
-                selectedPeaksSource = map.getSource("selectedPeaks") as mapboxgl.GeoJSONSource | undefined;
-            }
-
-            if (selectedPeaksSource) {
-                selectedPeaksSource.setData(convertPeaksToGeoJSON(peaks));
-            }
-
-            // Move selectedPeaks layer to the top
-            if (map.getLayer("selectedPeaks")) {
-                map.moveLayer("selectedPeaks");
-            }
-        };
-
-        setUserPeaksOnMap();
-
-        // Cleanup: clear selected peaks (only if viewing a profile)
+        // Cleanup: clear selected peaks when unmounting
         return () => {
-            if (!map || !userId) return;
+            if (!map) return;
 
             try {
-                const selectedPeaksSource = map.getSource("selectedPeaks") as mapboxgl.GeoJSONSource | undefined;
-                if (selectedPeaksSource) {
-                    selectedPeaksSource.setData({
+                const source = map.getSource("selectedPeaks") as mapboxgl.GeoJSONSource | undefined;
+                if (source) {
+                    source.setData({
                         type: "FeatureCollection",
                         features: [],
                     });
@@ -157,7 +173,7 @@ export function useProfileMapEffects({
                 console.debug("Failed to cleanup selectedPeaks map source:", error);
             }
         };
-    }, [map, peaks, userId]);
+    }, [map, peaks, userId, showPeaksOnMap]);
 
     // Show peaks on map function
     const showOnMap = useCallback(() => {

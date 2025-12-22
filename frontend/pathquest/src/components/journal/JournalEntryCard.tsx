@@ -249,8 +249,8 @@ const JournalEntryCard = ({ entry, isOwner, onDeleted }: JournalEntryCardProps) 
                         </button>
                     ) : null}
 
-                    {/* Activity Link */}
-                    {entry.activity && (
+                    {/* Activity Link - only show to owner (Strava compliance) */}
+                    {isOwner && entry.activity && (
                         <Link
                             href={`/activities/${entry.activity.id}`}
                             onClick={(e) => e.stopPropagation()}
@@ -377,8 +377,8 @@ const JournalEntryCard = ({ entry, isOwner, onDeleted }: JournalEntryCardProps) 
                                 </div>
                             )}
 
-                            {/* Activity Details */}
-                            {entry.activity && (
+                            {/* Activity Details - only show to owner (Strava compliance) */}
+                            {isOwner && entry.activity && (
                                 <div className="flex items-center gap-2 text-xs text-muted-foreground">
                                     <Route className="w-3 h-3" />
                                     <span>{entry.activity.title}</span>
