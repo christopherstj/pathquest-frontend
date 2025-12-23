@@ -102,7 +102,7 @@ src/app/
   - States/countries climbed
   - Peak type breakdown (14ers, 13ers, etc.)
   - Accepted challenges with progress bars
-  - All summited peaks displayed on map via `useProfileMapEffects` hook
+  - All summited peaks displayed on map via `useProfileMapEffects` hook (only when viewing the Profile **Peaks** sub-tab)
   - Searchable peaks and summits lists
 
 ##### Legacy Routes (Removed)

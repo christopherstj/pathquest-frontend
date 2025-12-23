@@ -56,15 +56,30 @@ export function useProfileMapEffects({
         }
     }, [peaks]);
 
-    // Disable peaks search when profile opens
+    // Disable peaks search only when the Profile "Peaks" subtab is active.
+    // For other profile subtabs (Stats/Journal/Challenges), allow normal peak searching.
     useEffect(() => {
         if (!userId) return;
 
-        // Set both the module-level flag (immediate) and store flag
+        // When not on Peaks subtab, ensure search is enabled.
+        if (!showPeaksOnMap) {
+            setPeaksSearchDisabled(false);
+            setDisablePeaksSearch(false);
+
+            // Trigger peaks refresh when leaving Peaks subtab (or entering profile on non-peaks subtab).
+            // Note: Don't reset map padding here - it's controlled by MapBackground based on drawer height.
+            if (map) {
+                setTimeout(() => {
+                    map.fire("moveend");
+                }, 50);
+            }
+            return;
+        }
+
+        // Peaks subtab active: disable general peaks search and clear any already-loaded peaks.
         setPeaksSearchDisabled(true);
         setDisablePeaksSearch(true);
 
-        // Clear the peaks source to remove any already-loaded peaks
         if (map) {
             const peaksSource = map.getSource("peaks") as mapboxgl.GeoJSONSource | undefined;
             if (peaksSource) {
@@ -79,15 +94,14 @@ export function useProfileMapEffects({
             setPeaksSearchDisabled(false);
             setDisablePeaksSearch(false);
 
-            // Trigger peaks refresh when panel closes
-            // Note: Don't reset map padding here - it's controlled by MapBackground based on drawer height
+            // Trigger peaks refresh when leaving Peaks subtab / closing profile.
             if (map) {
                 setTimeout(() => {
                     map.fire("moveend");
                 }, 50);
             }
         };
-    }, [userId, setDisablePeaksSearch, map]);
+    }, [userId, showPeaksOnMap, setDisablePeaksSearch, map]);
 
     // Fit map to peaks bounds (only when showing peaks)
     useEffect(() => {
