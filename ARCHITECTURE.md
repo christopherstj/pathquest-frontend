@@ -705,13 +705,41 @@ Next.js middleware for legacy route redirects:
   - Not summited: muted green (#4d7a57)
 - `selectedPeaks` - Peak markers for challenges/activities/profiles with unified summit-based styling:
   - **Fill color is strictly blue/green** - never changes on hover/selection
-  - Summited (summits > 0): sky blue (#5b9bd5), 9px radius
-  - Not summited: muted green (#4d7a57), 7px radius
+  - Summited (summits > 0): sky blue (#5b9bd5)
+  - Not summited: muted green (#4d7a57)
+  - Default radius: 7px (matches discovery peaks)
   - Hover: radius increases to 10px, stroke changes to pink/amber (#d66ba0) ring, fill stays blue/green
 - `activityHover` - Hover marker from elevation profile (created dynamically)
 - `peakHover` - Hover ring for peak rows in discovery list (transparent fill, pink/amber #d66ba0 stroke, created dynamically by `usePeakHoverMapEffects`)
 
-**Unified Summit Styling Rule**: All peak markers use the same color rule - blue if summited, green if not. The `summits` property is normalized in `convertPeaksToGeoJSON` from various sources (`summits`, `ascents.length`, or `is_summited`). Hover/selection indicators may change stroke color and radius, but never the fill color.
+**Unified Summit Styling Rule**: All peak markers use the same color rule - blue if summited, green if not. The `summits` property is normalized in `convertPeaksToGeoJSON` from various sources (`summits`, `summit_count`, `ascents.length`, or `is_summited`). Hover/selection indicators may change stroke color and radius, but never the fill color.
+
+### Peak Marker Interactions
+
+**Click-to-Popup Behavior**: Clicking a peak dot (either `peaks-point` or `selectedPeaks`) opens a popup instead of navigating directly. The popup displays:
+- Peak name
+- Elevation (in feet)
+- Location (county/state/country)
+- Public summit count (total public summits from all users)
+- Personal summit count (user's own summits, if logged in)
+- **Details** button that navigates to the peak detail page (`/peaks/:id`)
+
+This provides a quick preview without forcing navigation, improving exploration UX.
+
+**Popup Implementation**:
+- `PeakMarkerPopup` component (`src/components/map/PeakMarkerPopup.tsx`)
+- `renderPopup` helper returns the popup instance for cleanup
+- `activePopupRef` in MapBackground ensures only one popup is open at a time
+- Click handlers are bound to invisible hitbox layers (`peaks-point-hitbox`, `selectedPeaks-hitbox`) with a larger radius to make clicks reliable even with small dots / pitch / 3D terrain.
+- Cluster clicks still zoom to expand (no popup)
+
+**Popup Close UX**:
+- The Mapbox default close button ("X") is disabled (no top-right close icon).
+- Popups close via clicking elsewhere on the map (Mapbox `closeOnClick`).
+
+**Data Requirements**: All peak payloads used for map markers must include:
+- `public_summits` - count of public summits from all users (API responsibility)
+- `summits` or `summit_count` or `ascents` - for personal summit display (normalized by `convertPeaksToGeoJSON`)
 
 ### Map State
 - Stored in Zustand store (map instance) and kept mounted via root layout background

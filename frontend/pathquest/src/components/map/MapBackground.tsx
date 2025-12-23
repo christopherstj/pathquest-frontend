@@ -14,6 +14,8 @@ import updateMapURL from "@/helpers/updateMapURL";
 import getTrueMapCenter from "@/helpers/getTrueMapCenter";
 import { getMapboxToken } from "@/lib/map/getMapboxToken";
 import { useInitialMapLocation } from "@/hooks/use-initial-map-location";
+import renderPopup from "@/lib/map/renderPopup";
+import { PeakMarkerPopup } from "@/components/map/PeakMarkerPopup";
 
 // Debounce utility function
 const debounce = <T extends (...args: any[]) => any>(
@@ -66,6 +68,9 @@ const MapBackground = () => {
     const setVisibleChallengesRef = useRef(setVisibleChallenges);
     const setIsZoomedOutTooFarRef = useRef(setIsZoomedOutTooFar);
     
+    // Active popup ref - allows closing previous popup when a new one is opened
+    const activePopupRef = useRef<mapboxgl.Popup | null>(null);
+    
     // Keep store function refs up to date
     useEffect(() => {
         setMapRef.current = setMap;
@@ -104,6 +109,62 @@ const MapBackground = () => {
             setVisibleChallengesRef.current([]);
         }
     }, []);
+
+    /**
+     * Opens a peak marker popup for the given feature.
+     * Closes any previously open popup first.
+     * Extracts peak data from feature.properties and renders PeakMarkerPopup.
+     */
+    const openPeakPopup = useCallback((feature: mapboxgl.MapboxGeoJSONFeature, mapInstance: mapboxgl.Map) => {
+        const props = feature.properties;
+        const id = props?.id;
+        if (!id) return;
+
+        const coords = (feature.geometry as GeoJSON.Point).coordinates as [number, number];
+
+        // Mapbox feature properties can be strings; normalize to numbers where needed
+        const name = props?.name as string | undefined;
+        const elevationRaw = props?.elevation;
+        const publicSummitsRaw = props?.public_summits;
+        // User summits can come from summits, summit_count, or ascents (already normalized in convertPeaksToGeoJSON)
+        const userSummitsRaw = props?.summits ?? props?.summit_count;
+
+        const elevation = elevationRaw != null ? Number(elevationRaw) : undefined;
+        const publicSummits = publicSummitsRaw != null ? Number(publicSummitsRaw) : undefined;
+        const userSummits = userSummitsRaw != null ? Number(userSummitsRaw) : undefined;
+
+        // Location fields
+        const county = props?.county as string | undefined;
+        const state = props?.state as string | undefined;
+        const country = props?.country as string | undefined;
+
+        // Challenge info
+        const numChallengesRaw = props?.num_challenges;
+        const numChallenges = numChallengesRaw != null ? Number(numChallengesRaw) : undefined;
+
+        // Close any existing popup
+        activePopupRef.current?.remove();
+
+        // Render new popup
+        activePopupRef.current = renderPopup(
+            mapInstance,
+            coords,
+            <PeakMarkerPopup
+                name={name}
+                elevation={Number.isFinite(elevation) ? elevation : undefined}
+                county={county}
+                state={state}
+                country={country}
+                publicSummits={Number.isFinite(publicSummits) ? publicSummits : undefined}
+                userSummits={Number.isFinite(userSummits) ? userSummits : undefined}
+                numChallenges={Number.isFinite(numChallenges) ? numChallenges : undefined}
+                onDetails={() => {
+                    activePopupRef.current?.remove();
+                    routerRef.current.push(`/peaks/${id}`);
+                }}
+            />
+        );
+    }, [routerRef]);
 
     useEffect(() => {
         // Skip the initial render - only apply style changes after user interaction
@@ -295,6 +356,23 @@ const MapBackground = () => {
                 });
             }
 
+            // Invisible hitbox layer for more reliable clicking on small dots (especially with pitch/terrain)
+            // This does not affect visuals but increases the interactive target size.
+            if (!newMap.getLayer("peaks-point-hitbox")) {
+                newMap.addLayer({
+                    id: "peaks-point-hitbox",
+                    type: "circle",
+                    source: "peaks",
+                    filter: ["!", ["has", "point_count"]],
+                    paint: {
+                        "circle-radius": 14,
+                        "circle-color": "rgba(0,0,0,0)",
+                        "circle-stroke-width": 0,
+                        "circle-opacity": 1
+                    }
+                });
+            }
+
             // Activities Source (for GPX lines from user activities)
             // Added FIRST so it renders below peak markers
             if (!newMap.getSource("activities")) {
@@ -408,6 +486,21 @@ const MapBackground = () => {
                     }
                 });
             }
+
+            // Invisible hitbox for selected peaks as well (keeps click behavior consistent and reliable)
+            if (!newMap.getLayer("selectedPeaks-hitbox")) {
+                newMap.addLayer({
+                    id: "selectedPeaks-hitbox",
+                    type: "circle",
+                    source: "selectedPeaks",
+                    paint: {
+                        "circle-radius": 14,
+                        "circle-color": "rgba(0,0,0,0)",
+                        "circle-stroke-width": 0,
+                        "circle-opacity": 1
+                    }
+                });
+            }
             
             // Trigger initial fetch
             // We need to wait for map to be ready, which style.load implies, 
@@ -418,25 +511,12 @@ const MapBackground = () => {
             fetchVisibleChallenges(newMap);
         });
 
-        // Interactions
-        newMap.on("click", "peaks-point", (e) => {
+        // Interactions - click opens popup, not direct navigation
+        // Use hitbox layers so clicks are reliable even with small dots / pitch / 3D terrain.
+        newMap.on("click", "peaks-point-hitbox", (e) => {
             const feature = e.features?.[0];
             if (feature) {
-                const id = feature.properties?.id;
-                if (id) {
-                     // Navigate to peak detail page (URL-driven overlay via UrlOverlayManager)
-                     routerRef.current.push(`/peaks/${id}`);
-                }
-                
-                // Fly to (mark as programmatic so URL updates after completion, not during)
-                isUserInteraction.current = false;
-                const coords = (feature.geometry as any).coordinates;
-                newMap.flyTo({
-                    center: coords,
-                    zoom: 14,
-                    pitch: 60,
-                    essential: true
-                });
+                openPeakPopup(feature, newMap);
             }
         });
 
@@ -460,27 +540,25 @@ const MapBackground = () => {
             });
         });
 
-        newMap.on("mouseenter", "peaks-point", () => {
+        newMap.on("mouseenter", "peaks-point-hitbox", () => {
             newMap.getCanvas().style.cursor = "pointer";
         });
-        newMap.on("mouseleave", "peaks-point", () => {
+        newMap.on("mouseleave", "peaks-point-hitbox", () => {
             newMap.getCanvas().style.cursor = "";
         });
 
-        // Selected peaks interactions (for challenge detail view)
-        newMap.on("click", "selectedPeaks", (e) => {
+        // Selected peaks interactions (for challenge/activity/profile detail views)
+        // Click opens popup with peak info; Details button navigates
+        newMap.on("click", "selectedPeaks-hitbox", (e) => {
             const feature = e.features?.[0];
             if (feature) {
-                const id = feature.properties?.id;
-                if (id) {
-                    routerRef.current.push(`/peaks/${id}`);
-                }
+                openPeakPopup(feature, newMap);
             }
         });
-        newMap.on("mouseenter", "selectedPeaks", () => {
+        newMap.on("mouseenter", "selectedPeaks-hitbox", () => {
             newMap.getCanvas().style.cursor = "pointer";
         });
-        newMap.on("mouseleave", "selectedPeaks", () => {
+        newMap.on("mouseleave", "selectedPeaks-hitbox", () => {
             newMap.getCanvas().style.cursor = "";
         });
 

@@ -26,6 +26,7 @@ export default interface SummitWithPeak {
         county?: string;
         state?: string;
         country?: string;
+        public_summits?: number;
     };
 }
 
