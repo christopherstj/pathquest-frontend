@@ -125,3 +125,34 @@
 .mapboxgl-popup-tip {
     border-top-color: var(--card) !important;
 }
+
+/* Safe Area Support for iOS Safari/Brave */
+@supports (padding: max(0px)) {
+    .safe-area-pb {
+        padding-bottom: max(env(safe-area-inset-bottom), 0px);
+    }
+    .safe-area-pt {
+        padding-top: max(env(safe-area-inset-top), 0px);
+    }
+    .safe-area-pl {
+        padding-left: max(env(safe-area-inset-left), 0px);
+    }
+    .safe-area-pr {
+        padding-right: max(env(safe-area-inset-right), 0px);
+    }
+}
+
+/* Mobile Safari/Brave viewport height fix */
+@supports (-webkit-touch-callout: none) {
+    /* iOS Safari */
+    .h-screen-mobile {
+        height: -webkit-fill-available;
+    }
+}
+
+/* Fallback for browsers that support dvh */
+@supports (height: 100dvh) {
+    .h-screen-mobile {
+        height: 100dvh;
+    }
+}
