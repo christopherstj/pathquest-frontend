@@ -7,25 +7,13 @@ import { useMapStore } from "@/providers/MapProvider";
 import getNewData from "@/helpers/getNewData";
 import { useRouter, useSearchParams } from "next/navigation";
 import { searchChallengesClient } from "@/lib/client/searchChallengesClient";
-import { useIsMobile } from "@/hooks/use-mobile";
+import { useRouterRef } from "@/hooks/use-stable-ref";
+import { useMapPadding } from "@/hooks/use-map-padding";
 import getMapStateFromURL from "@/helpers/getMapStateFromURL";
 import updateMapURL from "@/helpers/updateMapURL";
 import getTrueMapCenter from "@/helpers/getTrueMapCenter";
 import { getMapboxToken } from "@/lib/map/getMapboxToken";
-import { useTabStore, type DrawerHeight } from "@/store/tabStore";
 import { useInitialMapLocation } from "@/hooks/use-initial-map-location";
-
-// Heights for drawer (same as ContentSheet) - used for map padding on mobile
-const DRAWER_HEIGHTS = {
-    collapsed: 60,
-    halfway: typeof window !== "undefined" ? window.innerHeight * 0.45 : 400,
-    expanded: typeof window !== "undefined" ? window.innerHeight - 140 : 600,
-};
-
-// Desktop panel widths (same as DesktopNavLayout) - used for map padding on desktop
-const DESKTOP_PANEL_WIDTH_EXPANDED = 380;
-const DESKTOP_PANEL_WIDTH_COLLAPSED = 64;
-const DESKTOP_PANEL_MARGIN = 16; // left margin of panel (left-4 = 16px)
 
 // Debounce utility function
 const debounce = <T extends (...args: any[]) => any>(
@@ -60,14 +48,11 @@ const MapBackground = () => {
     const setIsSatellite = useMapStore((state) => state.setIsSatellite);
     const router = useRouter();
     const searchParams = useSearchParams();
-    const isMobile = useIsMobile(1024);
     const isInitialStyleSet = useRef(false);
     // Initialize as false to suppress URL writes until location is resolved
     const isUserInteraction = useRef(false);
     // Track if we've already handled location resolution
     const hasResolvedLocation = useRef(false);
-    const drawerHeight = useTabStore((state) => state.drawerHeight);
-    const isDesktopPanelCollapsed = useTabStore((state) => state.isDesktopPanelCollapsed);
     
     // Get initial map location with fallback chain:
     // URL params → browser geolocation → IP geolocation → default (Boulder)
@@ -75,20 +60,22 @@ const MapBackground = () => {
     const initialLocation = useInitialMapLocation();
     
     // Use refs for callbacks to avoid them being dependencies
-    const routerRef = useRef(router);
+    const routerRef = useRouterRef(router);
     const setMapRef = useRef(setMap);
     const setVisiblePeaksRef = useRef(setVisiblePeaks);
     const setVisibleChallengesRef = useRef(setVisibleChallenges);
     const setIsZoomedOutTooFarRef = useRef(setIsZoomedOutTooFar);
     
-    // Keep refs up to date
+    // Keep store function refs up to date
     useEffect(() => {
-        routerRef.current = router;
         setMapRef.current = setMap;
         setVisiblePeaksRef.current = setVisiblePeaks;
         setVisibleChallengesRef.current = setVisibleChallenges;
         setIsZoomedOutTooFarRef.current = setIsZoomedOutTooFar;
     });
+
+    // Map padding based on UI layout (mobile drawer / desktop panel)
+    useMapPadding({ map });
 
     const fetchVisibleChallenges = useCallback(async (mapInstance: mapboxgl.Map) => {
         // Don't search when zoomed out too far (prevents massive result sets)
@@ -132,47 +119,6 @@ const MapBackground = () => {
                 : "mapbox://styles/mapbox/outdoors-v12"
         );
     }, [isSatellite, map]);
-
-    // Set map padding based on UI layout
-    // Mobile: bottom padding for drawer
-    // Desktop: left padding for side panel
-    // This is the ONLY place that should control map padding
-    useEffect(() => {
-        if (!map) return;
-        
-        if (isMobile) {
-            // Mobile: bottom padding for drawer
-            const getDrawerPixelHeight = (height: DrawerHeight): number => {
-                if (typeof window === "undefined") return DRAWER_HEIGHTS[height];
-                switch (height) {
-                    case "collapsed": return 60;
-                    case "halfway": return window.innerHeight * 0.45;
-                    case "expanded": return window.innerHeight - 140;
-                }
-            };
-            
-            const bottomPadding = getDrawerPixelHeight(drawerHeight) + 20; // Add small buffer
-            map.setPadding({
-                top: 20,
-                bottom: bottomPadding,
-                left: 0,
-                right: 0,
-            });
-        } else {
-            // Desktop: left padding for side panel
-            const panelWidth = isDesktopPanelCollapsed 
-                ? DESKTOP_PANEL_WIDTH_COLLAPSED 
-                : DESKTOP_PANEL_WIDTH_EXPANDED;
-            const leftPadding = panelWidth + DESKTOP_PANEL_MARGIN + 20; // panel + margin + buffer
-            
-            map.setPadding({
-                top: 20,
-                bottom: 20,
-                left: leftPadding,
-                right: 20,
-            });
-        }
-    }, [map, isMobile, drawerHeight, isDesktopPanelCollapsed]);
 
     // Handle flying to resolved location after location hook completes
     // This runs once after the location fallback chain resolves

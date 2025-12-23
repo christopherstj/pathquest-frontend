@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useRef, useCallback } from "react";
-import mapboxgl from "mapbox-gl";
 import { useMapStore } from "@/providers/MapProvider";
+import { waitForMapSource, clearMapSource } from "@/lib/map/waitForMapSource";
 
 interface UseMapSourceOptions {
     maxAttempts?: number;
@@ -27,16 +27,7 @@ export function useMapSource<T>(
     const setSourceData = useCallback(async () => {
         if (!map || !dataRef.current) return;
 
-        let source = map.getSource(sourceName) as mapboxgl.GeoJSONSource | undefined;
-        let attempts = 0;
-
-        // Retry logic to wait for source to be available
-        while (!source && attempts < maxAttempts) {
-            attempts++;
-            await new Promise((resolve) => setTimeout(resolve, retryDelay));
-            source = map.getSource(sourceName) as mapboxgl.GeoJSONSource | undefined;
-        }
-
+        const source = await waitForMapSource(map, sourceName, { maxAttempts, retryDelay });
         if (source && dataRef.current) {
             source.setData(convertToGeoJSON(dataRef.current));
         }
@@ -47,23 +38,8 @@ export function useMapSource<T>(
             setSourceData();
         }
 
-        // Cleanup: clear source data when unmounting or data changes
         return () => {
-            if (!map) return;
-
-            try {
-                const source = map.getSource(sourceName) as mapboxgl.GeoJSONSource | undefined;
-                if (source) {
-                    source.setData({
-                        type: "FeatureCollection",
-                        features: [],
-                    });
-                }
-            } catch (error) {
-                // Map may be in invalid state (being destroyed, not loaded, etc.)
-                // Silently ignore cleanup errors as they're non-critical
-                console.debug(`Failed to cleanup ${sourceName} map source:`, error);
-            }
+            clearMapSource(map, sourceName);
         };
     }, [map, data, sourceName, setSourceData]);
 
@@ -76,23 +52,11 @@ export function useMapSource<T>(
 export function useClearMapSource(sourceName: string) {
     const map = useMapStore((state) => state.map);
 
-    const clearSource = useCallback(() => {
-        if (!map) return;
-
-        try {
-            const source = map.getSource(sourceName) as mapboxgl.GeoJSONSource | undefined;
-            if (source) {
-                source.setData({
-                    type: "FeatureCollection",
-                    features: [],
-                });
-            }
-        } catch (error) {
-            console.debug(`Failed to clear ${sourceName} map source:`, error);
-        }
+    const clear = useCallback(() => {
+        clearMapSource(map, sourceName);
     }, [map, sourceName]);
 
-    return clearSource;
+    return clear;
 }
 
 

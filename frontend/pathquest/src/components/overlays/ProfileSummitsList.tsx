@@ -26,7 +26,7 @@ interface ProfileSummitsListProps {
 const PAGE_SIZE = 50;
 
 const ProfileSummitsList = ({ userId, compact = false, isActive = true }: ProfileSummitsListProps) => {
-    // When compact, force peaks tab only (no tabs shown, tabs are in DiscoveryDrawer)
+    // When compact, force peaks tab only (no tabs shown, tabs are in parent navigation)
     const [activeTab, setActiveTab] = useState<Tab>("peaks");
     const effectiveTab = compact ? "peaks" : activeTab;
     const setHoveredPeakId = useMapStore((state) => state.setHoveredPeakId);
@@ -206,7 +206,7 @@ const ProfileSummitsList = ({ userId, compact = false, isActive = true }: Profil
                 />
             )}
 
-            {/* Tabs - only show when not compact (tabs are in DiscoveryDrawer in compact mode) */}
+            {/* Tabs - only show when not compact (tabs are in parent navigation in compact mode) */}
             {!compact && (
                 <div className="flex gap-2 px-4">
                     <button

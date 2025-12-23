@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Search, X, MapPin, Mountain, Trophy, Loader2, Users, User } from "lucide-react";
 import { useIsAuthenticated } from "@/hooks/useRequireAuth";
+import { useRouterRef } from "@/hooks/use-stable-ref";
 import { cn } from "@/lib/utils";
 import { useMapStore } from "@/providers/MapProvider";
 import { useQuery } from "@tanstack/react-query";
@@ -39,14 +40,9 @@ const Omnibar = () => {
     const inputRef = useRef<HTMLInputElement>(null);
     const map = useMapStore((state) => state.map);
     const router = useRouter();
+    const routerRef = useRouterRef(router);
     const pathname = usePathname();
     const { isAuthenticated } = useIsAuthenticated();
-    
-    // Use ref to avoid stale closure issues with router
-    const routerRef = useRef(router);
-    useEffect(() => {
-        routerRef.current = router;
-    }, [router]);
 
     // Debounce the search query
     useEffect(() => {

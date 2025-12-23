@@ -4,6 +4,7 @@ import { useEffect, useCallback, useRef } from "react";
 import { useMapStore } from "@/providers/MapProvider";
 import convertPeaksToGeoJSON from "@/helpers/convertPeaksToGeoJSON";
 import convertActivitiesToGeoJSON from "@/helpers/convertActivitiesToGeoJSON";
+import { waitForMapSource, waitForMapSources, clearMapSources } from "@/lib/map/waitForMapSource";
 import Activity from "@/typeDefs/Activity";
 import Peak from "@/typeDefs/Peak";
 import mapboxgl from "mapbox-gl";
@@ -14,9 +15,6 @@ interface UseActivityMapEffectsOptions {
     hoverCoords?: [number, number] | null;
     flyToOnLoad?: boolean;
 }
-
-const MAX_ATTEMPTS = 5;
-const RETRY_DELAY = 300;
 
 /**
  * Hook to handle map effects when viewing an activity detail.
@@ -76,49 +74,18 @@ export function useActivityMapEffects({
         if (!map || !activity) return;
 
         const setActivityOnMap = async () => {
-            let activitiesSource = map.getSource("activities") as mapboxgl.GeoJSONSource | undefined;
-            let activityStartsSource = map.getSource("activityStarts") as mapboxgl.GeoJSONSource | undefined;
-            let attempts = 0;
-
-            while ((!activitiesSource || !activityStartsSource) && attempts < MAX_ATTEMPTS) {
-                attempts++;
-                await new Promise((resolve) => setTimeout(resolve, RETRY_DELAY));
-                activitiesSource = map.getSource("activities") as mapboxgl.GeoJSONSource | undefined;
-                activityStartsSource = map.getSource("activityStarts") as mapboxgl.GeoJSONSource | undefined;
-            }
-
-            if (activitiesSource && activityStartsSource) {
+            const sources = await waitForMapSources(map, ["activities", "activityStarts"]);
+            if (sources.activities && sources.activityStarts) {
                 const [lineStrings, starts] = convertActivitiesToGeoJSON([activity]);
-                activitiesSource.setData(lineStrings);
-                activityStartsSource.setData(starts);
+                sources.activities.setData(lineStrings);
+                sources.activityStarts.setData(starts);
             }
         };
 
         setActivityOnMap();
 
-        // Cleanup: clear activity when unmounting
         return () => {
-            if (!map) return;
-
-            try {
-                const activitiesSource = map.getSource("activities") as mapboxgl.GeoJSONSource | undefined;
-                const activityStartsSource = map.getSource("activityStarts") as mapboxgl.GeoJSONSource | undefined;
-
-                if (activitiesSource) {
-                    activitiesSource.setData({
-                        type: "FeatureCollection",
-                        features: [],
-                    });
-                }
-                if (activityStartsSource) {
-                    activityStartsSource.setData({
-                        type: "FeatureCollection",
-                        features: [],
-                    });
-                }
-            } catch (error) {
-                console.debug("Failed to cleanup activities map source:", error);
-            }
+            clearMapSources(map, ["activities", "activityStarts"]);
         };
     }, [map, activity]);
 
@@ -155,15 +122,7 @@ export function useActivityMapEffects({
         }
 
         const setPeaksOnMap = async () => {
-            let peaksSource = map.getSource("selectedPeaks") as mapboxgl.GeoJSONSource | undefined;
-            let attempts = 0;
-
-            while (!peaksSource && attempts < MAX_ATTEMPTS) {
-                attempts++;
-                await new Promise((resolve) => setTimeout(resolve, RETRY_DELAY));
-                peaksSource = map.getSource("selectedPeaks") as mapboxgl.GeoJSONSource | undefined;
-            }
-
+            const peaksSource = await waitForMapSource(map, "selectedPeaks");
             if (peaksSource) {
                 peaksSource.setData(convertPeaksToGeoJSON(peakSummits));
                 previousPeakSummitsRef.current = peakSummits;

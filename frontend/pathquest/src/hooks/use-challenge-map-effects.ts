@@ -4,6 +4,7 @@ import { useEffect, useMemo, useCallback, useRef } from "react";
 import { useMapStore } from "@/providers/MapProvider";
 import { setPeaksSearchDisabled } from "@/helpers/peaksSearchState";
 import convertPeaksToGeoJSON from "@/helpers/convertPeaksToGeoJSON";
+import { waitForMapSource, clearMapSource } from "@/lib/map/waitForMapSource";
 import Peak from "@/typeDefs/Peak";
 import Challenge from "@/typeDefs/Challenge";
 import mapboxgl from "mapbox-gl";
@@ -12,9 +13,6 @@ interface UseChallengeMapEffectsOptions {
     challenge: Challenge | null | undefined;
     peaks?: Peak[] | null;
 }
-
-const MAX_ATTEMPTS = 10;
-const RETRY_DELAY = 300;
 
 /**
  * Hook to handle map effects when viewing a challenge detail.
@@ -118,15 +116,8 @@ export function useChallengeMapEffects({
         if (!map || !peaks || peaks.length === 0) return;
 
         const setChallengePeaksOnMap = async () => {
-            let selectedPeaksSource = map.getSource("selectedPeaks") as mapboxgl.GeoJSONSource | undefined;
-            let attempts = 0;
-
-            while (!selectedPeaksSource && attempts < MAX_ATTEMPTS) {
-                attempts++;
-                await new Promise((resolve) => setTimeout(resolve, RETRY_DELAY));
-                selectedPeaksSource = map.getSource("selectedPeaks") as mapboxgl.GeoJSONSource | undefined;
-            }
-
+            // Use higher max attempts for challenge peaks since they're critical
+            const selectedPeaksSource = await waitForMapSource(map, "selectedPeaks", { maxAttempts: 10 });
             if (selectedPeaksSource) {
                 selectedPeaksSource.setData(convertPeaksToGeoJSON(peaks));
             }
@@ -139,21 +130,8 @@ export function useChallengeMapEffects({
 
         setChallengePeaksOnMap();
 
-        // Cleanup: clear selected peaks
         return () => {
-            if (!map) return;
-
-            try {
-                const selectedPeaksSource = map.getSource("selectedPeaks") as mapboxgl.GeoJSONSource | undefined;
-                if (selectedPeaksSource) {
-                    selectedPeaksSource.setData({
-                        type: "FeatureCollection",
-                        features: [],
-                    });
-                }
-            } catch (error) {
-                console.debug("Failed to cleanup selectedPeaks map source:", error);
-            }
+            clearMapSource(map, "selectedPeaks");
         };
     }, [map, peaks]);
 

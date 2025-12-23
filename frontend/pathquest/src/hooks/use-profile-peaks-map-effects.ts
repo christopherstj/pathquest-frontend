@@ -4,6 +4,7 @@ import { useEffect } from "react";
 import { useMapStore } from "@/providers/MapProvider";
 import { setPeaksSearchDisabled } from "@/helpers/peaksSearchState";
 import convertPeaksToGeoJSON from "@/helpers/convertPeaksToGeoJSON";
+import { waitForMapSource, clearMapSource } from "@/lib/map/waitForMapSource";
 import Peak from "@/typeDefs/Peak";
 import mapboxgl from "mapbox-gl";
 
@@ -11,9 +12,6 @@ interface UseProfilePeaksMapEffectsOptions {
     peaks: Peak[] | null;
     isActive: boolean;
 }
-
-const MAX_ATTEMPTS = 10;
-const RETRY_DELAY = 300;
 
 /**
  * Hook to handle map effects when viewing the Profile Peaks tab.
@@ -69,31 +67,13 @@ export function useProfilePeaksMapEffects({
         if (!map || !isActive || !peaks || peaks.length === 0) {
             // Clear selectedPeaks when inactive or no peaks
             if (!isActive && map) {
-                try {
-                    const selectedPeaksSource = map.getSource("selectedPeaks") as mapboxgl.GeoJSONSource | undefined;
-                    if (selectedPeaksSource) {
-                        selectedPeaksSource.setData({
-                            type: "FeatureCollection",
-                            features: [],
-                        });
-                    }
-                } catch (error) {
-                    console.debug("Failed to cleanup selectedPeaks map source:", error);
-                }
+                clearMapSource(map, "selectedPeaks");
             }
             return;
         }
 
         const setProfilePeaksOnMap = async () => {
-            let selectedPeaksSource = map.getSource("selectedPeaks") as mapboxgl.GeoJSONSource | undefined;
-            let attempts = 0;
-
-            while (!selectedPeaksSource && attempts < MAX_ATTEMPTS) {
-                attempts++;
-                await new Promise((resolve) => setTimeout(resolve, RETRY_DELAY));
-                selectedPeaksSource = map.getSource("selectedPeaks") as mapboxgl.GeoJSONSource | undefined;
-            }
-
+            const selectedPeaksSource = await waitForMapSource(map, "selectedPeaks", { maxAttempts: 10 });
             if (selectedPeaksSource) {
                 selectedPeaksSource.setData(convertPeaksToGeoJSON(peaks));
             }
@@ -106,21 +86,8 @@ export function useProfilePeaksMapEffects({
 
         setProfilePeaksOnMap();
 
-        // Cleanup: clear selected peaks when inactive or peaks change
         return () => {
-            if (!map) return;
-
-            try {
-                const selectedPeaksSource = map.getSource("selectedPeaks") as mapboxgl.GeoJSONSource | undefined;
-                if (selectedPeaksSource) {
-                    selectedPeaksSource.setData({
-                        type: "FeatureCollection",
-                        features: [],
-                    });
-                }
-            } catch (error) {
-                console.debug("Failed to cleanup selectedPeaks map source:", error);
-            }
+            clearMapSource(map, "selectedPeaks");
         };
     }, [map, peaks, isActive]);
 }

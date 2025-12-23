@@ -4,6 +4,7 @@ import { useEffect, useMemo, useCallback } from "react";
 import { useMapStore } from "@/providers/MapProvider";
 import { setPeaksSearchDisabled } from "@/helpers/peaksSearchState";
 import convertPeaksToGeoJSON from "@/helpers/convertPeaksToGeoJSON";
+import { waitForMapSource, clearMapSource } from "@/lib/map/waitForMapSource";
 import Peak from "@/typeDefs/Peak";
 import mapboxgl from "mapbox-gl";
 
@@ -13,9 +14,6 @@ interface UseProfileMapEffectsOptions {
     /** Only show peaks on map when this is true (e.g., on the Peaks subtab) */
     showPeaksOnMap?: boolean;
 }
-
-const MAX_ATTEMPTS = 10;
-const RETRY_DELAY = 300;
 
 /**
  * Hook to handle map effects when viewing a user profile.
@@ -121,21 +119,11 @@ export function useProfileMapEffects({
     // Show user peaks on the map (only when showPeaksOnMap is true)
     useEffect(() => {
         if (!map || !userId) return;
-
-        const selectedPeaksSource = map.getSource("selectedPeaks") as mapboxgl.GeoJSONSource | undefined;
         
         if (showPeaksOnMap && peaks && peaks.length > 0) {
             // Show peaks on map
             const setUserPeaksOnMap = async () => {
-                let source = selectedPeaksSource;
-                let attempts = 0;
-
-                while (!source && attempts < MAX_ATTEMPTS) {
-                    attempts++;
-                    await new Promise((resolve) => setTimeout(resolve, RETRY_DELAY));
-                    source = map.getSource("selectedPeaks") as mapboxgl.GeoJSONSource | undefined;
-                }
-
+                const source = await waitForMapSource(map, "selectedPeaks", { maxAttempts: 10 });
                 if (source) {
                     source.setData(convertPeaksToGeoJSON(peaks));
                 }
@@ -149,29 +137,11 @@ export function useProfileMapEffects({
             setUserPeaksOnMap();
         } else {
             // Clear peaks from map when not on peaks tab
-            if (selectedPeaksSource) {
-                selectedPeaksSource.setData({
-                    type: "FeatureCollection",
-                    features: [],
-                });
-            }
+            clearMapSource(map, "selectedPeaks");
         }
 
-        // Cleanup: clear selected peaks when unmounting
         return () => {
-            if (!map) return;
-
-            try {
-                const source = map.getSource("selectedPeaks") as mapboxgl.GeoJSONSource | undefined;
-                if (source) {
-                    source.setData({
-                        type: "FeatureCollection",
-                        features: [],
-                    });
-                }
-            } catch (error) {
-                console.debug("Failed to cleanup selectedPeaks map source:", error);
-            }
+            clearMapSource(map, "selectedPeaks");
         };
     }, [map, peaks, userId, showPeaksOnMap]);
 

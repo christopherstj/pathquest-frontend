@@ -1,6 +1,6 @@
 import React from "react";
 
-// Home page - DiscoveryDrawer and map are rendered in root layout
+// Home page - navigation layout and map are rendered in root layout via UrlOverlayManager
 const Page = () => {
     return null;
 };

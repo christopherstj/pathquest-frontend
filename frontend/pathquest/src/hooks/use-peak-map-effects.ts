@@ -4,9 +4,9 @@ import { useEffect, useCallback } from "react";
 import { useMapStore } from "@/providers/MapProvider";
 import convertPeaksToGeoJSON from "@/helpers/convertPeaksToGeoJSON";
 import convertActivitiesToGeoJSON from "@/helpers/convertActivitiesToGeoJSON";
+import { waitForMapSource, waitForMapSources, clearMapSource, clearMapSources } from "@/lib/map/waitForMapSource";
 import Peak from "@/typeDefs/Peak";
 import Activity from "@/typeDefs/Activity";
-import mapboxgl from "mapbox-gl";
 
 interface UsePeakMapEffectsOptions {
     peak: Peak | null | undefined;
@@ -14,9 +14,6 @@ interface UsePeakMapEffectsOptions {
     flyToOnLoad?: boolean;
     padding?: { top: number; bottom: number; left: number; right: number };
 }
-
-const MAX_ATTEMPTS = 5;
-const RETRY_DELAY = 300;
 
 /**
  * Hook to handle map effects when viewing a peak detail.
@@ -51,15 +48,7 @@ export function usePeakMapEffects({
         if (!map || !peak) return;
 
         const setSelectedPeakSource = async () => {
-            let peaksSource = map.getSource("selectedPeaks") as mapboxgl.GeoJSONSource | undefined;
-            let attempts = 0;
-
-            while (!peaksSource && attempts < MAX_ATTEMPTS) {
-                attempts++;
-                await new Promise((resolve) => setTimeout(resolve, RETRY_DELAY));
-                peaksSource = map.getSource("selectedPeaks") as mapboxgl.GeoJSONSource | undefined;
-            }
-
+            const peaksSource = await waitForMapSource(map, "selectedPeaks");
             if (peaksSource) {
                 peaksSource.setData(convertPeaksToGeoJSON([peak]));
             }
@@ -67,21 +56,8 @@ export function usePeakMapEffects({
 
         setSelectedPeakSource();
 
-        // Cleanup: clear selected peak when unmounting
         return () => {
-            if (!map) return;
-
-            try {
-                const peaksSource = map.getSource("selectedPeaks") as mapboxgl.GeoJSONSource | undefined;
-                if (peaksSource) {
-                    peaksSource.setData({
-                        type: "FeatureCollection",
-                        features: [],
-                    });
-                }
-            } catch (error) {
-                console.debug("Failed to cleanup selectedPeaks map source:", error);
-            }
+            clearMapSource(map, "selectedPeaks");
         };
     }, [map, peak]);
 
@@ -90,49 +66,18 @@ export function usePeakMapEffects({
         if (!map || !activities || activities.length === 0) return;
 
         const setActivitiesOnMap = async () => {
-            let activitiesSource = map.getSource("activities") as mapboxgl.GeoJSONSource | undefined;
-            let activityStartsSource = map.getSource("activityStarts") as mapboxgl.GeoJSONSource | undefined;
-            let attempts = 0;
-
-            while ((!activitiesSource || !activityStartsSource) && attempts < MAX_ATTEMPTS) {
-                attempts++;
-                await new Promise((resolve) => setTimeout(resolve, RETRY_DELAY));
-                activitiesSource = map.getSource("activities") as mapboxgl.GeoJSONSource | undefined;
-                activityStartsSource = map.getSource("activityStarts") as mapboxgl.GeoJSONSource | undefined;
-            }
-
-            if (activitiesSource && activityStartsSource) {
+            const sources = await waitForMapSources(map, ["activities", "activityStarts"]);
+            if (sources.activities && sources.activityStarts) {
                 const [lineStrings, starts] = convertActivitiesToGeoJSON(activities);
-                activitiesSource.setData(lineStrings);
-                activityStartsSource.setData(starts);
+                sources.activities.setData(lineStrings);
+                sources.activityStarts.setData(starts);
             }
         };
 
         setActivitiesOnMap();
 
-        // Cleanup: clear activities when unmounting
         return () => {
-            if (!map) return;
-
-            try {
-                const activitiesSource = map.getSource("activities") as mapboxgl.GeoJSONSource | undefined;
-                const activityStartsSource = map.getSource("activityStarts") as mapboxgl.GeoJSONSource | undefined;
-
-                if (activitiesSource) {
-                    activitiesSource.setData({
-                        type: "FeatureCollection",
-                        features: [],
-                    });
-                }
-                if (activityStartsSource) {
-                    activityStartsSource.setData({
-                        type: "FeatureCollection",
-                        features: [],
-                    });
-                }
-            } catch (error) {
-                console.debug("Failed to cleanup activities map source:", error);
-            }
+            clearMapSources(map, ["activities", "activityStarts"]);
         };
     }, [map, activities]);
 

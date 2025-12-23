@@ -1,14 +1,11 @@
 "use client";
 
-import { useEffect } from "react";
-import { useRouter } from "next/navigation";
-
 /**
  * Activity Detail Page - Dynamic route (no ISR)
  * 
  * This page acts as a landing page for direct URL access to activities.
  * The visual overlay is rendered by UrlOverlayManager in the root layout,
- * which reads the pathname and shows the appropriate panel.
+ * which reads the pathname and shows the appropriate content via ExploreTabContent.
  * 
  * Unlike peaks/challenges, activities are NOT statically generated because:
  * 1. There are potentially millions of activities in the database
@@ -18,10 +15,8 @@ import { useRouter } from "next/navigation";
  * Privacy is enforced at the data fetching level (getActivityDetails action).
  */
 const ActivityPage = () => {
-    // This page is a client component that relies on UrlOverlayManager
-    // to render the actual content via the ActivityDetailPanel.
+    // This page relies on UrlOverlayManager to render activity content.
     // The page itself is just a wrapper for URL-based routing.
-    
     return null;
 };
 

@@ -78,9 +78,7 @@ src/app/
 - **Not statically generated** (too many activities, privacy concerns)
 - Dynamic page with runtime data fetching
 - Privacy-aware: only accessible if user AND activity are public, or by the owner
-- Components:
-  - `ActivityDetailPanel` (desktop): Right-side panel with Details/Summits/Analytics tabs
-  - `ActivityDetailsMobile` (mobile): Bottom sheet content with same tab structure
+- Content rendered via `ExploreTabContent` with Details/Summits/Analytics sub-tabs
 - Features:
   - Activity stats (distance, elevation gain, duration, start time)
   - GPX route displayed on map via `useActivityMapEffects` hook
@@ -94,10 +92,9 @@ src/app/
 - **Not statically generated** (too many users, privacy concerns)
 - Dynamic page with runtime data fetching
 - Privacy-aware: only accessible if user is public, or by the owner
+- Content rendered via `ExploreTabContent` with Stats/Peaks/Journal/Challenges sub-tabs
 - Components:
-  - `ProfileDetailPanel` (desktop): Right-side panel with profile stats and action buttons
-  - `ProfileDetailsMobile` (mobile): Bottom sheet content with same structure
-  - `ProfileSummitsList`: Left drawer list with Peaks/Journal/Challenges tabs and search
+  - `ProfileSummitsList`: Peaks list with filtering, sorting, and infinite scroll
 - Features:
   - User info (name, avatar, location)
   - Accomplishment stats (peaks summited, total summits, highest peak, challenges completed, elevation gained)
@@ -220,7 +217,6 @@ For static ISR pages (`/peaks/[id]`, `/challenges/[id]`), always use the "Public
 #### Root Actions
 - `searchNearestPeaks.ts` - Searches peaks nearest to coordinates
 - `getTimezoneFromCoords.ts` - Gets IANA timezone string for given coordinates (uses geo-tz library)
-- `testApi.ts` - **UNUSED** - Test API endpoint (likely for development)
 
 ### Components (`src/components/`)
 
@@ -229,7 +225,6 @@ For static ISR pages (`/peaks/[id]`, `/challenges/[id]`), always use the "Public
 ##### Layout (`components/app/layout/`)
 - `GlobalNavigation.tsx` - Top navigation bar with logo, search omnibar, and user menu. User dropdown includes Profile, Settings (opens UserManagementModal), and Logout options.
 - `SidebarLink.tsx` - Sidebar link component
-- `UserButton.tsx` - User menu button (legacy, not currently used)
 
 ##### Brand (`components/brand/`)
 - `Logo.tsx` - SVG logo component with topographic contour-line mountain design. Uses currentColor for theming, supports size prop.
@@ -239,21 +234,10 @@ For static ISR pages (`/peaks/[id]`, `/challenges/[id]`), always use the "Public
   - Desktop (≥ 1024px): `DesktopNavLayout` - Collapsible side panel with same 3-tab structure as mobile
   - Mobile (< 1024px): `MobileNavLayout` - Fixed 3-tab bottom navigation with draggable content sheet
   - Both layouts use the same content components (HomeTabContent, ExploreTabContent, ProfileTabContent)
-- `DiscoveryDrawer.tsx` - **DEPRECATED (December 2024)**: Replaced by unified `DesktopNavLayout`. Kept for reference.
-- `DetailBottomSheet.tsx` - **DEPRECATED (December 2024)**: Legacy mobile bottom sheet with dynamic tabbed interface. Replaced by `MobileNavLayout` with fixed 3-tab navigation. Kept for reference during migration. Original functionality: Used extracted mobile components, managed drawer height with snap points, dynamic tabs based on context.
-- `SummitHistoryPanel.tsx` - Full summit history list for a peak. Shows all public summits with user names, dates, and weather conditions at summit time. Used inside DiscoveryDrawer (desktop) or DetailBottomSheet (mobile).
-- `PeakDetailPanel.tsx` - Desktop right panel for peak details (redesigned December 2024). Features:
-  - Compact header with peak name, elevation, summit status badge, and PeakActivityIndicator
-  - Collapsible weather widget (CurrentConditions)
-  - `[Community]` `[My Journal]` tabs (Community is default)
-  - Fly to Peak and close buttons in header
-  - "Share Your Experience" CTA in Community tab (for users with unreported summits)
-  - "Log Summit" CTA in My Journal tab
 - `PeakDetailContent.tsx` - Peak detail content with SSR data (used by static pages). Uses shared UI components.
 - `PeakCommunity.tsx` - Community summit history display component. Shows public summits with user names (linking to profile pages when user_id is available), weather conditions, difficulty/experience ratings as pill-style chips, and condition tags as small pills. User avatar and name are clickable links to `/users/[user_id]`. **Note**: Activity links have been removed to comply with Strava API guidelines (Strava data can only be shown to the activity owner). Public summits only display PathQuest-derived data (timestamp, notes, ratings, weather).
 - `PeakUserActivity.tsx` - User's activity display for a peak (shows user's ascents, activities, and allows editing). Activity cards link to `/activities/[id]` detail pages. Uses shared `ActivityWithSummits` and `OrphanSummitCard` components.
 - `PeakDetailsTab.tsx` - Peak details tab content showing current weather conditions and challenges the peak belongs to. Used in the "Details" sub-tab of peak detail views. Shows challenge progress bars for authenticated users.
-- `ChallengeDetailPanel.tsx` - Desktop right panel for challenge details. Uses shared components and useChallengeMapEffects hook. Shows challenge progress for authenticated users. Peaks list is displayed in DiscoveryDrawer (left pane) instead of this panel. Shares challenge data with mapStore via `selectedChallengeData`.
 - `ChallengeDetailContent.tsx` - Challenge detail content with SSR data (used by static pages). Uses shared UI components.
 - `DashboardPanel.tsx` - User dashboard panel (authenticated only). Wrapper component that renders DashboardContent.
 - `DashboardContent.tsx` - Dashboard content component (refactored December 2024). Shows login CTA button when not authenticated. When authenticated, shows:
@@ -281,23 +265,21 @@ For static ISR pages (`/peaks/[id]`, `/challenges/[id]`), always use the "Public
   - Delete account button with AlertDialog confirmation
   - Cancel and Save buttons
   - Triggered by UserManagementProvider
-- `ActivityDetailPanel.tsx` - Desktop right panel for activity details. Shows Details/Summits/Analytics tabs, GPX route on map, elevation profile with hover interaction.
-- `ProfileDetailPanel.tsx` - Desktop right panel for user profile details. Shows profile stats and action buttons. Accepted challenges are displayed in the Challenges tab of the left pane (DiscoveryDrawer). Uses useProfileMapEffects hook.
 - `ProfileDetailContent.tsx` - Profile detail content with SSR data (used by static pages). Uses shared UI components.
 - `ProfileSummitsList.tsx` - User's peaks list with advanced filtering and sorting. Features:
   - **Filter Bar**: State dropdown, elevation presets (14ers/13ers/12ers), repeat peaks toggle
   - **Sort Options**: Most summits, highest elevation, most recent, first climbed, A-Z
   - **Show All on Map**: Button to zoom map to fit all summited peaks
-  - When `compact` prop is true, hides internal tabs (tabs are in DiscoveryDrawer). Uses infinite scroll for pagination.
+  - When `compact` prop is true, hides internal tabs (tabs are in parent navigation). Uses infinite scroll for pagination.
 - `ProfileJournal.tsx` - User's summit journal grouped by activity. Fetches all summits via `searchUserSummits`, groups by activity_id, fetches activity details, and renders `ActivityWithSummits` and `OrphanSummitCard` components. Similar to PeakUserActivity but for all peaks. Detects ownership via `useIsAuthenticated` hook and passes `isOwner` prop to child components to control edit/delete button visibility. Invalidates query cache when summits are deleted.
 - `ProfileChallenges.tsx` - User's accepted challenges list. Fetches user profile data and displays favorited challenges split into two sections: "In Progress" (sorted by progress percentage) and "Completed" (sorted by name). Completed challenges are styled with sky blue accent and checkmark icon. Each challenge shows name, completion count (completed/total), progress bar. Links to `/users/:userId/challenges/:challengeId` when viewing another user's profile, or `/challenges/:challengeId` when viewing your own. Uses `is_completed` flag from API when available.
 
 ##### Mobile Overlays (`components/overlays/mobile/`)
-- `peak-details-mobile.tsx` - Mobile-optimized peak detail view extracted from DetailBottomSheet
+- `peak-details-mobile.tsx` - Mobile-optimized peak detail view
 - `challenge-details-mobile.tsx` - Mobile-optimized challenge detail view. Shows stats, progress bar, momentum messaging (% complete, last progress), next peak suggestions (closest + easiest unclimbed), community activity indicator, and action buttons. Peaks list is shown in separate Challenge Peaks tab.
 - `discovery-content-mobile.tsx` - Mobile-optimized discovery content using shared discovery components
 - `activity-details-mobile.tsx` - Mobile-optimized activity detail view with Details/Summits/Analytics tabs. Shows activity highlight callouts (multi-summit day badge, summit count, weather conditions at summit time).
-- `profile-details-mobile.tsx` - Mobile-optimized profile detail view with stats and highest peak. Accepted challenges are displayed in the Challenges tab of DetailBottomSheet.
+- `profile-details-mobile.tsx` - Mobile-optimized profile detail view with stats and highest peak.
 
 ##### Dashboard Components (`components/dashboard/`)
 Action-oriented dashboard components (December 2024):
@@ -328,7 +310,7 @@ Unified navigation system (December 2024) with fixed 3-tab structure for both mo
 
 **Mobile Components:**
 - `BottomTabBar.tsx` - Fixed bottom navigation bar with 3 tabs: Home, Explore, Profile. Always visible, never changes based on context. Uses Zustand tab store for state management.
-- `ContentSheet.tsx` - Reusable draggable sheet component extracted from DetailBottomSheet. Supports 3 snap heights (collapsed, halfway, expanded) with swipe gestures and velocity detection. Positions above the bottom tab bar.
+- `ContentSheet.tsx` - Reusable draggable sheet component. Supports 3 snap heights (collapsed, halfway, expanded) with swipe gestures and velocity detection. Positions above the bottom tab bar.
 - `MobileNavLayout.tsx` - Main layout orchestrator for mobile. Manages tab switching, URL-driven tab activation, and content sheet rendering.
 
 **Shared Content Components:**
@@ -396,7 +378,7 @@ Unified navigation system (December 2024) with fixed 3-tab structure for both mo
 - `ElevationProfileSelector.tsx` - Clickable elevation profile for selecting summit time in manual summit modal. Used by AddManualSummitModal when an activity is linked.
 
 #### Discovery Components (`components/discovery/`)
-Shared discovery list components used by both desktop (DiscoveryDrawer) and mobile (DetailBottomSheet):
+Shared discovery list components used by both desktop and mobile navigation layouts:
 - `discovery-challenges-list.tsx` - Renders visible challenges list with click handlers
 - `discovery-peaks-list.tsx` - Renders visible peaks list using `PeakRow` component. Supports `onHoverStart` and `onHoverEnd` props for map hover dot interaction.
 - `empty-discovery-state.tsx` - Empty state when no peaks/challenges visible (includes zoom-in prompt)
@@ -466,12 +448,8 @@ Utility functions for common operations.
 - `updateMapStateInURL.ts` - Updates URL with map state
 - `updateMapURL.ts` - Updates map-related URL params using router.replace (soft navigation) with debouncing
 - `updateURLWithBounds.ts` - Updates URL with map bounds
-- `useIsMobile.ts` - Mobile detection hook (legacy implementation using window resize, breakpoint 900px)
-- `useWindowResize.tsx` - Window resize hook
 
-**Note**: There are two `useIsMobile` implementations:
-- `hooks/use-mobile.ts` - Modern implementation using `window.matchMedia` (default breakpoint 768px, can be customized). This is the primary implementation used by components.
-- `helpers/useIsMobile.ts` - Legacy implementation using window resize (breakpoint 900px). May be deprecated.
+**Note**: Mobile detection uses `hooks/use-mobile.ts` - Modern implementation using `window.matchMedia` (default breakpoint 768px, can be customized).
 - `stateAbbreviations.ts` - US state abbreviation mapping and search query utilities:
   - `expandSearchQuery()` - Expands abbreviations to full names and vice versa
   - `extractStateFromQuery()` - Smart state extraction that only extracts state if remaining search is meaningful (prevents "mount washington" from being parsed as "mount" + WA state)
@@ -516,8 +494,8 @@ Zustand state management stores:
   - `visiblePeaks`, `visibleChallenges` - Currently visible items on map
   - `isSatellite` - Satellite mode toggle
   - `disablePeaksSearch` - Prevents peaks loading when viewing challenge details
-  - `summitHistoryPeakId` - When set, DiscoveryDrawer shows SummitHistoryPanel instead of discovery content (desktop drill-down)
-  - `selectedChallengeData` - Challenge peaks data shared between ChallengeDetailPanel and DiscoveryDrawer (challengeId, challengeName, peaks)
+  - `summitHistoryPeakId` - When set, shows SummitHistoryPanel instead of discovery content (desktop drill-down)
+  - `selectedChallengeData` - Challenge peaks data shared between challenge views and navigation (challengeId, challengeName, peaks)
   - `hoveredPeakId` - ID of peak being hovered over in summit list, used for map marker highlighting with amber accent color
 - `tabStore.ts` - Navigation state (vanilla Zustand with React hook). Note: `activeTab` is derived from URL in MobileNavLayout/DesktopNavLayout, not stored in state. State includes:
   - `profileSubTab` - Active sub-tab within Profile tab ("stats" | "peaks" | "journal" | "challenges" | "review")
@@ -587,8 +565,8 @@ Next.js middleware for legacy route redirects:
 - `use-peak-map-effects.ts` - Hook to handle map effects when viewing a peak detail. Sets selected peak marker, displays activity GPX lines, and provides flyTo functionality.
 - `use-challenge-map-effects.ts` - Hook to handle map effects when viewing a challenge. Disables general peaks search, shows challenge peaks on map (with conditional styling for summited peaks), and fits map to challenge bounds (only once on initial load to prevent zoom/pan issues).
 - `use-activity-map-effects.ts` - Hook to handle map effects when viewing an activity. Displays GPX line, shows peak markers for summitted peaks, handles hover marker from elevation profile chart, handles hover highlighting of peaks from summit list via mapStore.hoveredPeakId (uses Mapbox feature-state for amber accent color), and fits map to activity bounds. Note: Map padding is NOT managed by this hook - it's controlled centrally by `MapBackground` based on drawer height.
-- `use-peak-hover-map-effects.ts` - Hook to handle map hover effects when hovering over peak rows in discovery lists. Creates/updates a `peakHover` map source and layer to show a bright green dot marker at peak coordinates. Used by DiscoveryDrawer to show a visual indicator on the map when hovering over peak rows.
-- `use-drawer-height.ts` - Hook to manage draggable drawer height with snap points (collapsed/halfway/expanded). Used by DetailBottomSheet for mobile UI.
+- `use-peak-hover-map-effects.ts` - Hook to handle map hover effects when hovering over peak rows in discovery lists. Creates/updates a `peakHover` map source and layer to show a bright green dot marker at peak coordinates. Shows a visual indicator on the map when hovering over peak rows.
+- `use-drawer-height.ts` - Hook to manage draggable drawer height with snap points (collapsed/halfway/expanded). Used by ContentSheet for mobile UI.
 
 ## Authentication Flow
 
@@ -624,13 +602,13 @@ Next.js middleware for legacy route redirects:
 2. `MapBackground` loads peaks in visible bounds via `getNewData`
 3. Peaks rendered as markers on Mapbox map
 4. User clicks peak marker → navigates to `/peaks/[id]`
-5. `UrlOverlayManager` opens `PeakDetailPanel` (desktop) or `DetailBottomSheet` (mobile)
+5. `UrlOverlayManager` renders appropriate content via `ExploreTabContent`
 6. Map flies to peak location
 
 ### Peak Detail Flow
 1. User clicks peak on map or in discovery list
 2. Navigates to `/peaks/[id]`
-3. `PeakDetailPanel`/`DetailBottomSheet` fetches data via `getPeakDetails`
+3. `ExploreTabContent` fetches data via `getPeakDetails`
 4. Renders peak details, weather, challenges, user summits
 5. Map shows peak location and associated activities
 
@@ -704,7 +682,7 @@ Next.js middleware for legacy route redirects:
       - **Expanded** (~100vh - 140px): Full screen content (accounting for tab bar)
     - Supports swipe gestures with velocity detection
     - Back stack navigation within Explore tab for detail-to-detail navigation
-    - **Legacy**: `DetailBottomSheet` has been deprecated but kept for reference
+    - Mobile drawer managed by `ContentSheet` component
   - `GlobalNavigation`: Adapts padding and visibility of elements (logo hidden on mobile) to preserve space.
 - **Hooks**: Uses `useIsMobile` hook (based on `window.matchMedia`, default breakpoint 768px, 1024px for layout changes) for programmatic layout adaptations.
 
@@ -826,7 +804,7 @@ Google Cloud authentication (required for production API access):
 4. **Missing Providers**: Added `QueryProvider`, `ManualSummitProvider`, and `SummitReportProvider` to providers documentation
 5. **Missing Stores**: Added `manualSummitStore` and `summitReportStore` to stores documentation
 6. **Missing Components**: Added `AddManualSummitModal`, `SummitReportModal`, `PeakCommunity`, `PeakUserActivity`, and `DashboardContent` to overlays documentation
-7. **Hook Discrepancy**: Documented that there are two `useIsMobile` implementations (one in hooks, one in helpers)
+7. **Hook Consolidation**: Consolidated `useIsMobile` implementations - legacy helper version removed
 8. **getGoogleIdToken Status**: Corrected from "Possibly unused" to "ACTIVELY USED" - used extensively throughout codebase
 9. **Intercepting Routes**: Removed incorrect documentation about `@overlay` parallel routes - the app uses URL-driven overlays via `UrlOverlayManager` instead
 10. **React Query**: Added documentation for `QueryProvider` and expanded React Query usage documentation
@@ -866,8 +844,8 @@ The following legacy/unused components were removed:
 - `peak-list-item.tsx` - Challenge list item for peak detail views
 
 #### Mobile Overlays (`components/overlays/mobile/`)
-- `peak-details-mobile.tsx` - Mobile-optimized peak detail view extracted from DetailBottomSheet
-- `challenge-details-mobile.tsx` - Mobile-optimized challenge detail view extracted from DetailBottomSheet
+- `peak-details-mobile.tsx` - Mobile-optimized peak detail view
+- `challenge-details-mobile.tsx` - Mobile-optimized challenge detail view
 - `discovery-content-mobile.tsx` - Mobile-optimized discovery content using shared discovery components
 
 ### Created Map Hooks (`hooks/`)
@@ -875,21 +853,21 @@ The following legacy/unused components were removed:
 - `use-peak-map-effects.ts` - Handles map effects when viewing a peak detail. Sets selected peak marker, displays activity GPX lines, and provides flyTo functionality.
 - `use-challenge-map-effects.ts` - Handles map effects when viewing a challenge. Disables general peaks search, shows challenge peaks on map, and fits map to challenge bounds.
 - `use-profile-map-effects.ts` - Handles map effects when viewing a user profile. Disables general peaks search, shows all user's summited peaks on map, and fits map to bounds.
-- `use-drawer-height.ts` - Manages draggable drawer height with snap points (collapsed/halfway/expanded). Used by DetailBottomSheet for mobile UI.
+- `use-drawer-height.ts` - Manages draggable drawer height with snap points (collapsed/halfway/expanded). Used by ContentSheet for mobile UI.
 
 ### Refactored Components
 - `PeakDetailPanel.tsx` - Now uses `DetailPanelHeader`, `StatsGrid`, `StatCard`, `DetailLoadingState`, and `usePeakMapEffects` hook
 - `ChallengeDetailPanel.tsx` - Now uses shared components and `useChallengeMapEffects` hook
 - `PeakDetailContent.tsx` - Uses shared UI components
 - `ChallengeDetailContent.tsx` - Uses shared UI components
-- `DetailBottomSheet.tsx` - Refactored to use extracted mobile components (`PeakDetailsMobile`, `ChallengeDetailsMobile`, `DiscoveryContentMobile`)
+- Mobile components extracted: `PeakDetailsMobile`, `ChallengeDetailsMobile`, `DiscoveryContentMobile`
 
 ### Benefits
 - **Reduced Bundle Size**: Removed 19 unused components (~15-20% reduction in component code)
 - **Easier Maintenance**: Single source of truth for common patterns (headers, stats grids, loading states)
 - **Consistency**: Shared components ensure UI consistency across desktop and mobile
 - **Testability**: Smaller, focused components are easier to test
-- **Readability**: Large components (DetailBottomSheet) split into manageable pieces
+- **Readability**: Large components split into manageable pieces
 - **Reusability**: Map hooks can be reused for future map interaction features
 
 ## Code Quality Issues & Improvement Opportunities
@@ -900,42 +878,49 @@ This section documents identified code quality issues, technical debt, and oppor
 
 Several components have grown large and handle multiple responsibilities, making them difficult to maintain and test:
 
-1. **`ExploreTabContent.tsx` (~1,380 lines)**
-   - **Issue**: Handles discovery mode, peak details, challenge details, activity details, profile details, and user challenge details all in one component
-   - **Responsibilities**: URL parsing, data fetching (7+ React Query hooks), map effects, sub-tab rendering, navigation handling, back stack management
-   - **Recommendation**: Split into smaller components:
-     - `ExploreDiscoveryContent.tsx` - Discovery mode only
-     - `ExplorePeakContent.tsx` - Peak detail rendering
-     - `ExploreChallengeContent.tsx` - Challenge detail rendering
-     - `ExploreActivityContent.tsx` - Activity detail rendering
-     - `ExploreProfileContent.tsx` - Profile detail rendering
-     - Extract shared sub-tab logic into `ExploreSubTabs.tsx`
-     - Extract URL parsing logic into a custom hook `useExploreContentType.ts`
+1. **`ExploreTabContent.tsx` (~600 lines)** - MODULARIZED (December 2024)
+   - **Issue**: Previously handled discovery mode + multiple detail views (peak/challenge/activity/profile/userChallenge) with large inlined JSX
+   - **Progress**:
+     - Extracted URL parsing to `hooks/use-explore-route.ts` with centralized `getDefaultSubTab()` helper
+     - Extracted data layer (React Query + derived view model) to `hooks/use-explore-data.ts`
+     - Extracted map/store side-effects to `hooks/use-explore-map-effects.ts`
+     - Extracted Explore UI modules into `components/navigation/explore/`:
+       - `ExploreContent.tsx` (content router)
+       - `ExploreDiscoveryContent.tsx`
+       - `ExplorePeakContent.tsx`
+       - `ExploreChallengeContent.tsx`
+       - `ExploreUserChallengeContent.tsx`
+       - `ExploreActivityContent.tsx`
+       - `ExploreProfileContent.tsx`
+       - `ExploreSubTabs.tsx`
+       - `ExploreProfileHeader.tsx`
+       - `ExploreLoadingState.tsx` / `ExploreEmptyContent.tsx`
+   - **Still mixed concerns**: Navigation/back stack logic remains centralized in `ExploreTabContent.tsx` (callbacks + back stack)
 
-2. **`MapBackground.tsx` (~586 lines)**
-   - **Issue**: Handles map initialization, layer setup, event handlers, data fetching, URL synchronization, and padding management
-   - **Recommendation**: Extract map layer configuration into `useMapLayers.ts` hook, extract event handlers into `useMapInteractions.ts` hook
+2. **`MapBackground.tsx` (~540 lines)** - PARTIALLY REFACTORED (December 2024)
+   - **Issue**: Handles map initialization, layer setup, event handlers, data fetching, URL synchronization
+   - **Progress**: Extracted padding logic into `useMapPadding` hook
+   - **Remaining**: Could extract map layer configuration into `useMapLayers.ts` hook, extract event handlers into `useMapInteractions.ts` hook
 
-3. **Deprecated Large Components** (kept for reference, should be removed):
-   - `DetailBottomSheet.tsx` (~1,030 lines) - Replaced by `MobileNavLayout` system
-   - `DiscoveryDrawer.tsx` (~740 lines) - Replaced by `DesktopNavLayout`
+3. **Deprecated Large Components** - REMOVED (December 2024):
+   - `DetailBottomSheet.tsx` - Deleted, replaced by `MobileNavLayout` system
+   - `DiscoveryDrawer.tsx` - Deleted, replaced by `DesktopNavLayout`
 
 ### Code Duplication
 
-1. **Map Source Retry Logic**
-   - **Pattern**: Repeated retry logic with `attempts`, `maxAttempts`, and `setTimeout` appears in multiple places:
-     - `ExploreTabContent.tsx` (lines 384-396, 441-450, 505-514, 565-574)
-     - `DetailBottomSheet.tsx` (lines 253-265, 348-357, 415-424)
-     - `DiscoveryDrawer.tsx` (similar patterns)
-   - **Recommendation**: Extract into a reusable hook `useMapSourceRetry.ts` or utility function `waitForMapSource()`
+1. **Map Source Retry Logic** - RESOLVED (December 2024):
+   - Created `lib/map/waitForMapSource.ts` with:
+     - `waitForMapSource()` - Wait for single source
+     - `waitForMapSources()` - Wait for multiple sources
+     - `clearMapSource()` / `clearMapSources()` - Cleanup utilities
+   - Migrated all hooks and components to use these utilities
 
-2. **Router Ref Pattern**
-   - **Pattern**: `routerRef.current = router` pattern repeated across multiple components:
-     - `ExploreTabContent.tsx` (lines 106, 141-143)
-     - `Omnibar.tsx` (lines 46-49)
-     - `MapBackground.tsx` (lines 78-91)
-     - `DetailBottomSheet.tsx` (lines 83, 109-111)
-   - **Recommendation**: Create a custom hook `useRouterRef.ts` that manages router ref lifecycle
+2. **Router Ref Pattern** - RESOLVED (December 2024):
+   - Created `hooks/use-stable-ref.ts` with `useStableRef()` and `useRouterRef()` hooks
+   - Migrated all router ref usage to use the hook:
+     - `ExploreTabContent.tsx`
+     - `Omnibar.tsx`
+     - `MapBackground.tsx`
 
 3. **Debounce Implementations**
    - **Pattern**: Inline debounce functions defined in multiple places:
@@ -953,28 +938,24 @@ Several components have grown large and handle multiple responsibilities, making
 
 ### Deprecated/Unused Code
 
-1. **Deprecated Components** (marked with `@deprecated` but still in codebase):
-   - `components/overlays/DetailBottomSheet.tsx` - Replaced by `MobileNavLayout`
-   - `components/overlays/DiscoveryDrawer.tsx` - Replaced by `DesktopNavLayout`
-   - `components/overlays/PeakDetailPanel.tsx` - Deprecated as of Phase 5B
-   - `components/overlays/ChallengeDetailPanel.tsx` - Deprecated as of Phase 5B
-   - `components/overlays/ActivityDetailPanel.tsx` - Deprecated as of Phase 5B
-   - `components/overlays/ProfileDetailPanel.tsx` - Deprecated as of Phase 5B
-   - **Recommendation**: Remove these files after verifying new navigation system is stable (suggested timeline: 1-2 months after Phase 5B completion)
+1. **Deprecated Components** - REMOVED (December 2024):
+   - `components/overlays/DetailBottomSheet.tsx` - DELETED
+   - `components/overlays/DiscoveryDrawer.tsx` - DELETED
+   - `components/overlays/PeakDetailPanel.tsx` - DELETED
+   - `components/overlays/ChallengeDetailPanel.tsx` - DELETED
+   - `components/overlays/ActivityDetailPanel.tsx` - DELETED
+   - `components/overlays/ProfileDetailPanel.tsx` - DELETED
 
-2. **Unused Actions**:
-   - `actions/testApi.ts` - Test API endpoint, marked as UNUSED
-   - **Recommendation**: Remove if not needed for development
+2. **Unused Actions** - REMOVED (December 2024):
+   - `actions/testApi.ts` - DELETED
 
-3. **Legacy Components**:
-   - `components/app/layout/UserButton.tsx` - Marked as "legacy, not currently used" in ARCHITECTURE.md but still exists
-   - **Recommendation**: Verify if actually unused, remove if not needed
+3. **Legacy Components** - REMOVED (December 2024):
+   - `components/app/layout/UserButton.tsx` - DELETED
 
-4. **Duplicate Mobile Detection Hooks**:
-   - `helpers/useIsMobile.ts` - Legacy implementation using window resize (breakpoint 900px)
-   - `hooks/use-mobile.ts` - Modern implementation using `window.matchMedia` (default breakpoint 768px)
-   - **Issue**: Two implementations exist, legacy one may still be imported in some places
-   - **Recommendation**: Audit all imports, migrate to `hooks/use-mobile.ts`, remove legacy implementation
+4. **Duplicate Mobile Detection Hooks** - RESOLVED (December 2024):
+   - `helpers/useIsMobile.ts` - DELETED (legacy implementation)
+   - `helpers/useWindowResize.tsx` - DELETED (only used by legacy hook)
+   - Now using single implementation: `hooks/use-mobile.ts`
 
 ### Code Organization Issues
 
@@ -1044,19 +1025,20 @@ Several components have grown large and handle multiple responsibilities, making
 ### Recommended Refactoring Priority
 
 **High Priority:**
-1. Remove deprecated components (`DetailBottomSheet`, `DiscoveryDrawer`, deprecated panels)
-2. Consolidate `useIsMobile` implementations
-3. Extract map source retry logic into reusable hook/utility
-4. Split `ExploreTabContent.tsx` into smaller components
+1. ~~Remove deprecated components~~ - DONE (December 2024)
+2. ~~Consolidate `useIsMobile` implementations~~ - DONE (December 2024)
+3. ~~Extract map source retry logic into reusable hook/utility~~ - DONE (December 2024)
+4. ~~Split `ExploreTabContent.tsx` into smaller components~~ - DONE (December 2024)
+   - Extracted route parsing to `useExploreRoute`
+   - Extracted per-content renderers and shared UI into `components/navigation/explore/*`
 
 **Medium Priority:**
-1. Extract router ref pattern into custom hook
+1. ~~Extract router ref pattern into custom hook~~ - DONE (December 2024)
 2. Consolidate debounce implementations
-3. Re-enable ESLint rules gradually
-4. Add unit tests for critical utilities and hooks
+3. Add unit tests for critical utilities and hooks
 
 **Low Priority:**
-1. Extract map layer configuration from `MapBackground.tsx`
+1. ~~Extract map layer configuration from `MapBackground.tsx`~~ - PARTIAL (padding extracted to `useMapPadding`)
 2. Improve type safety (reduce `any` usage)
 3. Add JSDoc documentation
 4. Optimize React Query hook usage
