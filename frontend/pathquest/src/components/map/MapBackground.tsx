@@ -272,6 +272,7 @@ const MapBackground = () => {
             }
 
             // Unclustered Peaks (Individual Points)
+            // Uses properties.summits for summit-based coloring (blue=summited, green=unsummited)
             if (!newMap.getLayer("peaks-point")) {
                 newMap.addLayer({
                     id: "peaks-point",
@@ -279,7 +280,13 @@ const MapBackground = () => {
                     source: "peaks",
                     filter: ["!", ["has", "point_count"]],
                     paint: {
-                        "circle-color": "#4d7a57",
+                        // Summit-based color: blue if summited, green otherwise
+                        "circle-color": [
+                            "case",
+                            [">", ["coalesce", ["get", "summits"], 0], 0],
+                            "#5b9bd5", // Summited: sky blue
+                            "#4d7a57"  // Not summited: muted green
+                        ],
                         "circle-radius": 7,
                         "circle-stroke-width": 2,
                         "circle-stroke-color": "#e8dfc9",
@@ -360,39 +367,43 @@ const MapBackground = () => {
             }
 
             // Selected Peaks Layer (larger markers for highlighted peaks)
-            // Uses feature-state for hover highlighting and properties.summits for summit status
+            // Uses properties.summits for summit-based coloring (blue=summited, green=unsummited)
+            // Hover/selection only affects stroke and radius, NOT fill color
             if (!newMap.getLayer("selectedPeaks")) {
                 newMap.addLayer({
                     id: "selectedPeaks",
                     type: "circle",
                     source: "selectedPeaks",
                     paint: {
-                        // Conditional color: 
-                        // - Pink/amber (#d66ba0) when hovered
-                        // - Sky blue (#5b9bd5) when summited
-                        // - Muted green (#4d7a57) default
+                        // Fill color is STRICTLY blue/green based on summit status
+                        // (hover does NOT change fill color per unified styling rule)
                         "circle-color": [
                             "case",
-                            ["boolean", ["feature-state", "hover"], false],
-                            "#d66ba0", // Hover: pink/amber accent
                             [">", ["coalesce", ["get", "summits"], 0], 0],
                             "#5b9bd5", // Summited: sky blue
-                            "#4d7a57"  // Default: muted green
+                            "#4d7a57"  // Not summited: muted green
                         ],
-                        // Conditional radius:
-                        // - 8px when hovered (slightly larger than default)
-                        // - 9px when summited (just a bit bigger, like selected peak)
-                        // - 7px default (match normal peaks exploration)
+                        // Radius matches discovery peaks size (7px), only increases on hover
                         "circle-radius": [
                             "case",
                             ["boolean", ["feature-state", "hover"], false],
-                            8, // Hover: slightly larger
-                            [">", ["coalesce", ["get", "summits"], 0], 0],
-                            9, // Summited: just a bit bigger (like selected peak)
-                            7  // Default: match normal peaks exploration
+                            10, // Hover: larger
+                            7   // Default: match discovery peaks size
                         ],
-                        "circle-stroke-width": 3,
-                        "circle-stroke-color": "#e8dfc9",
+                        // Stroke color changes on hover (accent ring)
+                        "circle-stroke-color": [
+                            "case",
+                            ["boolean", ["feature-state", "hover"], false],
+                            "#d66ba0", // Hover: pink/amber accent ring
+                            "#e8dfc9"  // Default: parchment
+                        ],
+                        // Stroke width increases on hover
+                        "circle-stroke-width": [
+                            "case",
+                            ["boolean", ["feature-state", "hover"], false],
+                            4,  // Hover: thicker ring
+                            3   // Default
+                        ],
                         "circle-opacity": 0.95
                     }
                 });

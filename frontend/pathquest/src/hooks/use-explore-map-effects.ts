@@ -260,12 +260,8 @@ export function useExploreMapEffects(params: UseExploreMapEffectsParams) {
         const setUserChallengePeaksOnMap = async () => {
             const selectedPeaksSource = await waitForMapSource(map, "selectedPeaks");
             if (selectedPeaksSource) {
-                // Convert peaks with summits property set based on is_summited
-                const peaksForMap = userChallengePeaks.map((p) => ({
-                    ...p,
-                    summits: p.is_summited ? 1 : 0,
-                }));
-                selectedPeaksSource.setData(convertPeaksToGeoJSON(peaksForMap));
+                // convertPeaksToGeoJSON handles is_summited → summits normalization
+                selectedPeaksSource.setData(convertPeaksToGeoJSON(userChallengePeaks));
             }
 
             if (map.getLayer("selectedPeaks")) {

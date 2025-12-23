@@ -11,8 +11,8 @@ interface UsePeakHoverMapEffectsOptions {
 
 /**
  * Hook to handle map hover effects when hovering over peak rows in discovery lists.
- * Creates/updates a `peakHover` map source and layer to show a dot marker at peak coordinates.
- * Similar to activityHover in use-activity-map-effects.ts
+ * Creates/updates a `peakHover` map source and layer to show a ring marker at peak coordinates.
+ * Uses transparent fill with colored stroke so the underlying peak's blue/green color stays visible.
  */
 export function usePeakHoverMapEffects({ hoverCoords }: UsePeakHoverMapEffectsOptions = {}) {
     const map = useMapStore((state) => state.map);
@@ -42,11 +42,12 @@ export function usePeakHoverMapEffects({ hoverCoords }: UsePeakHoverMapEffectsOp
                         type: "circle",
                         source: "peakHover",
                         paint: {
-                            "circle-radius": 10,
-                            "circle-color": "#d66ba0", // Amber accent color
-                            "circle-stroke-width": 2,
-                            "circle-stroke-color": "#ffffff", // White border for visibility
-                            "circle-opacity": 0.9,
+                            // Ring style: transparent fill so underlying peak color shows through
+                            "circle-radius": 12,
+                            "circle-color": "rgba(0, 0, 0, 0)", // Transparent fill
+                            "circle-stroke-width": 3,
+                            "circle-stroke-color": "#d66ba0", // Pink/amber accent ring
+                            "circle-opacity": 1,
                         },
                     });
 

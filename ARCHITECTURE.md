@@ -425,7 +425,7 @@ Utility functions for common operations.
 - `getAuthHeaders.ts` - Gets authentication headers (Bearer token + x-user-* headers) for backend API calls. Used by several challenge actions.
 - `checkEmail.ts` - Email validation
 - `convertActivitiesToGeoJSON.ts` - Converts activities to GeoJSON format
-- `convertPeaksToGeoJSON.ts` - Converts peaks to GeoJSON format
+- `convertPeaksToGeoJSON.ts` - Converts peaks to GeoJSON format with summit normalization. Ensures all peaks have a numeric `summits` property for unified map styling (derived from `summits`, `ascents.length`, or `is_summited`).
 - `convertChallengesToGeoJSON.ts` - Converts challenges (with center coords) to GeoJSON
 - `convertSummitsToPeaks.ts` - Converts SummitWithPeak[] to Peak[] with nested ascents. Used by activity detail components for map effects and elevation profile.
 - `dayjs.ts` - Day.js configuration/helpers
@@ -700,13 +700,18 @@ Next.js middleware for legacy route redirects:
 ### Map Layers (render order bottom to top)
 - `activities` - GPX track lines (orange #c9915a)
 - `activityStarts` - Activity start point markers (green #22c55e)
-- `selectedPeaks` - Peak markers for challenges/activities with conditional styling:
-  - Default: muted green (#4d7a57), 7px radius (matches normal exploration)
-  - Summited (summits > 0): sky blue (#5b9bd5), 9px radius (slightly bigger)
-  - Hover: pink/amber accent (#d66ba0), 8px radius (via feature-state)
+- `peaks-point` - Discovery peaks (individual unclustered markers) with unified summit-based coloring:
+  - Summited (summits > 0): sky blue (#5b9bd5)
+  - Not summited: muted green (#4d7a57)
+- `selectedPeaks` - Peak markers for challenges/activities/profiles with unified summit-based styling:
+  - **Fill color is strictly blue/green** - never changes on hover/selection
+  - Summited (summits > 0): sky blue (#5b9bd5), 9px radius
+  - Not summited: muted green (#4d7a57), 7px radius
+  - Hover: radius increases to 10px, stroke changes to pink/amber (#d66ba0) ring, fill stays blue/green
 - `activityHover` - Hover marker from elevation profile (created dynamically)
-- `peakHover` - Hover marker for peak rows in discovery list (bright green #22c55e, created dynamically by `usePeakHoverMapEffects`)
-- Peak markers use conditional `circle-color` based on `feature-state.hover` and `properties.summits` for interactive highlighting
+- `peakHover` - Hover ring for peak rows in discovery list (transparent fill, pink/amber #d66ba0 stroke, created dynamically by `usePeakHoverMapEffects`)
+
+**Unified Summit Styling Rule**: All peak markers use the same color rule - blue if summited, green if not. The `summits` property is normalized in `convertPeaksToGeoJSON` from various sources (`summits`, `ascents.length`, or `is_summited`). Hover/selection indicators may change stroke color and radius, but never the fill color.
 
 ### Map State
 - Stored in Zustand store (map instance) and kept mounted via root layout background
