@@ -1,4 +1,4 @@
-# PathQuest Frontend Architecture
+ # PathQuest Frontend Architecture
 
 ## Overview
 PathQuest Frontend is a Next.js 16 application built with React 19, TypeScript, and TailwindCSS. It provides a modern web interface for users to explore mountain peaks, track their summits, view challenges, and manage their Strava-connected activities.
@@ -891,4 +891,173 @@ The following legacy/unused components were removed:
 - **Testability**: Smaller, focused components are easier to test
 - **Readability**: Large components (DetailBottomSheet) split into manageable pieces
 - **Reusability**: Map hooks can be reused for future map interaction features
+
+## Code Quality Issues & Improvement Opportunities
+
+This section documents identified code quality issues, technical debt, and opportunities for improvement in the frontend codebase. These items should be addressed in future refactoring efforts.
+
+### Monolithic Components
+
+Several components have grown large and handle multiple responsibilities, making them difficult to maintain and test:
+
+1. **`ExploreTabContent.tsx` (~1,380 lines)**
+   - **Issue**: Handles discovery mode, peak details, challenge details, activity details, profile details, and user challenge details all in one component
+   - **Responsibilities**: URL parsing, data fetching (7+ React Query hooks), map effects, sub-tab rendering, navigation handling, back stack management
+   - **Recommendation**: Split into smaller components:
+     - `ExploreDiscoveryContent.tsx` - Discovery mode only
+     - `ExplorePeakContent.tsx` - Peak detail rendering
+     - `ExploreChallengeContent.tsx` - Challenge detail rendering
+     - `ExploreActivityContent.tsx` - Activity detail rendering
+     - `ExploreProfileContent.tsx` - Profile detail rendering
+     - Extract shared sub-tab logic into `ExploreSubTabs.tsx`
+     - Extract URL parsing logic into a custom hook `useExploreContentType.ts`
+
+2. **`MapBackground.tsx` (~586 lines)**
+   - **Issue**: Handles map initialization, layer setup, event handlers, data fetching, URL synchronization, and padding management
+   - **Recommendation**: Extract map layer configuration into `useMapLayers.ts` hook, extract event handlers into `useMapInteractions.ts` hook
+
+3. **Deprecated Large Components** (kept for reference, should be removed):
+   - `DetailBottomSheet.tsx` (~1,030 lines) - Replaced by `MobileNavLayout` system
+   - `DiscoveryDrawer.tsx` (~740 lines) - Replaced by `DesktopNavLayout`
+
+### Code Duplication
+
+1. **Map Source Retry Logic**
+   - **Pattern**: Repeated retry logic with `attempts`, `maxAttempts`, and `setTimeout` appears in multiple places:
+     - `ExploreTabContent.tsx` (lines 384-396, 441-450, 505-514, 565-574)
+     - `DetailBottomSheet.tsx` (lines 253-265, 348-357, 415-424)
+     - `DiscoveryDrawer.tsx` (similar patterns)
+   - **Recommendation**: Extract into a reusable hook `useMapSourceRetry.ts` or utility function `waitForMapSource()`
+
+2. **Router Ref Pattern**
+   - **Pattern**: `routerRef.current = router` pattern repeated across multiple components:
+     - `ExploreTabContent.tsx` (lines 106, 141-143)
+     - `Omnibar.tsx` (lines 46-49)
+     - `MapBackground.tsx` (lines 78-91)
+     - `DetailBottomSheet.tsx` (lines 83, 109-111)
+   - **Recommendation**: Create a custom hook `useRouterRef.ts` that manages router ref lifecycle
+
+3. **Debounce Implementations**
+   - **Pattern**: Inline debounce functions defined in multiple places:
+     - `MapBackground.tsx` (lines 31-40) - Custom debounce utility
+     - `Omnibar.tsx` (lines 52-57) - useEffect-based debounce
+   - **Recommendation**: Use a shared debounce utility from a library (e.g., `lodash.debounce`) or create `utils/debounce.ts`
+
+4. **Map Source Cleanup Patterns**
+   - **Pattern**: Similar cleanup logic for clearing map sources appears in multiple useEffect cleanup functions
+   - **Recommendation**: Extract into `useMapSourceCleanup.ts` hook or utility functions
+
+5. **Sub-tab Button Rendering**
+   - **Pattern**: Similar sub-tab button rendering logic in `ExploreTabContent.tsx` (lines 709-830)
+   - **Recommendation**: Extract `SubTabButton` component (already exists but could be more reusable) and create `SubTabBar` component
+
+### Deprecated/Unused Code
+
+1. **Deprecated Components** (marked with `@deprecated` but still in codebase):
+   - `components/overlays/DetailBottomSheet.tsx` - Replaced by `MobileNavLayout`
+   - `components/overlays/DiscoveryDrawer.tsx` - Replaced by `DesktopNavLayout`
+   - `components/overlays/PeakDetailPanel.tsx` - Deprecated as of Phase 5B
+   - `components/overlays/ChallengeDetailPanel.tsx` - Deprecated as of Phase 5B
+   - `components/overlays/ActivityDetailPanel.tsx` - Deprecated as of Phase 5B
+   - `components/overlays/ProfileDetailPanel.tsx` - Deprecated as of Phase 5B
+   - **Recommendation**: Remove these files after verifying new navigation system is stable (suggested timeline: 1-2 months after Phase 5B completion)
+
+2. **Unused Actions**:
+   - `actions/testApi.ts` - Test API endpoint, marked as UNUSED
+   - **Recommendation**: Remove if not needed for development
+
+3. **Legacy Components**:
+   - `components/app/layout/UserButton.tsx` - Marked as "legacy, not currently used" in ARCHITECTURE.md but still exists
+   - **Recommendation**: Verify if actually unused, remove if not needed
+
+4. **Duplicate Mobile Detection Hooks**:
+   - `helpers/useIsMobile.ts` - Legacy implementation using window resize (breakpoint 900px)
+   - `hooks/use-mobile.ts` - Modern implementation using `window.matchMedia` (default breakpoint 768px)
+   - **Issue**: Two implementations exist, legacy one may still be imported in some places
+   - **Recommendation**: Audit all imports, migrate to `hooks/use-mobile.ts`, remove legacy implementation
+
+### Code Organization Issues
+
+1. **ESLint Rules Disabled**
+   - **Location**: `.eslintrc.json`
+   - **Disabled Rules**:
+     - `@typescript-eslint/no-unused-vars` - Off
+     - `react-hooks/rules-of-hooks` - Off
+     - `@typescript-eslint/no-explicit-any` - Off
+     - `react-hooks/exhaustive-deps` - Off
+   - **Issue**: These disabled rules can hide bugs and code quality issues
+   - **Recommendation**: Gradually re-enable rules and fix violations, or use more targeted rule configurations
+
+2. **Large useEffect Dependencies**
+   - **Issue**: Some useEffect hooks have many dependencies, making them hard to reason about
+   - **Example**: `ExploreTabContent.tsx` line 183 has 7 dependencies
+   - **Recommendation**: Split complex effects into smaller, focused effects
+
+3. **Mixed Concerns in Components**
+   - **Issue**: Some components mix data fetching, state management, and rendering concerns
+   - **Example**: `ExploreTabContent.tsx` handles URL parsing, data fetching, map effects, and rendering
+   - **Recommendation**: Extract data fetching into custom hooks, extract map effects into hooks (partially done), extract rendering into smaller components
+
+### Performance Considerations
+
+1. **Multiple React Query Hooks in Single Component**
+   - **Issue**: `ExploreTabContent.tsx` uses 7+ React Query hooks, all potentially refetching when tab becomes active
+   - **Recommendation**: Consider using React Query's `enabled` option more strategically, or split into smaller components that only fetch when needed
+
+2. **Large Component Re-renders**
+   - **Issue**: Large components like `ExploreTabContent.tsx` may re-render frequently due to many state updates
+   - **Recommendation**: Use React.memo for expensive sub-components, split into smaller components with focused re-render scopes
+
+3. **Map Source Retry Delays**
+   - **Issue**: Retry logic uses fixed 300ms delays, which could cause perceived lag
+   - **Recommendation**: Consider exponential backoff or more sophisticated retry strategies
+
+### Type Safety Issues
+
+1. **Explicit `any` Types**
+   - **Issue**: ESLint rule for `@typescript-eslint/no-explicit-any` is disabled
+   - **Recommendation**: Gradually add proper types, use `unknown` instead of `any` where types are truly unknown
+
+2. **Type Assertions**
+   - **Issue**: Some map source type assertions (`as mapboxgl.GeoJSONSource`) may fail at runtime
+   - **Recommendation**: Add runtime checks before type assertions
+
+### Testing Gaps
+
+1. **No Test Files Found**
+   - **Issue**: No test files (`.test.ts`, `.test.tsx`, `.spec.ts`) found in the codebase
+   - **Recommendation**: Add unit tests for utility functions, hooks, and components, especially for:
+     - Map hooks (`use-peak-map-effects.ts`, `use-challenge-map-effects.ts`, etc.)
+     - Utility functions (`getMapStateFromURL.ts`, `stateAbbreviations.ts`, etc.)
+     - Complex components (`ExploreTabContent.tsx`, `MapBackground.tsx`)
+
+### Documentation Gaps
+
+1. **Inline Comments**
+   - **Issue**: Some complex logic lacks inline comments explaining the "why"
+   - **Recommendation**: Add JSDoc comments for complex functions and hooks
+
+2. **Component Props Documentation**
+   - **Issue**: Some components lack clear prop type documentation
+   - **Recommendation**: Add JSDoc comments for component props, especially for shared components
+
+### Recommended Refactoring Priority
+
+**High Priority:**
+1. Remove deprecated components (`DetailBottomSheet`, `DiscoveryDrawer`, deprecated panels)
+2. Consolidate `useIsMobile` implementations
+3. Extract map source retry logic into reusable hook/utility
+4. Split `ExploreTabContent.tsx` into smaller components
+
+**Medium Priority:**
+1. Extract router ref pattern into custom hook
+2. Consolidate debounce implementations
+3. Re-enable ESLint rules gradually
+4. Add unit tests for critical utilities and hooks
+
+**Low Priority:**
+1. Extract map layer configuration from `MapBackground.tsx`
+2. Improve type safety (reduce `any` usage)
+3. Add JSDoc documentation
+4. Optimize React Query hook usage
 

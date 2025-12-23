@@ -15,7 +15,8 @@ export type ExploreSubTab =
     | "peaks" 
     | "details" 
     | "summits" 
-    | "analytics";
+    | "analytics"
+    | "stats";
 
 // Note: activeTab is no longer stored here - it's derived from URL in MobileNavLayout/BottomTabBar
 // The store now only manages sub-tab state within each tab
