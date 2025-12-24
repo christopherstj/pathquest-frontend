@@ -61,9 +61,10 @@ const addManualPeakSummit = async ({
         headers: {
             "Content-Type": "application/json",
             ...(token ? { Authorization: `Bearer ${token}` } : {}),
-            ...(process.env.NODE_ENV === "development" && userId
-                ? { "x-user-id": userId }
-                : {}),
+            // Pass user identity via headers for backend auth (works in both dev and prod)
+            ...(userId ? { "x-user-id": userId } : {}),
+            ...(session?.user?.email ? { "x-user-email": session.user.email } : {}),
+            ...(session?.user?.name ? { "x-user-name": encodeURIComponent(session.user.name) } : {}),
         },
         body: JSON.stringify(data),
     });
