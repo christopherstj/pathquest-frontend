@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useMemo } from "react";
+import React, { useEffect, useMemo } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { Home, Compass, User } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -65,6 +65,7 @@ const BottomTabBar = ({ className }: BottomTabBarProps) => {
     // Tab memory: remember last Explore detail path
     // Note: We read from store directly in handleTabChange to avoid stale closure issues
     const setLastExplorePath = useTabStore((state) => state.setLastExplorePath);
+    const clearExploreHistory = useTabStore((state) => state.clearExploreHistory);
 
     // Derive active tab from URL - URL is the source of truth
     const activeTab: TabType = useMemo(() => {
@@ -74,6 +75,15 @@ const BottomTabBar = ({ className }: BottomTabBarProps) => {
         }
         return "home";
     }, [pathname]);
+
+    // If the user is back in Explore discovery mode, clear any cached Explore detail path
+    // (prevents stale restoration when switching away and back).
+    useEffect(() => {
+        if (pathname === "/explore") {
+            setLastExplorePath(null);
+            clearExploreHistory();
+        }
+    }, [pathname, setLastExplorePath, clearExploreHistory]);
 
     const handleTabChange = (tab: TabType) => {
         // Read the current store state at click time to avoid stale closure issues

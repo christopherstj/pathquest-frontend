@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { Mountain, CheckCircle, Navigation, MapPin, X } from "lucide-react";
+import { Mountain, CheckCircle, Navigation, MapPin } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import metersToFt from "@/helpers/metersToFt";
 import Peak from "@/typeDefs/Peak";
@@ -24,7 +24,6 @@ const PeakDetailsMobile = ({
     peak,
     challenges,
     publicSummits,
-    onClose,
     onFlyToPeak,
 }: PeakDetailsMobileProps) => {
     const router = useRouter();
@@ -48,15 +47,6 @@ const PeakDetailsMobile = ({
         <div className="space-y-5">
             {/* Header */}
             <div className="relative">
-                <button
-                    onClick={onClose}
-                    className="absolute top-0 right-0 p-2 rounded-full hover:bg-white/10 text-muted-foreground hover:text-foreground transition-colors"
-                    aria-label="Close peak details"
-                    tabIndex={0}
-                >
-                    <X className="w-4 h-4" />
-                </button>
-
                 <div className="flex items-center gap-2 mb-2 text-primary">
                     <span className="px-2 py-1 rounded-full border border-border/70 bg-muted/60 text-[11px] font-mono uppercase tracking-[0.18em] flex items-center gap-1">
                         <Mountain className="w-3.5 h-3.5" />
@@ -65,7 +55,7 @@ const PeakDetailsMobile = ({
                 </div>
 
                 <h1
-                    className="text-xl font-bold text-foreground pr-8"
+                    className="text-xl font-bold text-foreground"
                     style={{ fontFamily: "var(--font-display)" }}
                 >
                     {peak.name}

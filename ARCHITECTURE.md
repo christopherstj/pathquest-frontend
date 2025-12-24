@@ -505,8 +505,8 @@ Zustand state management stores:
 - `tabStore.ts` - Navigation state (vanilla Zustand with React hook). Note: `activeTab` is derived from URL in MobileNavLayout/DesktopNavLayout, not stored in state. State includes:
   - `profileSubTab` - Active sub-tab within Profile tab ("stats" | "peaks" | "journal" | "challenges" | "review")
   - `exploreSubTab` - Active sub-tab within Explore tab (varies by content type)
-  - `exploreBackStack` - Navigation history within Explore tab for back navigation
-  - `lastExplorePath` - Remembers last Explore detail path for "tab memory" (so clicking Explore restores where you were). **Important**: Read via `getTabStore().getState().lastExplorePath` in click handlers to avoid stale closure issues.
+  - `exploreBackStack` - Legacy Explore internal history (currently cleared when returning to `/explore` and not used for the primary back affordance)
+  - `lastExplorePath` - Remembers last Explore detail path for "tab memory" (so clicking Explore can restore where you were). **Important**: Read via `getTabStore().getState().lastExplorePath` in click handlers to avoid stale closure issues. This value is explicitly cleared when the user is on `/explore` to prevent stale restoration.
   - `drawerHeight` - Current mobile drawer height for map padding ("collapsed" | "halfway" | "expanded")
   - `isDesktopPanelCollapsed` - Desktop panel collapse state for map padding
   - Actions: `setProfileSubTab`, `setExploreSubTab`, `pushExploreHistory`, `popExploreHistory`, `clearExploreHistory`, `setLastExplorePath`, `setDrawerHeight`, `setDesktopPanelCollapsed`
@@ -686,7 +686,9 @@ Next.js middleware for legacy route redirects:
       - **Halfway** (~45vh): Default state, map partially visible
       - **Expanded** (~100vh - 140px): Full screen content (accounting for tab bar)
     - Supports swipe gestures with velocity detection
-    - Back stack navigation within Explore tab for detail-to-detail navigation
+    - Explore detail navigation:\
+      - The Explore back arrow returns directly to `/explore` (discovery mode)\
+      - Returning to `/explore` clears cached Explore detail restoration (`lastExplorePath`) so tab switching cannot resurrect stale detail URLs
     - Mobile drawer managed by `ContentSheet` component
   - `GlobalNavigation`: Adapts padding and visibility of elements (logo hidden on mobile) to preserve space.
 - **Hooks**: Uses `useIsMobile` hook (based on `window.matchMedia`, default breakpoint 768px, 1024px for layout changes) for programmatic layout adaptations.
@@ -933,7 +935,7 @@ Several components have grown large and handle multiple responsibilities, making
        - `ExploreSubTabs.tsx`
        - `ExploreProfileHeader.tsx`
        - `ExploreLoadingState.tsx` / `ExploreEmptyContent.tsx`
-   - **Still mixed concerns**: Navigation/back stack logic remains centralized in `ExploreTabContent.tsx` (callbacks + back stack)
+   - **Still mixed concerns**: Navigation logic remains centralized in `ExploreTabContent.tsx` (callbacks). The Explore back affordance is intentionally deterministic: it routes to `/explore` and clears Explore tab caches to prevent stale restoration.
 
 2. **`MapBackground.tsx` (~540 lines)** - PARTIALLY REFACTORED (December 2024)
    - **Issue**: Handles map initialization, layer setup, event handlers, data fetching, URL synchronization

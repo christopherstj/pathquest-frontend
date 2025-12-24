@@ -92,6 +92,7 @@ const DesktopNavLayout = () => {
     // Tab memory for Explore
     // Note: We read lastExplorePath from store directly in handleTabChange to avoid stale closure issues
     const setLastExplorePath = useTabStore((state) => state.setLastExplorePath);
+    const clearExploreHistory = useTabStore((state) => state.clearExploreHistory);
     const setDesktopPanelCollapsed = useTabStore((state) => state.setDesktopPanelCollapsed);
 
     // Hydrate collapse state from localStorage
@@ -131,6 +132,15 @@ const DesktopNavLayout = () => {
         }
         return "home";
     }, [pathname]);
+
+    // If the user is back in Explore discovery mode, clear any cached Explore detail path
+    // (prevents stale restoration when switching away and back).
+    useEffect(() => {
+        if (pathname === "/explore") {
+            setLastExplorePath(null);
+            clearExploreHistory();
+        }
+    }, [pathname, setLastExplorePath, clearExploreHistory]);
 
     const handleTabChange = (tab: TabType) => {
         // Read the current store state at click time to avoid stale closure issues

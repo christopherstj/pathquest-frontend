@@ -57,10 +57,6 @@ const PeakDetailContent = ({ peak, publicSummits, challenges, activities }: Prop
         }
     }, [peak.location_coords, map]);
 
-    const handleClose = () => {
-        router.back();
-    };
-
     const handleFlyToPeak = () => {
         if (peak.location_coords && map) {
             map.flyTo({
@@ -88,7 +84,6 @@ const PeakDetailContent = ({ peak, publicSummits, challenges, activities }: Prop
                     badge={{ icon: Mountain, label: "Peak" }}
                     title={peak.name || "Unknown Peak"}
                     location={location}
-                    onClose={handleClose}
                     gradientColorClass="from-accent/10"
                 />
 

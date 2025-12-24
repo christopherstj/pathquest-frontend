@@ -50,7 +50,6 @@ const ExploreTabContent = ({ isActive }: ExploreTabContentProps) => {
         userChallengeUserId,
         userChallengeChallengeId,
         hasDetail,
-        pathname,
     } = useExploreRoute();
 
     // Map store
@@ -63,9 +62,8 @@ const ExploreTabContent = ({ isActive }: ExploreTabContentProps) => {
     // Tab store
     const exploreSubTab = useTabStore((state) => state.exploreSubTab);
     const setExploreSubTab = useTabStore((state) => state.setExploreSubTab);
-    const pushExploreHistory = useTabStore((state) => state.pushExploreHistory);
-    const popExploreHistory = useTabStore((state) => state.popExploreHistory);
-    const exploreBackStack = useTabStore((state) => state.exploreBackStack);
+    const clearExploreHistory = useTabStore((state) => state.clearExploreHistory);
+    const setLastExplorePath = useTabStore((state) => state.setLastExplorePath);
 
     // Local state
     const [hoveredPeakCoords, setHoveredPeakCoords] = useState<[number, number] | null>(null);
@@ -139,9 +137,6 @@ const ExploreTabContent = ({ isActive }: ExploreTabContentProps) => {
 
     // Navigation handlers
     const handlePeakClick = useCallback((id: string, coords?: [number, number]) => {
-        if (pathname !== "/") {
-            pushExploreHistory(pathname);
-        }
         routerRef.current.push(`/peaks/${id}`);
         if (map && coords) {
             map.flyTo({
@@ -151,14 +146,11 @@ const ExploreTabContent = ({ isActive }: ExploreTabContentProps) => {
                 essential: true,
             });
         }
-    }, [pathname, pushExploreHistory, map]);
+    }, [map]);
 
     const handleChallengeClick = useCallback((id: string) => {
-        if (pathname !== "/") {
-            pushExploreHistory(pathname);
-        }
         routerRef.current.push(`/challenges/${id}`);
-    }, [pathname, pushExploreHistory]);
+    }, []);
 
     const handlePeakHoverStart = useCallback((peakId: string, coords: [number, number]) => {
         setHoveredPeakCoords(coords);
@@ -169,17 +161,19 @@ const ExploreTabContent = ({ isActive }: ExploreTabContentProps) => {
     }, []);
 
     const handleBack = useCallback(() => {
-        const previousUrl = popExploreHistory();
-        if (previousUrl) {
-            routerRef.current.push(previousUrl);
-        } else {
-            routerRef.current.push("/");
-        }
-    }, [popExploreHistory]);
+        // UX decision: the Explore back arrow always returns to Explore discovery mode.
+        // Also clear any cached Explore detail route and internal history to prevent stale restoration.
+        clearExploreHistory();
+        setLastExplorePath(null);
+        routerRef.current.push("/explore");
+    }, [clearExploreHistory, setLastExplorePath]);
 
     const handleClose = useCallback(() => {
-        routerRef.current.push("/");
-    }, []);
+        // Close detail views back to Explore discovery mode (not Home).
+        clearExploreHistory();
+        setLastExplorePath(null);
+        routerRef.current.push("/explore");
+    }, [clearExploreHistory, setLastExplorePath]);
 
     const handleShowChallengeOnMap = useCallback(() => {
         if (!challengePeaks || challengePeaks.length === 0 || !map) return;
@@ -222,7 +216,7 @@ const ExploreTabContent = ({ isActive }: ExploreTabContentProps) => {
                     <button
                         onClick={handleBack}
                         className="p-1.5 rounded-md hover:bg-muted/50 text-muted-foreground hover:text-foreground transition-colors"
-                        aria-label={exploreBackStack.length > 0 ? "Go back" : "Back to discovery"}
+                        aria-label="Back to Explore"
                     >
                         <ArrowLeft className="w-4 h-4" />
                     </button>
