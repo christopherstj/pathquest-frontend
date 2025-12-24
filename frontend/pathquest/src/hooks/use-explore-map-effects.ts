@@ -112,21 +112,21 @@ export function useExploreMapEffects(params: UseExploreMapEffectsParams) {
         }
     }, [peak, peakActivities, isAuthenticated, peakId, setSelectedPeakUserData, setHighlightedActivityId]);
 
-    // Share community data with map store
+    // Share community data with map store (only peakId and peakName needed for PeakCommunity)
+    // PeakCommunity now fetches public summits directly via cursor pagination
     useEffect(() => {
         if (peak && peakId) {
-            // Set data immediately when peak is available, even if publicSummits is still loading
             setSelectedPeakCommunityData({
                 peakId: peakId,
                 peakName: peak.name || "Unknown Peak",
-                publicSummits: publicSummits || [],
+                publicSummits: [], // No longer used - PeakCommunity fetches via cursor pagination
             });
         } else if (!peakId) {
             // Only clear if we're not viewing a peak anymore
             setSelectedPeakCommunityData(null);
         }
         // Note: We don't clear in cleanup to avoid race conditions when navigating between peaks
-    }, [peak, publicSummits, peakId, setSelectedPeakCommunityData]);
+    }, [peak, peakId, setSelectedPeakCommunityData]);
 
     // Display activity GPX lines on map for peak details
     useEffect(() => {

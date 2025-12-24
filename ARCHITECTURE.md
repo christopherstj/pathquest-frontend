@@ -142,6 +142,10 @@ src/app/
 - `recent-public-summits/route.ts` - Fetches most recent public summits across the whole community (no auth). Used for guest landing “community is alive” feed.
 - `popular-challenges/route.ts` - Fetches “popular” challenges (hybrid ordering; no popularity numbers displayed) (no auth). Used for guest landing feed.
 
+##### Peaks (`api/peaks/`)
+- `[id]/activity/route.ts` - Fetches recent summit activity counts for a peak (no auth). Used by PeakActivityIndicator.
+- `[id]/public-summits/route.ts` - Fetches public summits for a peak with cursor-based pagination (no auth). Query params: `cursor` (ISO timestamp), `limit` (default 20, max 100). Returns `{ summits, nextCursor, totalCount }`. Used by PeakCommunity component for efficient infinite scrolling of peaks with hundreds of summits.
+
 ##### Summits (`api/summits/`)
 - `unconfirmed/route.ts` - GET: Fetches summits that need user review (low confidence auto-detections). Optional `limit` query param.
 - `[id]/confirm/route.ts` - POST: Confirms a summit as valid. Updates `confirmation_status` to `user_confirmed`.
@@ -239,7 +243,7 @@ For static ISR pages (`/peaks/[id]`, `/challenges/[id]`), always use the "Public
   - Mobile (< 1024px): `MobileNavLayout` - Fixed 3-tab bottom navigation with draggable content sheet
   - Both layouts use the same content components (HomeTabContent, ExploreTabContent, ProfileTabContent)
 - `PeakDetailContent.tsx` - Peak detail content with SSR data (used by static pages). Uses shared UI components.
-- `PeakCommunity.tsx` - Community summit history display component. Shows public summits with user names (linking to profile pages when user_id is available), weather conditions, difficulty/experience ratings as pill-style chips, and condition tags as small pills. User avatar and name are clickable links to `/users/[user_id]`. **Note**: Activity links have been removed to comply with Strava API guidelines (Strava data can only be shown to the activity owner). Public summits only display PathQuest-derived data (timestamp, notes, ratings, weather). Uses shared `PublicSummitCard`.
+- `PeakCommunity.tsx` - Community summit history display component. Shows public summits with user names (linking to profile pages when user_id is available), weather conditions, difficulty/experience ratings as pill-style chips, and condition tags as small pills. User avatar and name are clickable links to `/users/[user_id]`. **Note**: Activity links have been removed to comply with Strava API guidelines (Strava data can only be shown to the activity owner). Public summits only display PathQuest-derived data (timestamp, notes, ratings, weather). Uses shared `PublicSummitCard`. **Uses React Query cursor-based infinite scrolling** (`useInfiniteQuery`) for efficient pagination of peaks with hundreds of summits. Fetches from `/api/peaks/[id]/public-summits` endpoint with cursor pagination.
 - `PeakUserActivity.tsx` - User's activity display for a peak (shows user's ascents, activities, and allows editing). Peak **Journal** sub-tab now reuses `JournalEntryCard` styling for summit entries, but displays the **activity title** as the primary title line (owner-only; not a Strava privacy issue). Activity cards link to `/activities/[id]` detail pages.
 - `PeakDetailsTab.tsx` - Peak details tab content showing current weather conditions and challenges the peak belongs to. Used in the "Details" sub-tab of peak detail views. Shows challenge progress bars for authenticated users. Uses shared `ChallengeLinkItem`.
 - `ChallengeDetailContent.tsx` - Challenge detail content with SSR data (used by static pages). Uses shared UI components.
