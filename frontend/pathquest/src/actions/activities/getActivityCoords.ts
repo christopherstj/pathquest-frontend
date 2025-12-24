@@ -29,11 +29,17 @@ const getActivityCoords = async (
 
     const coordsUrl = `${backendUrl}/activities/${activityId}/coords`;
 
+    const userId = session?.user?.id;
+
     const coordsRes = await fetch(coordsUrl, {
         method: "GET",
         headers: {
             "Content-Type": "application/json",
             ...(token ? { Authorization: `Bearer ${token}` } : {}),
+            // Pass user identity via headers for backend auth (works in both dev and prod)
+            ...(userId ? { "x-user-id": userId } : {}),
+            ...(session?.user?.email ? { "x-user-email": session.user.email } : {}),
+            ...(session?.user?.name ? { "x-user-name": encodeURIComponent(session.user.name) } : {}),
         },
     });
 
