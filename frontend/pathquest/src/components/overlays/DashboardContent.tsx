@@ -7,6 +7,8 @@ import {
     Loader2,
     Calendar,
     LogIn,
+    Users,
+    BarChart3,
 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
@@ -19,6 +21,8 @@ import ChallengeProgress from "@/typeDefs/ChallengeProgress";
 import DashboardStats from "@/typeDefs/DashboardStats";
 import UnconfirmedSummit from "@/typeDefs/UnconfirmedSummit";
 import { QuickStatsBar, HeroSummitCard, UnreviewedSummitsQueue, ProcessingToast, UnconfirmedSummitsCard, ImportProgressCard, ImportStatus } from "@/components/dashboard";
+import PublicSummitCard, { PublicSummitCardSummit } from "@/components/summits/PublicSummitCard";
+import ChallengeLinkItem from "@/components/lists/challenge-link-item";
 
 // Fetch recent summits from API route instead of server action
 const fetchRecentSummits = async (): Promise<(Peak & ManualPeakSummit)[] | null> => {
@@ -92,36 +96,195 @@ const fetchUnconfirmedSummits = async (): Promise<UnconfirmedSummit[]> => {
     return res.json();
 };
 
+// Fetch recent public summits for guest landing
+const fetchRecentPublicSummits = async (): Promise<PublicSummitCardSummit[]> => {
+    const res = await fetch("/api/landing/recent-public-summits?limit=5", {
+        credentials: "include",
+    });
+    if (!res.ok) {
+        console.error("Failed to fetch recent public summits:", res.status);
+        return [];
+    }
+    return res.json();
+};
+
+type PopularChallenge = {
+    id: string | number;
+    name: string;
+    region?: string;
+    num_peaks?: number;
+};
+
+// Fetch popular challenges for guest landing
+const fetchPopularChallenges = async (): Promise<PopularChallenge[]> => {
+    const res = await fetch("/api/landing/popular-challenges?limit=6", {
+        credentials: "include",
+    });
+    if (!res.ok) {
+        console.error("Failed to fetch popular challenges:", res.status);
+        return [];
+    }
+    return res.json();
+};
+
 type DashboardContentProps = {
     isActive?: boolean;
     showHeader?: boolean;
+};
+
+type HomeSubTab = "dashboard" | "recent";
+
+const HOME_SUBTAB_STORAGE_KEY = "pathquest:homeSubTab";
+
+type RecentFeedContentProps = {
+    recentPublicSummits: PublicSummitCardSummit[] | undefined;
+    publicSummitsLoading: boolean;
+    popularChallenges: PopularChallenge[] | undefined;
+    popularChallengesLoading: boolean;
+};
+
+const RecentFeedContent = ({
+    recentPublicSummits,
+    publicSummitsLoading,
+    popularChallenges,
+    popularChallengesLoading,
+}: RecentFeedContentProps) => {
+    return (
+        <>
+            {/* Community feed */}
+            <div className="space-y-3">
+                <div className="flex items-center gap-2">
+                    <Users className="w-4 h-4 text-secondary" />
+                    <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
+                        Recent community summits
+                    </h3>
+                </div>
+
+                {publicSummitsLoading ? (
+                    <div className="space-y-3">
+                        {[1, 2, 3].map((i) => (
+                            <div
+                                key={i}
+                                className="h-28 rounded-xl bg-card/50 animate-pulse"
+                            />
+                        ))}
+                    </div>
+                ) : recentPublicSummits && recentPublicSummits.length > 0 ? (
+                    <div className="space-y-3">
+                        {recentPublicSummits.slice(0, 5).map((summit) => (
+                            <PublicSummitCard
+                                key={summit.id}
+                                summit={summit}
+                                showPeakHeader
+                            />
+                        ))}
+                    </div>
+                ) : (
+                    <div className="p-6 rounded-lg bg-card/50 border border-border/50 text-center">
+                        <Users className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
+                        <p className="text-sm text-muted-foreground">
+                            No public summits yet
+                        </p>
+                    </div>
+                )}
+            </div>
+
+            <div className="space-y-3">
+                <div className="flex items-center gap-2">
+                    <Trophy className="w-4 h-4 text-secondary" />
+                    <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
+                        Popular challenges
+                    </h3>
+                </div>
+
+                {popularChallengesLoading ? (
+                    <div className="space-y-2">
+                        {[1, 2, 3].map((i) => (
+                            <div
+                                key={i}
+                                className="h-16 rounded-lg bg-card/50 animate-pulse"
+                            />
+                        ))}
+                    </div>
+                ) : popularChallenges && popularChallenges.length > 0 ? (
+                    <div className="space-y-2">
+                        {popularChallenges.slice(0, 6).map((challenge) => (
+                            <ChallengeLinkItem
+                                key={String(challenge.id)}
+                                challenge={challenge}
+                                showProgress={false}
+                            />
+                        ))}
+                    </div>
+                ) : (
+                    <div className="p-6 rounded-lg bg-card/50 border border-border/50 text-center">
+                        <Trophy className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
+                        <p className="text-sm text-muted-foreground">
+                            No challenges yet
+                        </p>
+                    </div>
+                )}
+            </div>
+        </>
+    );
 };
 
 const DashboardContent = ({ isActive = true, showHeader = false }: DashboardContentProps) => {
     const { isAuthenticated, isLoading: authLoading, user } = useIsAuthenticated();
     const openLoginModal = useAuthModalStore((state) => state.openLoginModal);
 
-    // Only fetch when authenticated and content is active
-    const shouldFetch = isAuthenticated && isActive;
+    const [homeSubTab, setHomeSubTab] = React.useState<HomeSubTab>("dashboard");
+
+    React.useEffect(() => {
+        if (!isAuthenticated) return;
+        try {
+            const stored = window.localStorage.getItem(HOME_SUBTAB_STORAGE_KEY);
+            if (stored === "dashboard" || stored === "recent") {
+                setHomeSubTab(stored);
+            } else {
+                setHomeSubTab("dashboard");
+            }
+        } catch {
+            setHomeSubTab("dashboard");
+        }
+    }, [isAuthenticated]);
+
+    React.useEffect(() => {
+        if (!isAuthenticated) return;
+        try {
+            window.localStorage.setItem(HOME_SUBTAB_STORAGE_KEY, homeSubTab);
+        } catch {
+            // ignore
+        }
+    }, [isAuthenticated, homeSubTab]);
+
+    // Only fetch when active; gate authed dashboard fetches behind the Dashboard sub-tab.
+    const shouldFetchDashboard = isAuthenticated && isActive && homeSubTab === "dashboard";
+
+    // Recent feed should load for guests and for authed users on the Recent sub-tab.
+    const shouldFetchRecentFeed =
+        isActive &&
+        !authLoading &&
+        (!isAuthenticated || (isAuthenticated && homeSubTab === "recent"));
 
     const { data: recentSummits } = useQuery({
         queryKey: ["recentSummits"],
         queryFn: fetchRecentSummits,
-        enabled: shouldFetch,
+        enabled: shouldFetchDashboard,
         staleTime: 30000,
     });
 
     const { data: favoriteChallenges, isLoading: challengesLoading } = useQuery({
         queryKey: ["favoriteChallenges"],
         queryFn: fetchFavoriteChallenges,
-        enabled: shouldFetch,
+        enabled: shouldFetchDashboard,
         staleTime: 30000,
     });
 
     const { data: dashboardStats, isLoading: statsLoading } = useQuery({
         queryKey: ["dashboardStats"],
         queryFn: fetchDashboardStats,
-        enabled: shouldFetch,
+        enabled: shouldFetchDashboard,
         staleTime: 30000,
     });
 
@@ -129,7 +292,7 @@ const DashboardContent = ({ isActive = true, showHeader = false }: DashboardCont
     const { data: queueStatus } = useQuery({
         queryKey: ["queueStatus"],
         queryFn: fetchQueueStatus,
-        enabled: shouldFetch,
+        enabled: shouldFetchDashboard,
         staleTime: 5000,
         refetchInterval: (query) => {
             // Poll every 10 seconds if there are activities processing
@@ -142,7 +305,7 @@ const DashboardContent = ({ isActive = true, showHeader = false }: DashboardCont
     const { data: importStatus } = useQuery({
         queryKey: ["importStatus"],
         queryFn: fetchImportStatus,
-        enabled: shouldFetch,
+        enabled: shouldFetchDashboard,
         staleTime: 10000,
         refetchInterval: (query) => {
             // Poll every 15 seconds if there are activities being imported
@@ -155,8 +318,22 @@ const DashboardContent = ({ isActive = true, showHeader = false }: DashboardCont
     const { data: unconfirmedSummits } = useQuery({
         queryKey: ["unconfirmedSummits"],
         queryFn: fetchUnconfirmedSummits,
-        enabled: shouldFetch,
+        enabled: shouldFetchDashboard,
         staleTime: 30000,
+    });
+
+    const { data: recentPublicSummits, isLoading: publicSummitsLoading } = useQuery({
+        queryKey: ["landingRecentPublicSummits"],
+        queryFn: fetchRecentPublicSummits,
+        enabled: shouldFetchRecentFeed,
+        staleTime: 60000,
+    });
+
+    const { data: popularChallenges, isLoading: popularChallengesLoading } = useQuery({
+        queryKey: ["landingPopularChallenges"],
+        queryFn: fetchPopularChallenges,
+        enabled: shouldFetchRecentFeed,
+        staleTime: 60000,
     });
 
     // Find the most recent unreviewed summit (for hero card)
@@ -185,19 +362,30 @@ const DashboardContent = ({ isActive = true, showHeader = false }: DashboardCont
     // Show login prompt if not authenticated
     if (!isAuthenticated) {
         return (
-            <div className="text-center py-10">
-                <Mountain className="w-12 h-12 text-muted-foreground mx-auto mb-3" />
-                <p className="text-foreground font-medium">Sign in to view your dashboard</p>
-                <p className="text-sm text-muted-foreground mt-1">
-                    Track your summits and challenge progress
-                </p>
-                <button
-                    onClick={() => openLoginModal()}
-                    className="mt-4 inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-primary-foreground font-medium text-sm hover:bg-primary/90 transition-colors"
-                >
-                    <LogIn className="w-4 h-4" />
-                    Sign In
-                </button>
+            <div className="space-y-6">
+                <div className="text-center py-8">
+                    <Mountain className="w-12 h-12 text-muted-foreground mx-auto mb-3" />
+                    <p className="text-foreground font-medium">
+                        Sign in to track your summits
+                    </p>
+                    <p className="text-sm text-muted-foreground mt-1">
+                        Connect Strava to log peaks and join challenges
+                    </p>
+                    <button
+                        onClick={() => openLoginModal()}
+                        className="mt-4 inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-primary-foreground font-medium text-sm hover:bg-primary/90 transition-colors"
+                    >
+                        <LogIn className="w-4 h-4" />
+                        Sign In
+                    </button>
+                </div>
+
+                <RecentFeedContent
+                    recentPublicSummits={recentPublicSummits}
+                    publicSummitsLoading={publicSummitsLoading}
+                    popularChallenges={popularChallenges}
+                    popularChallengesLoading={popularChallengesLoading}
+                />
             </div>
         );
     }
@@ -224,36 +412,83 @@ const DashboardContent = ({ isActive = true, showHeader = false }: DashboardCont
                 </div>
             )}
 
-            {/* Processing Toast (fixed position, doesn't take up layout space) */}
-            <ProcessingToast count={queueStatus?.numProcessing ?? 0} />
+            {/* Home sub-tabs (authenticated) */}
+            <div className="flex items-center justify-between">
+                <div className="flex gap-0.5 bg-muted/50 p-0.5 rounded-lg">
+                    <button
+                        type="button"
+                        onClick={() => setHomeSubTab("dashboard")}
+                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all whitespace-nowrap flex-shrink-0 ${
+                            homeSubTab === "dashboard"
+                                ? "bg-background text-foreground shadow-sm"
+                                : "text-muted-foreground hover:text-foreground"
+                        }`}
+                        aria-label="Dashboard"
+                        aria-selected={homeSubTab === "dashboard"}
+                        role="tab"
+                    >
+                        <BarChart3 className="w-3.5 h-3.5" />
+                        Dashboard
+                    </button>
+                    <button
+                        type="button"
+                        onClick={() => setHomeSubTab("recent")}
+                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all whitespace-nowrap flex-shrink-0 ${
+                            homeSubTab === "recent"
+                                ? "bg-background text-foreground shadow-sm"
+                                : "text-muted-foreground hover:text-foreground"
+                        }`}
+                        aria-label="Recent"
+                        aria-selected={homeSubTab === "recent"}
+                        role="tab"
+                    >
+                        <Users className="w-3.5 h-3.5" />
+                        Recent
+                    </button>
+                </div>
+            </div>
 
-            {/* Import Progress Card (shows when importing historical data) */}
-            {importStatus && importStatus.status === "processing" && (
-                <ImportProgressCard status={importStatus} />
-            )}
+            {homeSubTab === "dashboard" ? (
+                <>
+                    {/* Processing Toast (fixed position, doesn't take up layout space) */}
+                    <ProcessingToast count={queueStatus?.numProcessing ?? 0} />
 
-            {/* Quick Stats Bar */}
-            <QuickStatsBar stats={dashboardStats ?? null} isLoading={statsLoading} />
+                    {/* Import Progress Card (shows when importing historical data) */}
+                    {importStatus && importStatus.status === "processing" && (
+                        <ImportProgressCard status={importStatus} />
+                    )}
 
-            {/* Hero Summit Card (if there's an unreviewed summit) */}
-            {heroSummit && <HeroSummitCard summit={heroSummit} />}
+                    {/* Quick Stats Bar */}
+                    <QuickStatsBar stats={dashboardStats ?? null} isLoading={statsLoading} />
 
-            {/* Unreviewed Summits Queue (older summits without reports) */}
-            {recentSummits && recentSummits.length > 0 && (
-                <UnreviewedSummitsQueue summits={recentSummits} />
-            )}
+                    {/* Hero Summit Card (if there's an unreviewed summit) */}
+                    {heroSummit && <HeroSummitCard summit={heroSummit} />}
 
-            {/* Challenge Progress */}
-            <ChallengeProgressSection
-                challenges={favoriteChallenges}
-                isLoading={challengesLoading}
-            />
+                    {/* Unreviewed Summits Queue (older summits without reports) */}
+                    {recentSummits && recentSummits.length > 0 && (
+                        <UnreviewedSummitsQueue summits={recentSummits} />
+                    )}
 
-            {/* Unconfirmed Summits Card (summits needing user review) - lower priority */}
-            {unconfirmedSummits && unconfirmedSummits.length > 0 && (
-                <UnconfirmedSummitsCard 
-                    summits={unconfirmedSummits.slice(0, 3)} 
-                    totalCount={unconfirmedSummits.length}
+                    {/* Challenge Progress */}
+                    <ChallengeProgressSection
+                        challenges={favoriteChallenges}
+                        isLoading={challengesLoading}
+                    />
+
+                    {/* Unconfirmed Summits Card (summits needing user review) - lower priority */}
+                    {unconfirmedSummits && unconfirmedSummits.length > 0 && (
+                        <UnconfirmedSummitsCard 
+                            summits={unconfirmedSummits.slice(0, 3)} 
+                            totalCount={unconfirmedSummits.length}
+                        />
+                    )}
+                </>
+            ) : (
+                <RecentFeedContent
+                    recentPublicSummits={recentPublicSummits}
+                    publicSummitsLoading={publicSummitsLoading}
+                    popularChallenges={popularChallenges}
+                    popularChallengesLoading={popularChallengesLoading}
                 />
             )}
         </div>

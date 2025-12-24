@@ -138,6 +138,10 @@ src/app/
 - `stats/route.ts` - Fetches dashboard quick stats (total peaks, elevation gained, summits this/last month, primary challenge progress)
 - All routes require authentication and use `getGoogleIdToken` for backend auth
 
+##### Landing (`api/landing/`)
+- `recent-public-summits/route.ts` - Fetches most recent public summits across the whole community (no auth). Used for guest landing “community is alive” feed.
+- `popular-challenges/route.ts` - Fetches “popular” challenges (hybrid ordering; no popularity numbers displayed) (no auth). Used for guest landing feed.
+
 ##### Summits (`api/summits/`)
 - `unconfirmed/route.ts` - GET: Fetches summits that need user review (low confidence auto-detections). Optional `limit` query param.
 - `[id]/confirm/route.ts` - POST: Confirms a summit as valid. Updates `confirmation_status` to `user_confirmed`.
@@ -235,12 +239,12 @@ For static ISR pages (`/peaks/[id]`, `/challenges/[id]`), always use the "Public
   - Mobile (< 1024px): `MobileNavLayout` - Fixed 3-tab bottom navigation with draggable content sheet
   - Both layouts use the same content components (HomeTabContent, ExploreTabContent, ProfileTabContent)
 - `PeakDetailContent.tsx` - Peak detail content with SSR data (used by static pages). Uses shared UI components.
-- `PeakCommunity.tsx` - Community summit history display component. Shows public summits with user names (linking to profile pages when user_id is available), weather conditions, difficulty/experience ratings as pill-style chips, and condition tags as small pills. User avatar and name are clickable links to `/users/[user_id]`. **Note**: Activity links have been removed to comply with Strava API guidelines (Strava data can only be shown to the activity owner). Public summits only display PathQuest-derived data (timestamp, notes, ratings, weather).
-- `PeakUserActivity.tsx` - User's activity display for a peak (shows user's ascents, activities, and allows editing). Activity cards link to `/activities/[id]` detail pages. Uses shared `ActivityWithSummits` and `OrphanSummitCard` components.
-- `PeakDetailsTab.tsx` - Peak details tab content showing current weather conditions and challenges the peak belongs to. Used in the "Details" sub-tab of peak detail views. Shows challenge progress bars for authenticated users.
+- `PeakCommunity.tsx` - Community summit history display component. Shows public summits with user names (linking to profile pages when user_id is available), weather conditions, difficulty/experience ratings as pill-style chips, and condition tags as small pills. User avatar and name are clickable links to `/users/[user_id]`. **Note**: Activity links have been removed to comply with Strava API guidelines (Strava data can only be shown to the activity owner). Public summits only display PathQuest-derived data (timestamp, notes, ratings, weather). Uses shared `PublicSummitCard`.
+- `PeakUserActivity.tsx` - User's activity display for a peak (shows user's ascents, activities, and allows editing). Peak **Journal** sub-tab now reuses `JournalEntryCard` styling for summit entries, but displays the **activity title** as the primary title line (owner-only; not a Strava privacy issue). Activity cards link to `/activities/[id]` detail pages.
+- `PeakDetailsTab.tsx` - Peak details tab content showing current weather conditions and challenges the peak belongs to. Used in the "Details" sub-tab of peak detail views. Shows challenge progress bars for authenticated users. Uses shared `ChallengeLinkItem`.
 - `ChallengeDetailContent.tsx` - Challenge detail content with SSR data (used by static pages). Uses shared UI components.
 - `DashboardPanel.tsx` - User dashboard panel (authenticated only). Wrapper component that renders DashboardContent.
-- `DashboardContent.tsx` - Dashboard content component (refactored December 2024). Shows login CTA button when not authenticated. When authenticated, shows:
+- `DashboardContent.tsx` - Dashboard content component (refactored December 2024). When not authenticated, shows login CTA + a guest “community is alive” feed (recent public summits + popular challenges). When authenticated, shows a small Home sub-tab switcher (**Dashboard** / **Recent**) with the selection persisted in localStorage (`pathquest:homeSubTab`):\n+  - **Dashboard** (default): shows:
   - Queue status indicator (when activities are processing) - polls `/api/dashboard/queue-status` every 10s when items in queue
   - **Import Progress Card** - Detailed import progress when historical data is being processed. Shows progress bar, summits found, ETA. Polls every 15s.
   - **Quick Stats Bar** - 4-metric horizontal bar (total peaks, elevation gained, summits this month with trend, primary challenge progress)
@@ -248,6 +252,7 @@ For static ISR pages (`/peaks/[id]`, `/challenges/[id]`), always use the "Public
   - **Unreviewed Summits Queue** - List of summits older than 72 hours without reports (max 5 items)
   - Recent summits (fetched from `/api/dashboard/recent-summits`) with `hasReport` and `summitNumber` fields
   - Favorite challenges with progress bars and last progress date (fetched from `/api/dashboard/favorite-challenges`)
+  - **Recent**: shows the community feed (recent public summits + popular challenges) via `/api/landing/*` proxies.
 - `AddManualSummitModal.tsx` - Modal for logging manual peak summits. Supports two flows: peak-first (from peak detail) and activity-first (from activity detail with peak search along route). Triggered by ManualSummitProvider.
 - `SummitReportModal.tsx` - Modal for editing summit experiences/reports (triggered by SummitReportProvider). Features:
   - Trip notes textarea with random placeholder prompts
@@ -292,7 +297,7 @@ Action-oriented dashboard components (December 2024):
 
 ##### Journal Components (`components/journal/`)
 Optimized journal system (December 2024) for viewing summit history:
-- `JournalEntryCard.tsx` - Compact/expandable card for individual summit entries. Shows summit number, peak name, date, elevation, condition tags. Expands to show weather data, notes, activity link, and edit button. Uses condition tag pills with color coding.
+- `JournalEntryCard.tsx` - Compact/expandable card for individual summit entries. Shows summit number, date, tags, and a primary title line. Default title is the **peak name** (Profile Journal), but supports an **activity-title** mode for peak-detail Journal. Expands to show weather data, notes, activity details, and edit/delete actions for the owner. Uses condition tag pills with color coding.
 - `JournalFilterBar.tsx` - Filter controls for journal view. Includes search input (peak name), year dropdown, hasReport toggle (All/Has Report/Needs Report), clear filters button, and result count display.
 - `index.ts` - Export barrel for journal components.
 - `index.ts` - Export barrel for dashboard components
@@ -346,7 +351,7 @@ Unified navigation system (December 2024) with fixed 3-tab structure for both mo
 
 ##### Activities (`components/app/activities/`)
 - `ActivityElevationProfile.tsx` - Interactive elevation profile chart using visx. Supports hover interaction that shows a marker on the GPX track at the corresponding distance point via `onHover` callback, displays summit markers on chart, shows min/max elevation labels.
-- `ActivitySummitsList.tsx` - List of individual summits during an activity (not grouped by peak). Uses shared `SummitItem` component with `showPeakHeader=true` to display peak name at top of each summit. Includes "Log Another Summit" button (only visible when `isOwner` is true). Supports `onSummitHover` callback for map marker highlighting. Props: `summits`, `activityId`, `onSummitHover`, `isOwner` (controls edit/delete/add buttons visibility), `onSummitDeleted` (callback for refreshing after deletion).
+- `ActivitySummitsList.tsx` - List of individual summits during an activity (not grouped by peak). Reuses `JournalEntryCard` styling (same as Profile/Peak journals) with peak title, tags, and expandable details; hides the redundant activity-link icon when already viewing the activity. Includes "Log Another Summit" button (only visible when `isOwner` is true). Supports `onSummitHover` callback for map marker highlighting. Props: `summits`, `activityId`, `activityTitle`, `onSummitHover`, `isOwner`, `onSummitDeleted`.
 - `ActivityWithSummits.tsx` - Shared activity card with nested summits. Used by PeakUserActivity and ProfileJournal. Shows activity header with link, stats (distance, elevation gain), Strava link, and nested summit items. Supports both `Summit[]` and `SummitWithPeak[]` for summits. Props: `activity`, `summits`, `summitsWithPeak`, `isHighlighted`, `onHighlight`, `peakId`, `peakName`, `showPeakHeaders`, `isOwner` (controls edit/delete button visibility), `onSummitDeleted` (callback when a summit is deleted).
 
 ##### Summits (`components/app/summits/`)

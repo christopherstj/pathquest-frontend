@@ -6,6 +6,7 @@ import {
     Mountain, 
     ChevronDown, 
     ChevronUp, 
+    Clock,
     Pencil,
     Trash2,
     Thermometer,
@@ -31,6 +32,17 @@ interface JournalEntryCardProps {
     entry: JournalEntry;
     isOwner: boolean;
     onDeleted?: () => void;
+    /**
+     * Controls what the “title” line represents.
+     * - peak: show peak name (profile journal default)
+     * - activity: show activity title (peak-detail journal)
+     */
+    titleVariant?: "peak" | "activity";
+    /**
+     * Whether to show the small “route” icon linking to the underlying activity.
+     * Useful to disable on the Activity detail page (since you’re already there).
+     */
+    showActivityLinkIcon?: boolean;
 }
 
 // Condition tag colors
@@ -85,10 +97,30 @@ const formatDate = (timestamp: string, timezone?: string) => {
     });
 };
 
+const formatTime = (timestamp: string, timezone?: string) => {
+    const date = new Date(timestamp);
+    const ianaTimezone = extractIanaTimezone(timezone);
+    return date.toLocaleTimeString("en-US", {
+        hour: "numeric",
+        minute: "2-digit",
+        timeZone: ianaTimezone,
+    });
+};
+
 const formatElevation = (meters?: number): string => {
     if (!meters) return "";
     const feet = Math.round(meters * 3.28084);
     return `${feet.toLocaleString()}ft`;
+};
+
+// Convert Celsius to Fahrenheit (Open-Meteo historical data uses Celsius)
+const celsiusToFahrenheit = (celsius: number): number => {
+    return (celsius * 9) / 5 + 32;
+};
+
+// Convert km/h to mph (Open-Meteo historical data uses km/h)
+const kmhToMph = (kmh: number): number => {
+    return kmh * 0.621371;
 };
 
 const weatherCodeDescriptions: Record<number, string> = {
@@ -117,14 +149,31 @@ const weatherCodeDescriptions: Record<number, string> = {
     96: "Thunderstorm with hail",
 };
 
-const JournalEntryCard = ({ entry, isOwner, onDeleted }: JournalEntryCardProps) => {
+const JournalEntryCard = ({
+    entry,
+    isOwner,
+    onDeleted,
+    titleVariant = "peak",
+    showActivityLinkIcon = true,
+}: JournalEntryCardProps) => {
     const [isExpanded, setIsExpanded] = useState(false);
     const [isDeleting, setIsDeleting] = useState(false);
     const router = useRouter();
     const openSummitReport = useSummitReportStore((state) => state.openSummitReport);
 
-    const handlePeakClick = () => {
-        router.push(`/peaks/${entry.peak.id}`);
+    const titleText =
+        titleVariant === "activity"
+            ? entry.activity?.title ?? "Manual Summit"
+            : entry.peak.name;
+
+    const titleHref =
+        titleVariant === "activity"
+            ? (entry.activity?.id ? `/activities/${entry.activity.id}` : null)
+            : `/peaks/${entry.peak.id}`;
+
+    const handleTitleClick = () => {
+        if (!titleHref) return;
+        router.push(titleHref);
     };
 
     const hasTags = 
@@ -211,22 +260,31 @@ const JournalEntryCard = ({ entry, isOwner, onDeleted }: JournalEntryCardProps) 
                     <button
                         onClick={(e) => {
                             e.stopPropagation();
-                            handlePeakClick();
+                            handleTitleClick();
                         }}
                         className="font-semibold text-sm text-foreground hover:text-primary transition-colors truncate block text-left w-full"
                     >
-                        {entry.peak.name}
+                        {titleText}
                     </button>
                     <div className="flex items-center gap-2 text-xs text-muted-foreground mt-0.5">
-                        {entry.peak.elevation && (
-                            <span>{formatElevation(entry.peak.elevation)}</span>
-                        )}
-                        {(entry.peak.state || entry.peak.country) && (
+                        {titleVariant === "activity" ? (
                             <>
-                                {entry.peak.elevation && <span>•</span>}
-                                <span>
-                                    {[entry.peak.state, entry.peak.country].filter(Boolean).join(", ")}
-                                </span>
+                                <Clock className="w-3 h-3" />
+                                <span>Summit at {formatTime(entry.timestamp, entry.timezone)}</span>
+                            </>
+                        ) : (
+                            <>
+                                {entry.peak.elevation && (
+                                    <span>{formatElevation(entry.peak.elevation)}</span>
+                                )}
+                                {(entry.peak.state || entry.peak.country) && (
+                                    <>
+                                        {entry.peak.elevation && <span>•</span>}
+                                        <span>
+                                            {[entry.peak.state, entry.peak.country].filter(Boolean).join(", ")}
+                                        </span>
+                                    </>
+                                )}
                             </>
                         )}
                     </div>
@@ -250,7 +308,7 @@ const JournalEntryCard = ({ entry, isOwner, onDeleted }: JournalEntryCardProps) 
                     ) : null}
 
                     {/* Activity Link - only show to owner (Strava compliance) */}
-                    {isOwner && entry.activity && (
+                    {showActivityLinkIcon && isOwner && entry.activity && (
                         <Link
                             href={`/activities/${entry.activity.id}`}
                             onClick={(e) => e.stopPropagation()}
@@ -352,7 +410,7 @@ const JournalEntryCard = ({ entry, isOwner, onDeleted }: JournalEntryCardProps) 
                                     {entry.temperature !== undefined && (
                                         <div className="flex items-center gap-1">
                                             <Thermometer className="w-3 h-3" />
-                                            <span>{Math.round(entry.temperature)}°F</span>
+                                            <span>{Math.round(celsiusToFahrenheit(entry.temperature))}°F</span>
                                         </div>
                                     )}
                                     {entry.weatherCode !== undefined && (
@@ -364,7 +422,7 @@ const JournalEntryCard = ({ entry, isOwner, onDeleted }: JournalEntryCardProps) 
                                     {entry.windSpeed !== undefined && (
                                         <div className="flex items-center gap-1">
                                             <Wind className="w-3 h-3" />
-                                            <span>{Math.round(entry.windSpeed)} mph</span>
+                                            <span>{Math.round(kmhToMph(entry.windSpeed))} mph</span>
                                         </div>
                                     )}
                                 </div>

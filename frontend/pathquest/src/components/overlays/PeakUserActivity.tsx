@@ -13,7 +13,8 @@ import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import Summit from "@/typeDefs/Summit";
 import ActivityWithSummits from "@/components/app/activities/ActivityWithSummits";
-import { PeakJournalCard } from "@/components/journal";
+import { JournalEntryCard } from "@/components/journal";
+import { JournalEntry } from "@/typeDefs/JournalEntry";
 
 type PeakUserActivityProps = {
     highlightedActivityId?: string | null;
@@ -111,17 +112,50 @@ const PeakUserActivity = ({ highlightedActivityId, onHighlightActivity }: PeakUs
                         const activity = summit.activity_id 
                             ? activityMap.get(String(summit.activity_id))
                             : undefined;
-                        
+
+                        const entry: JournalEntry = {
+                            id: summit.id,
+                            timestamp: summit.timestamp,
+                            timezone: summit.timezone,
+                            notes: summit.notes,
+                            difficulty: summit.difficulty,
+                            experienceRating: summit.experience_rating,
+                            conditionTags: summit.condition_tags,
+                            customConditionTags: summit.custom_condition_tags,
+                            isPublic: summit.is_public,
+                            hasReport: Boolean(
+                                (summit.notes && summit.notes.trim().length > 0) ||
+                                    summit.difficulty ||
+                                    summit.experience_rating
+                            ),
+                            // For peak detail, show a per-peak summit counter (newest = highest)
+                            summitNumber: sortedSummits.length - idx,
+                            temperature: summit.temperature,
+                            weatherCode: summit.weather_code,
+                            cloudCover: summit.cloud_cover,
+                            windSpeed: summit.wind_speed,
+                            peak: {
+                                id: peakId,
+                                name: peakName,
+                            },
+                            activity: activity
+                                ? {
+                                      id: String(activity.id),
+                                      title: activity.title ?? "Activity",
+                                      sport: activity.sport,
+                                      distance: activity.distance,
+                                      gain: activity.gain,
+                                  }
+                                : undefined,
+                        };
+
                         return (
-                            <PeakJournalCard
+                            <JournalEntryCard
                                 key={summit.id}
-                                summit={summit}
-                                peakId={peakId}
-                                peakName={peakName}
-                                activityTitle={activity?.title}
+                                entry={entry}
                                 isOwner={true}
                                 onDeleted={handleSummitDeleted}
-                                index={sortedSummits.length - idx}
+                                titleVariant="activity"
                             />
                         );
                     })}

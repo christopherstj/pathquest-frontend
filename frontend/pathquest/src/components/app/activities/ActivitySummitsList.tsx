@@ -3,19 +3,21 @@
 import React from "react";
 import { Mountain, Plus } from "lucide-react";
 import SummitWithPeak from "@/typeDefs/SummitWithPeak";
+import { JournalEntry } from "@/typeDefs/JournalEntry";
 import { Button } from "@/components/ui/button";
 import { useManualSummitStore } from "@/providers/ManualSummitProvider";
-import SummitItem from "@/components/app/summits/SummitItem";
+import { JournalEntryCard } from "@/components/journal";
 
 interface ActivitySummitsListProps {
     summits: SummitWithPeak[];
     activityId: string;
+    activityTitle?: string;
     onSummitHover?: (peakId: string | null) => void;
     isOwner?: boolean;
     onSummitDeleted?: () => void;
 }
 
-const ActivitySummitsList = ({ summits, activityId, onSummitHover, isOwner = false, onSummitDeleted }: ActivitySummitsListProps) => {
+const ActivitySummitsList = ({ summits, activityId, activityTitle, onSummitHover, isOwner = false, onSummitDeleted }: ActivitySummitsListProps) => {
     const openManualSummit = useManualSummitStore((state) => state.openManualSummit);
 
     if (summits.length === 0) {
@@ -62,18 +64,63 @@ const ActivitySummitsList = ({ summits, activityId, onSummitHover, isOwner = fal
             </div>
 
             <div className="space-y-3">
-                {summits.map((summit, idx) => (
-                    <SummitItem 
-                        key={summit.id} 
-                        summit={summit} 
-                        showPeakHeader={true}
-                        onHoverStart={onSummitHover ? (peakId) => onSummitHover(peakId) : undefined}
-                        onHoverEnd={onSummitHover ? () => onSummitHover(null) : undefined}
-                        isOwner={isOwner}
-                        onDeleted={onSummitDeleted}
-                        index={idx + 1}
-                    />
-                ))}
+                {summits.map((summit, idx) => {
+                    const entry: JournalEntry = {
+                        id: summit.id,
+                        timestamp: summit.timestamp,
+                        timezone: summit.timezone,
+                        notes: summit.notes,
+                        difficulty: summit.difficulty,
+                        experienceRating: summit.experience_rating,
+                        conditionTags: summit.condition_tags,
+                        customConditionTags: summit.custom_condition_tags,
+                        isPublic: summit.is_public,
+                        hasReport: Boolean(
+                            (summit.notes && summit.notes.trim().length > 0) ||
+                                summit.difficulty ||
+                                summit.experience_rating
+                        ),
+                        summitNumber: idx + 1,
+                        temperature: summit.temperature,
+                        weatherCode: summit.weather_code,
+                        cloudCover: summit.cloud_cover,
+                        windSpeed: summit.wind_speed,
+                        peak: {
+                            id: summit.peak.id,
+                            name: summit.peak.name,
+                            elevation: summit.peak.elevation,
+                            state: summit.peak.state,
+                            country: summit.peak.country,
+                        },
+                        // Keep activity context for owner-only report editing; hide the link icon in this view.
+                        activity: {
+                            id: activityId,
+                            title: activityTitle ?? "Activity",
+                        },
+                    };
+
+                    return (
+                        <div
+                            key={summit.id}
+                            onMouseEnter={
+                                onSummitHover
+                                    ? () => onSummitHover(summit.peak.id)
+                                    : undefined
+                            }
+                            onMouseLeave={
+                                onSummitHover ? () => onSummitHover(null) : undefined
+                            }
+                        >
+                            <JournalEntryCard
+                                entry={entry}
+                                isOwner={isOwner}
+                                onDeleted={onSummitDeleted}
+                                titleVariant="peak"
+                                showActivityLinkIcon={false}
+                            />
+                        </div>
+                    );
+                })}
             </div>
 
             {/* Add Manual Summit Button - only shown for activity owner */}

@@ -56,6 +56,7 @@ export const ExploreActivityContent = ({
                 <ActivitySummitsList
                     summits={activitySummits}
                     activityId={activityId!}
+                    activityTitle={activity.title}
                     onSummitHover={onSummitHover}
                     isOwner={isActivityOwner}
                 />
