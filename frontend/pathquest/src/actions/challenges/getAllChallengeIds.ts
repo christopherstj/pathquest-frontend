@@ -1,40 +1,34 @@
 "use server";
 import getBackendUrl from "@/helpers/getBackendUrl";
-import Challenge from "@/typeDefs/Challenge";
 import getGoogleIdToken from "@/auth/getGoogleIdToken";
+import { createApiClient, endpoints } from "@pathquest/shared/api";
 
 const backendUrl = getBackendUrl();
 
 const getAllChallengeIds = async (): Promise<{ id: string }[]> => {
-    // Always generate token for Google IAM authentication (required at infrastructure level)
-    // Works during build via Vercel OIDC
     const token = await getGoogleIdToken().catch((err) => {
         console.error("[getAllChallengeIds] Failed to get Google ID token:", err);
         return null;
     });
-    
-    const headers: Record<string, string> = {
-        "Content-Type": "application/json",
-    };
-    
-    if (token) {
-        headers["Authorization"] = `Bearer ${token}`;
-    }
 
-    // Get all challenges (public endpoint)
-    const apiRes = await fetch(`${backendUrl}/challenges?perPage=1000`, {
-        method: "GET",
-        headers,
-        next: { revalidate: 86400 }, // Cache for 24 hours
+    const client = createApiClient({
+        baseUrl: backendUrl,
+        getAuthHeaders: async () => {
+            const headers: Record<string, string> = {};
+            if (token) headers.Authorization = `Bearer ${token}`;
+            return headers;
+        },
     });
 
-    if (!apiRes.ok) {
-        console.error("Failed to fetch challenges:", await apiRes.text());
+    try {
+        return await endpoints.getAllChallengeIds(
+            client,
+            { next: { revalidate: 86400 } } as any
+        );
+    } catch (err: any) {
+        console.error("[getAllChallengeIds] Failed to fetch challenges:", err?.bodyText ?? err);
         return [];
     }
-
-    const data: Challenge[] = await apiRes.json();
-    return data.map((c) => ({ id: c.id }));
 };
 
 export default getAllChallengeIds;

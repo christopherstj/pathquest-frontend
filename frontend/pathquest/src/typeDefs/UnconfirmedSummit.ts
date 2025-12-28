@@ -1,13 +1,3 @@
-export interface UnconfirmedSummit {
-    id: string;
-    peakId: string;
-    peakName: string;
-    peakElevation: number;
-    activityId: string;
-    timestamp: string;
-    distanceFromPeak: number; // meters
-    confidenceScore: number;
-}
-
-export default UnconfirmedSummit;
+export type { UnconfirmedSummit } from "@pathquest/shared/types";
+export type { UnconfirmedSummit as default } from "@pathquest/shared/types";
 

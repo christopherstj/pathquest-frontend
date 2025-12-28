@@ -2,7 +2,8 @@
 import getGoogleIdToken from "@/auth/getGoogleIdToken";
 import getBackendUrl from "@/helpers/getBackendUrl";
 import { useAuth } from "@/auth/useAuth";
-import ServerActionResult from "@/typeDefs/ServerActionResult";
+import { createApiClient, endpoints } from "@pathquest/shared/api";
+import type { ServerActionResult } from "@pathquest/shared/types";
 
 const backendUrl = getBackendUrl();
 
@@ -50,28 +51,22 @@ const getNextPeakSuggestion = async (
         return { success: false, error: "Authentication error" };
     }
 
-    const params = new URLSearchParams();
-    if (lat !== undefined) params.set("lat", lat.toString());
-    if (lng !== undefined) params.set("lng", lng.toString());
-
-    const url = `${backendUrl}/challenges/${challengeId}/next-peak${params.toString() ? `?${params.toString()}` : ""}`;
-
-    const res = await fetch(url, {
-        method: "GET",
-        headers: {
-            "Content-Type": "application/json",
-            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    const client = createApiClient({
+        baseUrl: backendUrl,
+        getAuthHeaders: async () => {
+            const headers: Record<string, string> = {};
+            if (token) headers.Authorization = `Bearer ${token}`;
+            return headers;
         },
     });
 
-    if (!res.ok) {
-        console.error("[getNextPeakSuggestion]", res.status, await res.text());
+    try {
+        const data = await endpoints.getNextPeakSuggestion(client, challengeId, { lat, lng });
+        return { success: true, data };
+    } catch (err: any) {
+        console.error("[getNextPeakSuggestion]", err?.bodyText ?? err);
         return { success: false, error: "Failed to get next peak suggestion" };
     }
-
-    const data = await res.json();
-
-    return { success: true, data };
 };
 
 export default getNextPeakSuggestion;

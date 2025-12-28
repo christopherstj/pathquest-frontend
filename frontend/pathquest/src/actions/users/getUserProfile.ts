@@ -2,11 +2,8 @@
 import getGoogleIdToken from "@/auth/getGoogleIdToken";
 import { useAuth } from "@/auth/useAuth";
 import getBackendUrl from "@/helpers/getBackendUrl";
-import User from "@/typeDefs/User";
-import ProfileStats from "@/typeDefs/ProfileStats";
-import ChallengeProgress from "@/typeDefs/ChallengeProgress";
-import Peak from "@/typeDefs/Peak";
-import ServerActionResult from "@/typeDefs/ServerActionResult";
+import { createApiClient, endpoints } from "@pathquest/shared/api";
+import type { ChallengeProgress, Peak, ProfileStats, ServerActionResult, User } from "@pathquest/shared/types";
 
 const backendUrl = getBackendUrl();
 
@@ -26,25 +23,25 @@ const getUserProfile = async (
     const token = await getGoogleIdToken().catch(() => null);
     const currentUserId = session?.user?.id;
 
-    const apiRes = await fetch(`${backendUrl}/users/${userId}/profile`, {
-        method: "GET",
-        cache: "no-cache",
-        headers: {
-            "Content-Type": "application/json",
-            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    const client = createApiClient({
+        baseUrl: backendUrl,
+        getAuthHeaders: async () => {
+            const headers: Record<string, string> = {};
+            if (token) headers.Authorization = `Bearer ${token}`;
+            return headers;
         },
     });
 
-    if (!apiRes.ok) {
-        const errorText = await apiRes.text();
-        console.error("Error fetching profile:", errorText);
+    let data: any;
+    try {
+        data = await endpoints.getUserProfile(client, userId, { cache: "no-cache" } as any);
+    } catch (err: any) {
+        console.error("Error fetching profile:", err?.bodyText ?? err);
         return {
             success: false,
-            error: apiRes.status === 404 ? "Profile not found" : "Error fetching profile",
+            error: err?.status === 404 ? "Profile not found" : "Error fetching profile",
         };
     }
-
-    const data = await apiRes.json();
     
     // Determine if current user is the owner of this profile
     // Convert both to strings to handle potential type mismatch (session user.id may be number, URL userId is string)

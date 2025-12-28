@@ -3,7 +3,8 @@
 import getGoogleIdToken from "@/auth/getGoogleIdToken";
 import { useAuth } from "@/auth/useAuth";
 import getBackendUrl from "@/helpers/getBackendUrl";
-import ChallengeProgress from "@/typeDefs/ChallengeProgress";
+import { createApiClient, endpoints } from "@pathquest/shared/api";
+import type { ChallengeProgress } from "@pathquest/shared/types";
 
 type SearchChallengesParams = {
     northWestLat?: string;
@@ -43,38 +44,29 @@ const searchChallenges = async (
     // Always generate token for Google IAM authentication (required at infrastructure level)
     const token = await getGoogleIdToken().catch(() => null);
 
-    const url = new URL(`${backendUrl}/challenges/search`);
-    url.searchParams.append("type", types.join(","));
-
-    if (northWestLat && northWestLng && southEastLat && southEastLng) {
-        url.searchParams.append("northWestLat", northWestLat);
-        url.searchParams.append("northWestLng", northWestLng);
-        url.searchParams.append("southEastLat", southEastLat);
-        url.searchParams.append("southEastLng", southEastLng);
-    }
-
-    if (search) {
-        url.searchParams.append("search", search);
-    }
-
-    if (favoritesOnly) {
-        url.searchParams.append("favoritesOnly", "true");
-    }
-
-    const response = await fetch(url.toString(), {
-        method: "GET",
-        cache: "no-cache",
-        headers: {
-            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    const client = createApiClient({
+        baseUrl: backendUrl,
+        getAuthHeaders: async () => {
+            const headers: Record<string, string> = {};
+            if (token) headers.Authorization = `Bearer ${token}`;
+            return headers;
         },
     });
 
-    if (!response.ok) {
-        console.error(await response.text());
+    try {
+        return await endpoints.searchChallenges(client, {
+            northWestLat,
+            northWestLng,
+            southEastLat,
+            southEastLng,
+            search,
+            favoritesOnly,
+            types,
+        }, { cache: "no-cache" } as any);
+    } catch (err: any) {
+        console.error("[searchChallenges]", err?.bodyText ?? err);
         return [];
     }
-
-    return (await response.json()) as ChallengeProgress[];
 };
 
 export default searchChallenges;

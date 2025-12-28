@@ -1,10 +1,3 @@
-import Peak from "./Peak";
-
-export interface UserPeakWithSummitCount extends Peak {
-    summit_count: number;
-    first_summit_date?: string;
-    last_summit_date?: string;
-}
-
-export default UserPeakWithSummitCount;
+export type { UserPeakWithSummitCount } from "@pathquest/shared/types";
+export type { UserPeakWithSummitCount as default } from "@pathquest/shared/types";
 

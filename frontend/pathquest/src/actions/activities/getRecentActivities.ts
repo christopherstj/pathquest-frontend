@@ -2,7 +2,8 @@
 import getGoogleIdToken from "@/auth/getGoogleIdToken";
 import getBackendUrl from "@/helpers/getBackendUrl";
 import { useAuth } from "@/auth/useAuth";
-import { ActivityStart } from "@/typeDefs/ActivityStart";
+import { createApiClient, endpoints } from "@pathquest/shared/api";
+import type { ActivityStart } from "@pathquest/shared/types";
 
 const backendUrl = getBackendUrl();
 
@@ -24,23 +25,20 @@ const getRecentActivities = async (summitsOnly?: boolean) => {
         return [];
     }
 
-    const response = await fetch(
-        `${backendUrl}/activities/recent${summitsOnly ? "?summitsOnly=true" : ""}`,
-        {
-            method: "GET",
-            headers: {
-                ...(idToken ? { Authorization: `Bearer ${idToken}` } : {}),
-            },
-        }
-    );
+    const client = createApiClient({
+        baseUrl: backendUrl,
+        getAuthHeaders: async () => {
+            const headers: Record<string, string> = {};
+            if (idToken) headers.Authorization = `Bearer ${idToken}`;
+            return headers;
+        },
+    });
 
-    if (!response.ok) {
+    try {
+        return await endpoints.getRecentActivities(client, { summitsOnly });
+    } catch {
         return [];
     }
-
-    const data: ActivityStart[] = await response.json();
-
-    return data;
 };
 
 export default getRecentActivities;

@@ -2,6 +2,7 @@
 import getGoogleIdToken from "@/auth/getGoogleIdToken";
 import { useAuth } from "@/auth/useAuth";
 import getBackendUrl from "@/helpers/getBackendUrl";
+import { createApiClient, endpoints } from "@pathquest/shared/api";
 
 const backendUrl = getBackendUrl();
 
@@ -23,20 +24,21 @@ const getIsFavorited = async (peakId: string): Promise<boolean> => {
         return false;
     }
 
-    const response = await fetch(`${backendUrl}/peaks/favorite?peakId=${peakId}`, {
-        method: "GET",
-        headers: {
-            ...(idToken ? { Authorization: `Bearer ${idToken}` } : {}),
+    const client = createApiClient({
+        baseUrl: backendUrl,
+        getAuthHeaders: async () => {
+            const headers: Record<string, string> = {};
+            if (idToken) headers.Authorization = `Bearer ${idToken}`;
+            return headers;
         },
     });
 
-    if (!response.ok) {
-        console.error(await response.text());
-        return false;
-    } else {
-        const data = await response.json();
-        console.log(data);
+    try {
+        const data = await endpoints.getIsPeakFavorited(client, peakId);
         return data.isFavorited;
+    } catch (err: any) {
+        console.error("[getIsPeakFavorited]", err?.bodyText ?? err);
+        return false;
     }
 };
 

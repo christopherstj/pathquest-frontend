@@ -2,10 +2,8 @@
 
 import getBackendUrl from "@/helpers/getBackendUrl";
 import getGoogleIdToken from "@/auth/getGoogleIdToken";
-import Activity from "@/typeDefs/Activity";
-import Challenge from "@/typeDefs/Challenge";
-import Peak from "@/typeDefs/Peak";
-import ServerActionResult from "@/typeDefs/ServerActionResult";
+import { createApiClient, endpoints } from "@pathquest/shared/api";
+import type { Activity, Challenge, Peak, ServerActionResult } from "@pathquest/shared/types";
 import { ChallengeProgressInfo } from "./getChallengeDetails";
 
 const backendUrl = getBackendUrl();
@@ -31,33 +29,32 @@ const getPublicChallengeDetails = async (
         }[];
     }>
 > => {
-    // Get token for Google IAM authentication (required at infrastructure level)
-    // No user headers - this is public-only data for static generation
     const token = await getGoogleIdToken().catch((err) => {
         console.error("[getPublicChallengeDetails] Failed to get Google ID token:", err);
         return null;
     });
 
-    const apiRes = await fetch(`${backendUrl}/challenges/${challengeId}/details`, {
-        method: "GET",
-        headers: {
-            "Content-Type": "application/json",
-            ...(token ? { Authorization: `Bearer ${token}` } : {}),
-            // No x-user-* headers - this is public-only data
+    const client = createApiClient({
+        baseUrl: backendUrl,
+        getAuthHeaders: async () => {
+            const headers: Record<string, string> = {};
+            if (token) headers.Authorization = `Bearer ${token}`;
+            return headers;
         },
-        // Cache for ISR
-        next: { revalidate: 86400 },
     });
 
-    if (!apiRes.ok) {
-        console.error("Failed to fetch challenge details:", await apiRes.text());
-        return {
-            success: false,
-            error: "Failed to fetch challenge details",
-        };
+    let data: any;
+    try {
+        data = await endpoints.getPublicChallengeDetails(
+            client,
+            challengeId,
+            // Next.js-only fetch options for ISR caching.
+            { next: { revalidate: 86400 } } as any
+        );
+    } catch (err: any) {
+        console.error("Failed to fetch challenge details:", err?.bodyText ?? err);
+        return { success: false, error: "Failed to fetch challenge details" };
     }
-
-    const data = await apiRes.json();
 
     return {
         success: true,

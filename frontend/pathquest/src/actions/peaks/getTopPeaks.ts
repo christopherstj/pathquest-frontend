@@ -1,6 +1,7 @@
 "use server";
-import getBackendUrl from "@/helpers/getBackendUrl";
 import getGoogleIdToken from "@/auth/getGoogleIdToken";
+import getBackendUrl from "@/helpers/getBackendUrl";
+import { createApiClient, endpoints } from "@pathquest/shared/api";
 
 interface TopPeak {
     id: string;
@@ -10,34 +11,31 @@ interface TopPeak {
 const backendUrl = getBackendUrl();
 
 const getTopPeaks = async (limit: number = 1000): Promise<TopPeak[]> => {
-    // Always generate token for Google IAM authentication (required at infrastructure level)
-    // Works during build via Vercel OIDC
     const token = await getGoogleIdToken().catch((err) => {
         console.error("[getTopPeaks] Failed to get Google ID token:", err);
         return null;
     });
-    
-    const headers: Record<string, string> = {
-        "Content-Type": "application/json",
-    };
-    
-    if (token) {
-        headers["Authorization"] = `Bearer ${token}`;
-    }
 
-    const apiRes = await fetch(`${backendUrl}/peaks/top?limit=${limit}`, {
-        method: "GET",
-        headers,
-        next: { revalidate: 86400 }, // Cache for 24 hours
+    const client = createApiClient({
+        baseUrl: backendUrl,
+        getAuthHeaders: async () => {
+            const headers: Record<string, string> = {};
+            if (token) headers.Authorization = `Bearer ${token}`;
+            return headers;
+        },
     });
 
-    if (!apiRes.ok) {
-        console.error("Failed to fetch top peaks:", await apiRes.text());
+    try {
+        return await endpoints.getTopPeaks(
+            client,
+            { limit },
+            // Next.js-only fetch options for ISR caching.
+            { next: { revalidate: 86400 } } as any
+        );
+    } catch (err: any) {
+        console.error("[getTopPeaks] Failed to fetch top peaks:", err?.bodyText ?? err);
         return [];
     }
-
-    const data = await apiRes.json();
-    return data;
 };
 
 export default getTopPeaks;

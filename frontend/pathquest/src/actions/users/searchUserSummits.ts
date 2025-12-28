@@ -2,8 +2,9 @@
 import getGoogleIdToken from "@/auth/getGoogleIdToken";
 import { useAuth } from "@/auth/useAuth";
 import getBackendUrl from "@/helpers/getBackendUrl";
-import SummitWithPeak from "@/typeDefs/SummitWithPeak";
 import ServerActionResult  from "@/typeDefs/ServerActionResult";
+import { createApiClient, endpoints } from "@pathquest/shared/api";
+import type { SummitWithPeak } from "@pathquest/shared/types";
 
 const backendUrl = getBackendUrl();
 
@@ -22,33 +23,27 @@ const searchUserSummits = async (
     // Always generate token for Google IAM authentication (required at infrastructure level)
     const token = await getGoogleIdToken().catch(() => null);
 
-    const params = new URLSearchParams();
-    if (search) params.set("search", search);
-    params.set("page", String(page));
-    params.set("pageSize", String(pageSize));
+    const client = createApiClient({
+        baseUrl: backendUrl,
+        getAuthHeaders: async () => {
+            const headers: Record<string, string> = {};
+            if (token) headers.Authorization = `Bearer ${token}`;
+            return headers;
+        },
+    });
 
-    const apiRes = await fetch(
-        `${backendUrl}/users/${userId}/summits?${params.toString()}`,
-        {
-            method: "GET",
-            cache: "no-cache",
-            headers: {
-                "Content-Type": "application/json",
-                ...(token ? { Authorization: `Bearer ${token}` } : {}),
-            },
-        }
-    );
-
-    if (!apiRes.ok) {
-        const errorText = await apiRes.text();
-        console.error("Error searching user summits:", errorText);
-        return {
-            success: false,
-            error: "Error searching summits",
-        };
+    let data: SearchUserSummitsResult;
+    try {
+        data = await endpoints.searchUserSummits(
+            client,
+            userId,
+            { search, page, pageSize },
+            { cache: "no-cache" } as any
+        );
+    } catch (err: any) {
+        console.error("Error searching user summits:", err?.bodyText ?? err);
+        return { success: false, error: "Error searching summits" };
     }
-
-    const data: SearchUserSummitsResult = await apiRes.json();
 
     return {
         success: true,

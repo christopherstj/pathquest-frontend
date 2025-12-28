@@ -2,9 +2,8 @@
 import getGoogleIdToken from "@/auth/getGoogleIdToken";
 import getBackendUrl from "@/helpers/getBackendUrl";
 import { useAuth } from "@/auth/useAuth";
-import Activity from "@/typeDefs/Activity";
-import Challenge from "@/typeDefs/Challenge";
-import Peak from "@/typeDefs/Peak";
+import { createApiClient, endpoints } from "@pathquest/shared/api";
+import type { Activity, Challenge, Peak } from "@pathquest/shared/types";
 
 const backendUrl = getBackendUrl();
 
@@ -44,26 +43,22 @@ const getChallengeDetails = async (
     }
 
     const userId = session?.user?.id;
-    const peaksUrl = `${backendUrl}/challenges/${challengeId}/details`;
-
-    const peaksRes = await fetch(peaksUrl, {
-        method: "GET",
-        headers: {
-            "Content-Type": "application/json",
-            ...(token ? { Authorization: `Bearer ${token}` } : {}),
-            // Send user ID header for backend to identify user (works in all environments)
-            ...(userId ? { "x-user-id": String(userId) } : {}),
+    const client = createApiClient({
+        baseUrl: backendUrl,
+        getAuthHeaders: async () => {
+            const headers: Record<string, string> = {};
+            if (token) headers.Authorization = `Bearer ${token}`;
+            if (userId) headers["x-user-id"] = String(userId);
+            return headers;
         },
     });
 
-    if (!peaksRes.ok) {
-        console.error("[getChallengeDetails]", peaksRes.status, await peaksRes.text());
+    try {
+        return await endpoints.getChallengeDetails(client, challengeId);
+    } catch (err: any) {
+        console.error("[getChallengeDetails]", err?.bodyText ?? err);
         return null;
     }
-
-    const peaks = await peaksRes.json();
-
-    return peaks;
 };
 
 export default getChallengeDetails;

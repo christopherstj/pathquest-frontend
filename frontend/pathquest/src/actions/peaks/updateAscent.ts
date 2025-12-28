@@ -2,7 +2,8 @@
 import getGoogleIdToken from "@/auth/getGoogleIdToken";
 import { useAuth } from "@/auth/useAuth";
 import getBackendUrl from "@/helpers/getBackendUrl";
-import AscentDetail from "@/typeDefs/AscentDetail";
+import { createApiClient, endpoints } from "@pathquest/shared/api";
+import type { AscentDetail } from "@pathquest/shared/types";
 
 const backendUrl = getBackendUrl();
 
@@ -28,25 +29,22 @@ const updateAscent = async (
     });
     const userId = session.user.id;
 
-    const url = `${backendUrl}/peaks/ascent/${ascent.id}`;
-
-    const res = await fetch(url, {
-        method: "PUT",
-        headers: {
-            "Content-Type": "application/json",
-            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    const client = createApiClient({
+        baseUrl: backendUrl,
+        getAuthHeaders: async () => {
+            const headers: Record<string, string> = {};
+            if (token) headers.Authorization = `Bearer ${token}`;
             // Pass user info via headers for backend auth (especially in dev)
-            ...(userId ? { "x-user-id": userId } : {}),
+            if (userId) headers["x-user-id"] = userId;
+            return headers;
         },
-        body: JSON.stringify({ ascent }),
     });
 
-    if (!res.ok) {
-        console.error(await res.text());
-        return {
-            success: false,
-            error: res.statusText,
-        };
+    try {
+        await endpoints.updateAscent(client, ascent);
+    } catch (err: any) {
+        console.error(err?.bodyText ?? err);
+        return { success: false, error: err?.message ?? "Failed to update ascent" };
     }
 
     return {

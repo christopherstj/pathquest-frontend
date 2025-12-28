@@ -2,7 +2,8 @@
 import getGoogleIdToken from "@/auth/getGoogleIdToken";
 import getBackendUrl from "@/helpers/getBackendUrl";
 import { useAuth } from "@/auth/useAuth";
-import Peak from "@/typeDefs/Peak";
+import { createApiClient, endpoints } from "@pathquest/shared/api";
+import type { Peak } from "@pathquest/shared/types";
 
 const backendUrl = getBackendUrl();
 
@@ -24,23 +25,21 @@ const getFavoritePeaks = async (): Promise<Peak[]> => {
         return [];
     }
 
-    const response = await fetch(`${backendUrl}/peaks/summits/favorites`, {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json",
-            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    const client = createApiClient({
+        baseUrl: backendUrl,
+        getAuthHeaders: async () => {
+            const headers: Record<string, string> = {};
+            if (token) headers.Authorization = `Bearer ${token}`;
+            return headers;
         },
-        body: JSON.stringify({
-            userId: session.user.id,
-        }),
     });
 
-    if (!response.ok) {
-        console.error("[getFavoritePeaks]", response.status, await response.text());
+    try {
+        return await endpoints.getFavoritePeaks(client);
+    } catch (err: any) {
+        console.error("[getFavoritePeaks]", err?.bodyText ?? err);
         return [];
     }
-
-    return response.json();
 };
 
 export default getFavoritePeaks;

@@ -2,7 +2,8 @@
 import getGoogleIdToken from "@/auth/getGoogleIdToken";
 import getBackendUrl from "@/helpers/getBackendUrl";
 import { useAuth } from "@/auth/useAuth";
-import ChallengeProgress from "@/typeDefs/ChallengeProgress";
+import { createApiClient, endpoints } from "@pathquest/shared/api";
+import type { ChallengeProgress } from "@pathquest/shared/types";
 
 const backendUrl = getBackendUrl();
 
@@ -24,23 +25,21 @@ const getFavoriteChallenges = async (): Promise<ChallengeProgress[]> => {
         return [];
     }
 
-    const response = await fetch(
-        `${backendUrl}/challenges/search?type=in-progress,not-started&favoritesOnly=true`,
-        {
-            method: "GET",
-            headers: {
-                "Content-Type": "application/json",
-                ...(token ? { Authorization: `Bearer ${token}` } : {}),
-            },
-        }
-    );
+    const client = createApiClient({
+        baseUrl: backendUrl,
+        getAuthHeaders: async () => {
+            const headers: Record<string, string> = {};
+            if (token) headers.Authorization = `Bearer ${token}`;
+            return headers;
+        },
+    });
 
-    if (!response.ok) {
-        console.error("[getFavoriteChallenges]", response.status, await response.text());
+    try {
+        return await endpoints.getFavoriteChallenges(client);
+    } catch (err: any) {
+        console.error("[getFavoriteChallenges]", err?.bodyText ?? err);
         return [];
     }
-
-    return response.json();
 };
 
 export default getFavoriteChallenges;

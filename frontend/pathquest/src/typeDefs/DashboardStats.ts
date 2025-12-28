@@ -1,15 +1,3 @@
-export interface DashboardStats {
-    totalPeaks: number;
-    totalElevationGained: number; // in meters
-    summitsThisMonth: number;
-    summitsLastMonth: number;
-    primaryChallengeProgress: {
-        challengeId: number;
-        name: string;
-        completed: number;
-        total: number;
-    } | null;
-}
-
-export default DashboardStats;
+export type { DashboardStats } from "@pathquest/shared/types";
+export type { DashboardStats as default } from "@pathquest/shared/types";
 

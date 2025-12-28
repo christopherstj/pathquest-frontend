@@ -2,6 +2,7 @@
 import getGoogleIdToken from "@/auth/getGoogleIdToken";
 import { useAuth } from "@/auth/useAuth";
 import getBackendUrl from "@/helpers/getBackendUrl";
+import { createApiClient, endpoints } from "@pathquest/shared/api";
 
 const toggleFavoritePeak = async (
     peakId: string,
@@ -26,23 +27,21 @@ const toggleFavoritePeak = async (
         return false;
     }
 
-    const response = await fetch(`${backendUrl}/peaks/favorite`, {
-        method: "PUT",
-        headers: {
-            "Content-Type": "application/json",
-            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    const client = createApiClient({
+        baseUrl: backendUrl,
+        getAuthHeaders: async () => {
+            const headers: Record<string, string> = {};
+            if (token) headers.Authorization = `Bearer ${token}`;
+            return headers;
         },
-        body: JSON.stringify({
-            newValue,
-            peakId,
-        }),
     });
 
-    if (!response.ok) {
-        console.error("[toggleFavoritePeak]", response.status, await response.text());
-        return false;
-    } else {
+    try {
+        await endpoints.toggleFavoritePeak(client, { peakId, newValue });
         return true;
+    } catch (err: any) {
+        console.error("[toggleFavoritePeak]", err?.bodyText ?? err);
+        return false;
     }
 };
 

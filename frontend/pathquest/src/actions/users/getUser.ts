@@ -1,7 +1,8 @@
 "use server";
 import getAuthHeaders from "@/helpers/getAuthHeaders";
 import getBackendUrl from "@/helpers/getBackendUrl";
-import User from "@/typeDefs/User";
+import { createApiClient, endpoints } from "@pathquest/shared/api";
+import type { User } from "@pathquest/shared/types";
 
 const backendUrl = getBackendUrl();
 
@@ -25,27 +26,22 @@ const getUser = async (
         };
     }
 
-    const apiRes = await fetch(`${backendUrl}/users/${requestedUserId}`, {
-        method: "GET",
-        cache: "no-cache",
-        headers: {
-            "Content-Type": "application/json",
-            ...headers,
-        },
+    const client = createApiClient({
+        baseUrl: backendUrl,
+        getAuthHeaders: async () => headers,
     });
 
-    if (!apiRes.ok) {
-        console.error(await apiRes.text());
-        return {
-            userFound: false,
-            error: apiRes.statusText,
-        };
-    } else {
-        const user: User = await apiRes.json();
-
+    try {
+        const user = await endpoints.getUser(client, requestedUserId, { cache: "no-cache" } as any);
         return {
             userFound: true,
             user,
+        };
+    } catch (err: any) {
+        console.error("[getUser]", err?.bodyText ?? err);
+        return {
+            userFound: false,
+            error: err?.statusCode === 404 ? "User not found" : "Error fetching user",
         };
     }
 };

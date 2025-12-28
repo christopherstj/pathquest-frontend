@@ -1,6 +1,7 @@
 "use server";
 import getAuthHeaders from "@/helpers/getAuthHeaders";
 import getBackendUrl from "@/helpers/getBackendUrl";
+import { createApiClient, endpoints } from "@pathquest/shared/api";
 
 const backendUrl = getBackendUrl();
 
@@ -13,17 +14,18 @@ const deleteUser = async () => {
         return false;
     }
 
-    const response = await fetch(`${backendUrl}/users/${id}`, {
-        method: "DELETE",
-        headers,
+    const client = createApiClient({
+        baseUrl: backendUrl,
+        getAuthHeaders: async () => headers,
     });
 
-    if (!response.ok) {
-        console.error(await response.text());
+    try {
+        await endpoints.deleteUser(client, id);
+        return true;
+    } catch (err: any) {
+        console.error("[deleteUser]", err?.bodyText ?? err);
         return false;
     }
-
-    return true;
 };
 
 export default deleteUser;

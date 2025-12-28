@@ -4,6 +4,7 @@ import { useAuth } from "@/auth/useAuth";
 import getBackendUrl from "@/helpers/getBackendUrl";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { createApiClient, endpoints } from "@pathquest/shared/api";
 
 const backendUrl = getBackendUrl();
 
@@ -25,17 +26,19 @@ const deleteActivity = async (activityId: string) => {
         return;
     }
 
-    const url = `${backendUrl}/activities/${activityId}`;
-
-    const res = await fetch(url, {
-        method: "DELETE",
-        headers: {
-            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    const client = createApiClient({
+        baseUrl: backendUrl,
+        getAuthHeaders: async () => {
+            const headers: Record<string, string> = {};
+            if (token) headers.Authorization = `Bearer ${token}`;
+            return headers;
         },
     });
 
-    if (!res.ok) {
-        console.error("[deleteActivity]", res.status, await res.text());
+    try {
+        await endpoints.deleteActivity(client, activityId);
+    } catch (err: any) {
+        console.error("[deleteActivity]", err?.bodyText ?? err);
         return;
     }
 

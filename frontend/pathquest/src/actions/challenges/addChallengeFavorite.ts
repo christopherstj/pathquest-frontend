@@ -2,6 +2,7 @@
 
 import getBackendUrl from "@/helpers/getBackendUrl";
 import getAuthHeaders from "@/helpers/getAuthHeaders";
+import { createApiClient, endpoints } from "@pathquest/shared/api";
 
 const backendUrl = getBackendUrl();
 
@@ -24,23 +25,16 @@ const addChallengeFavorite = async (
         challengeId,
     };
 
-    const url = `${backendUrl}/challenges/favorite`;
-
-    const res = await fetch(url, {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json",
-            ...headers,
-        },
-        body: JSON.stringify(body),
+    const client = createApiClient({
+        baseUrl: backendUrl,
+        getAuthHeaders: async () => headers,
     });
 
-    if (!res.ok) {
-        console.error(await res.text());
-        return {
-            success: false,
-            error: res.statusText,
-        };
+    try {
+        await endpoints.addChallengeFavorite(client, body.challengeId);
+    } catch (err: any) {
+        console.error(err?.bodyText ?? err);
+        return { success: false, error: err?.message ?? "Failed to favorite challenge" };
     }
 
     return {

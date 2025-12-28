@@ -2,7 +2,8 @@
 import getGoogleIdToken from "@/auth/getGoogleIdToken";
 import getBackendUrl from "@/helpers/getBackendUrl";
 import { useAuth } from "@/auth/useAuth";
-import { ActivityStart } from "@/typeDefs/ActivityStart";
+import { createApiClient, endpoints } from "@pathquest/shared/api";
+import type { ActivityStart } from "@pathquest/shared/types";
 
 const backendUrl = getBackendUrl();
 
@@ -34,34 +35,21 @@ const getActivityStarts = async (
         return [];
     }
 
-    const searchString =
-        search && search.length > 0
-            ? `&search=${encodeURIComponent(search)}`
-            : "";
-
-    const boundsString =
-        bounds && bounds.northwest && bounds.southeast
-            ? `&northWestLat=${bounds.northwest[0]}&northWestLng=${bounds.northwest[1]}&southEastLat=${bounds.southeast[0]}&southEastLng=${bounds.southeast[1]}`
-            : "";
-
-    const url = `${backendUrl}/activities/search${boundsString}${searchString}`;
-
-    const apiRes = await fetch(url, {
-        method: "GET",
-        headers: {
-            "Content-Type": "application/json",
-            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    const client = createApiClient({
+        baseUrl: backendUrl,
+        getAuthHeaders: async () => {
+            const headers: Record<string, string> = {};
+            if (token) headers.Authorization = `Bearer ${token}`;
+            return headers;
         },
     });
 
-    if (!apiRes.ok) {
-        console.error("[getActivityStarts]", apiRes.status, await apiRes.text());
+    try {
+        return await endpoints.getActivityStarts(client, { bounds, search });
+    } catch (err: any) {
+        console.error("[getActivityStarts]", err?.bodyText ?? err);
         return [];
     }
-
-    const data: ActivityStart[] = await apiRes.json();
-
-    return data;
 };
 
 export default getActivityStarts;

@@ -1,5 +1,1 @@
-export default interface ServerActionResult<T = any> {
-    success: boolean;
-    data?: T;
-    error?: string;
-}
+export type { ServerActionResult as default } from "@pathquest/shared/types";

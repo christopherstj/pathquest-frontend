@@ -1,6 +1,7 @@
 "use server";
 import getGoogleIdToken from "@/auth/getGoogleIdToken";
 import getBackendUrl from "@/helpers/getBackendUrl";
+import { createApiClient, endpoints } from "@pathquest/shared/api";
 
 const backendUrl = getBackendUrl();
 
@@ -16,24 +17,22 @@ const getIsUserSubscribed = async (userId: string) => {
         return false;
     }
 
-    const response = await fetch(
-        `${backendUrl}/users/${userId}/is-subscribed`,
-        {
-            method: "GET",
-            headers: {
-                "Content-Type": "application/json",
-                ...(idToken ? { Authorization: `Bearer ${idToken}` } : {}),
-            },
-        }
-    );
+    const client = createApiClient({
+        baseUrl: backendUrl,
+        getAuthHeaders: async () => {
+            const headers: Record<string, string> = {};
+            if (idToken) headers.Authorization = `Bearer ${idToken}`;
+            return headers;
+        },
+    });
 
-    if (!response.ok) {
-        console.error(await response.text());
+    try {
+        const data = await endpoints.getIsUserSubscribed(client, userId);
+        return data.isSubscribed;
+    } catch (err: any) {
+        console.error("[getIsUserSubscribed]", err?.bodyText ?? err);
         return false;
     }
-
-    const data = await response.json();
-    return data.isSubscribed as boolean;
 };
 
 export default getIsUserSubscribed;

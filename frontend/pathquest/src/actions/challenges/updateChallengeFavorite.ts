@@ -2,7 +2,8 @@
 import { useAuth } from "@/auth/useAuth";
 import getGoogleIdToken from "@/auth/getGoogleIdToken";
 import getBackendUrl from "@/helpers/getBackendUrl";
-import UserChallengeFavorite from "@/typeDefs/UserChallengeFavorite";
+import { createApiClient, endpoints } from "@pathquest/shared/api";
+import type { UserChallengeFavorite } from "@pathquest/shared/types";
 
 const backendUrl = getBackendUrl();
 
@@ -44,23 +45,20 @@ const updateChallengeFavorite = async (
         is_public: newPrivacy,
     };
 
-    const url = `${backendUrl}/challenges/favorite`;
-
-    const res = await fetch(url, {
-        method: "PUT",
-        headers: {
-            "Content-Type": "application/json",
-            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    const client = createApiClient({
+        baseUrl: backendUrl,
+        getAuthHeaders: async () => {
+            const headers: Record<string, string> = {};
+            if (token) headers.Authorization = `Bearer ${token}`;
+            return headers;
         },
-        body: JSON.stringify(body),
     });
 
-    if (!res.ok) {
-        console.error("[updateChallengeFavorite]", res.status, await res.text());
-        return {
-            success: false,
-            error: res.statusText,
-        };
+    try {
+        await endpoints.updateChallengeFavorite(client, body);
+    } catch (err: any) {
+        console.error("[updateChallengeFavorite]", err?.bodyText ?? err);
+        return { success: false, error: err?.message ?? "Failed to update challenge privacy" };
     }
 
     return {

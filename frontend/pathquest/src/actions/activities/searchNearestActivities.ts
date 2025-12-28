@@ -2,7 +2,8 @@
 import getGoogleIdToken from "@/auth/getGoogleIdToken";
 import { useAuth } from "@/auth/useAuth";
 import getBackendUrl from "@/helpers/getBackendUrl";
-import { ActivityStart } from "@/typeDefs/ActivityStart";
+import { createApiClient, endpoints } from "@pathquest/shared/api";
+import type { ActivityStart } from "@pathquest/shared/types";
 
 const backendUrl = getBackendUrl();
 
@@ -25,26 +26,23 @@ const searchNearestActivities = async (
     });
     const userId = session.user?.id;
 
-    const url = search
-        ? `${backendUrl}/activities/search/nearest?lat=${lat}&lng=${lng}&page=${page}&search=${search}`
-        : `${backendUrl}/activities/search/nearest?lat=${lat}&lng=${lng}&page=${page}`;
-
-    const response = await fetch(url, {
-        cache: "no-cache",
-        headers: {
-            ...(token ? { Authorization: `Bearer ${token}` } : {}),
-            // Pass user identity via headers for backend auth (works in both dev and prod)
-            ...(userId ? { "x-user-id": userId } : {}),
-            ...(session?.user?.email ? { "x-user-email": session.user.email } : {}),
-            ...(session?.user?.name ? { "x-user-name": encodeURIComponent(session.user.name) } : {}),
+    const client = createApiClient({
+        baseUrl: backendUrl,
+        getAuthHeaders: async () => {
+            const headers: Record<string, string> = {};
+            if (token) headers.Authorization = `Bearer ${token}`;
+            if (userId) headers["x-user-id"] = userId;
+            if (session?.user?.email) headers["x-user-email"] = session.user.email;
+            if (session?.user?.name) headers["x-user-name"] = encodeURIComponent(session.user.name);
+            return headers;
         },
     });
 
-    if (!response.ok) {
-        console.error(await response.text());
+    try {
+        return await endpoints.searchNearestActivities(client, { lat, lng, page, search }, { cache: "no-cache" } as any);
+    } catch (err: any) {
+        console.error("[searchNearestActivities]", err?.bodyText ?? err);
         return [];
-    } else {
-        return await response.json();
     }
 };
 

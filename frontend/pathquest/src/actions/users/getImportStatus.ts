@@ -2,11 +2,12 @@
 import getGoogleIdToken from "@/auth/getGoogleIdToken";
 import { useAuth } from "@/auth/useAuth";
 import getBackendUrl from "@/helpers/getBackendUrl";
-import ServerActionResult from "@/typeDefs/ServerActionResult";
+import { createApiClient, endpoints } from "@pathquest/shared/api";
+import type { ServerActionResult } from "@pathquest/shared/types";
 
 const backendUrl = getBackendUrl();
 
-export interface ImportStatus {
+export type ImportStatus = {
     totalActivities: number;
     processedActivities: number;
     pendingActivities: number;
@@ -16,7 +17,7 @@ export interface ImportStatus {
     estimatedHoursRemaining: number | null;
     status: "not_started" | "processing" | "complete";
     message: string;
-}
+};
 
 const getImportStatus = async (): Promise<ServerActionResult<ImportStatus>> => {
     const session = await useAuth();
@@ -40,24 +41,25 @@ const getImportStatus = async (): Promise<ServerActionResult<ImportStatus>> => {
         };
     }
 
-    const res = await fetch(`${backendUrl}/users/${id}/import-status`, {
-        method: "GET",
-        headers: {
-            ...(idToken ? { Authorization: `Bearer ${idToken}` } : {}),
+    const client = createApiClient({
+        baseUrl: backendUrl,
+        getAuthHeaders: async () => {
+            const headers: Record<string, string> = {};
+            if (idToken) headers.Authorization = `Bearer ${idToken}`;
+            return headers;
         },
-        cache: "no-store",
     });
 
-    if (!res.ok) {
+    try {
+        const data = await endpoints.getImportStatus(client, id, { cache: "no-store" } as any);
+        return { success: true, data };
+    } catch (err: any) {
+        console.error("[getImportStatus]", err?.bodyText ?? err);
         return {
             success: false,
             error: "Failed to fetch import status",
         };
     }
-
-    const data: ImportStatus = await res.json();
-
-    return { success: true, data };
 };
 
 export default getImportStatus;

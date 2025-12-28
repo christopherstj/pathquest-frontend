@@ -1,7 +1,8 @@
 "use server";
 import getGoogleIdToken from "@/auth/getGoogleIdToken";
 import getBackendUrl from "@/helpers/getBackendUrl";
-import Peak from "@/typeDefs/Peak";
+import { createApiClient, endpoints } from "@pathquest/shared/api";
+import type { Peak } from "@pathquest/shared/types";
 
 const getPeaks = async (
     page: number,
@@ -21,22 +22,20 @@ const getPeaks = async (
         return [];
     }
 
-    const url = search
-        ? `${backendUrl}/peaks?page=${page}&perPage=${perPage}&search=${search}`
-        : `${backendUrl}/peaks?page=${page}&perPage=${perPage}`;
-
-    const response = await fetch(url, {
-        cache: "no-cache",
-        headers: {
-            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    const client = createApiClient({
+        baseUrl: backendUrl,
+        getAuthHeaders: async () => {
+            const headers: Record<string, string> = {};
+            if (token) headers.Authorization = `Bearer ${token}`;
+            return headers;
         },
     });
 
-    if (!response.ok) {
-        console.error("[getPeaks]", response.status, await response.text());
+    try {
+        return await endpoints.getPeaks(client, { page, perPage, search }, { cache: "no-cache" } as any);
+    } catch (err: any) {
+        console.error("[getPeaks]", err?.bodyText ?? err);
         return [];
-    } else {
-        return await response.json();
     }
 };
 

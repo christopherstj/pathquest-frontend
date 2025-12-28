@@ -2,8 +2,9 @@
 import getGoogleIdToken from "@/auth/getGoogleIdToken";
 import { useAuth } from "@/auth/useAuth";
 import getBackendUrl from "@/helpers/getBackendUrl";
-import UserPeakWithSummitCount from "@/typeDefs/UserPeakWithSummitCount";
 import ServerActionResult  from "@/typeDefs/ServerActionResult";
+import { createApiClient, endpoints } from "@pathquest/shared/api";
+import type { UserPeakWithSummitCount } from "@pathquest/shared/types";
 
 const backendUrl = getBackendUrl();
 
@@ -33,38 +34,27 @@ const searchUserPeaks = async (
     // Always generate token for Google IAM authentication (required at infrastructure level)
     const token = await getGoogleIdToken().catch(() => null);
 
-    const params = new URLSearchParams();
-    if (filters.search) params.set("search", filters.search);
-    if (filters.state) params.set("state", filters.state);
-    if (filters.minElevation !== undefined) params.set("minElevation", String(filters.minElevation));
-    if (filters.maxElevation !== undefined) params.set("maxElevation", String(filters.maxElevation));
-    if (filters.hasMultipleSummits) params.set("hasMultipleSummits", "true");
-    if (filters.sortBy) params.set("sortBy", filters.sortBy);
-    params.set("page", String(page));
-    params.set("pageSize", String(pageSize));
+    const client = createApiClient({
+        baseUrl: backendUrl,
+        getAuthHeaders: async () => {
+            const headers: Record<string, string> = {};
+            if (token) headers.Authorization = `Bearer ${token}`;
+            return headers;
+        },
+    });
 
-    const apiRes = await fetch(
-        `${backendUrl}/users/${userId}/peaks?${params.toString()}`,
-        {
-            method: "GET",
-            cache: "no-cache",
-            headers: {
-                "Content-Type": "application/json",
-                ...(token ? { Authorization: `Bearer ${token}` } : {}),
-            },
-        }
-    );
-
-    if (!apiRes.ok) {
-        const errorText = await apiRes.text();
-        console.error("Error searching user peaks:", errorText);
-        return {
-            success: false,
-            error: "Error searching peaks",
-        };
+    let data: SearchUserPeaksResult;
+    try {
+        data = await endpoints.searchUserPeaks(
+            client,
+            userId,
+            { filters, page, pageSize },
+            { cache: "no-cache" } as any
+        );
+    } catch (err: any) {
+        console.error("Error searching user peaks:", err?.bodyText ?? err);
+        return { success: false, error: "Error searching peaks" };
     }
-
-    const data: SearchUserPeaksResult = await apiRes.json();
 
     return {
         success: true,

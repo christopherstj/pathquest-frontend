@@ -14,6 +14,7 @@ PathQuest Frontend is a Next.js 16 application built with React 19, TypeScript, 
 - **Maps**: Mapbox GL JS
 - **Charts**: Visx
 - **Payment**: Stripe
+- **Shared code**: `@pathquest/shared` (GitHub git-SHA dependency for shared types + API client helpers)
 - **Fonts**: Fraunces (display), IBM Plex Mono (body/data)
 
 ## Project Structure
@@ -136,11 +137,12 @@ src/app/
 - `queue-status/route.ts` - Fetches count of activities waiting to be processed from event queue
 - `import-status/route.ts` - Fetches detailed import progress: totalActivities, processedActivities, pendingActivities, summitsFound, percentComplete, estimatedHoursRemaining, status, message. Used by ImportProgressCard.
 - `stats/route.ts` - Fetches dashboard quick stats (total peaks, elevation gained, summits this/last month, primary challenge progress)
-- All routes require authentication and use `getGoogleIdToken` for backend auth
+- All routes require authentication and use `getGoogleIdToken` for backend auth. These proxy routes now call `pathquest-api` via the shared `@pathquest/shared` ApiClient (`createApiClient` + shared endpoint helpers where available) instead of ad-hoc `fetch()` calls.
 
 ##### Landing (`api/landing/`)
 - `recent-public-summits/route.ts` - Fetches most recent public summits across the whole community (no auth). Used for guest landing “community is alive” feed.
 - `popular-challenges/route.ts` - Fetches “popular” challenges (hybrid ordering; no popularity numbers displayed) (no auth). Used for guest landing feed.
+  - These proxy routes also use the shared `@pathquest/shared` ApiClient for upstream calls for consistency.
 
 ##### Peaks (`api/peaks/`)
 - `[id]/activity/route.ts` - Fetches recent summit activity counts for a peak (no auth). Used by PeakActivityIndicator.

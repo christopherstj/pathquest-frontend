@@ -2,8 +2,8 @@
 import getGoogleIdToken from "@/auth/getGoogleIdToken";
 import { useAuth } from "@/auth/useAuth";
 import getBackendUrl from "@/helpers/getBackendUrl";
-import ManualPeakSummit from "@/typeDefs/ManualPeakSummit";
-import Peak from "@/typeDefs/Peak";
+import { createApiClient, endpoints } from "@pathquest/shared/api";
+import type { ManualPeakSummit, Peak, Summit } from "@pathquest/shared/types";
 
 const backendUrl = getBackendUrl();
 
@@ -27,23 +27,22 @@ const getRecentSummits = async (): Promise<
         return null;
     }
 
-    const peaksUrl = `${backendUrl}/peaks/summits/recent`;
-
-    const peaksRes = await fetch(peaksUrl, {
-        method: "GET",
-        headers: {
-            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    const client = createApiClient({
+        baseUrl: backendUrl,
+        getAuthHeaders: async () => {
+            const headers: Record<string, string> = {};
+            if (token) headers.Authorization = `Bearer ${token}`;
+            return headers;
         },
     });
 
-    if (!peaksRes.ok) {
-        console.error("[getRecentSummits]", peaksRes.status, await peaksRes.text());
+    try {
+        const summits = await endpoints.getRecentSummits(client);
+        return summits as (Peak & ManualPeakSummit)[];
+    } catch (err: any) {
+        console.error("[getRecentSummits]", err?.bodyText ?? err);
         return null;
     }
-
-    const peaks = await peaksRes.json();
-
-    return peaks;
 };
 
 export default getRecentSummits;

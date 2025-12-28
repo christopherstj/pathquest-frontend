@@ -2,6 +2,7 @@
 import getGoogleIdToken from "@/auth/getGoogleIdToken";
 import getBackendUrl from "@/helpers/getBackendUrl";
 import { useAuth } from "@/auth/useAuth";
+import { createApiClient, endpoints } from "@pathquest/shared/api";
 
 const backendUrl = getBackendUrl();
 
@@ -27,30 +28,26 @@ const getActivityCoords = async (
         return null;
     }
 
-    const coordsUrl = `${backendUrl}/activities/${activityId}/coords`;
-
     const userId = session?.user?.id;
 
-    const coordsRes = await fetch(coordsUrl, {
-        method: "GET",
-        headers: {
-            "Content-Type": "application/json",
-            ...(token ? { Authorization: `Bearer ${token}` } : {}),
-            // Pass user identity via headers for backend auth (works in both dev and prod)
-            ...(userId ? { "x-user-id": userId } : {}),
-            ...(session?.user?.email ? { "x-user-email": session.user.email } : {}),
-            ...(session?.user?.name ? { "x-user-name": encodeURIComponent(session.user.name) } : {}),
+    const client = createApiClient({
+        baseUrl: backendUrl,
+        getAuthHeaders: async () => {
+            const headers: Record<string, string> = {};
+            if (token) headers.Authorization = `Bearer ${token}`;
+            if (userId) headers["x-user-id"] = userId;
+            if (session?.user?.email) headers["x-user-email"] = session.user.email;
+            if (session?.user?.name) headers["x-user-name"] = encodeURIComponent(session.user.name);
+            return headers;
         },
     });
 
-    if (!coordsRes.ok) {
-        console.error("[getActivityCoords]", coordsRes.status, await coordsRes.text());
+    try {
+        return await endpoints.getActivityCoords(client, activityId);
+    } catch (err: any) {
+        console.error("[getActivityCoords]", err?.bodyText ?? err);
         return null;
     }
-
-    const coords = await coordsRes.json();
-
-    return coords;
 };
 
 export default getActivityCoords;

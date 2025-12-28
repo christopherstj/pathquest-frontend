@@ -2,8 +2,8 @@
 import getGoogleIdToken from "@/auth/getGoogleIdToken";
 import { useAuth } from "@/auth/useAuth";
 import getBackendUrl from "@/helpers/getBackendUrl";
-import AscentDetail from "@/typeDefs/AscentDetail";
-import Peak from "@/typeDefs/Peak";
+import { createApiClient, endpoints } from "@pathquest/shared/api";
+import type { AscentDetail, Peak } from "@pathquest/shared/types";
 
 const backendUrl = getBackendUrl();
 
@@ -30,21 +30,21 @@ const getAscentDetails = async (
         return null;
     }
 
-    const url = `${backendUrl}/peaks/ascent/${ascentId}`;
-
-    const response = await fetch(url, {
-        method: "GET",
-        headers: {
-            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    const client = createApiClient({
+        baseUrl: backendUrl,
+        getAuthHeaders: async () => {
+            const headers: Record<string, string> = {};
+            if (token) headers.Authorization = `Bearer ${token}`;
+            return headers;
         },
     });
 
-    if (!response.ok) {
-        console.error("[getAscentDetails]", response.status, await response.text());
+    try {
+        return await endpoints.getAscentDetails(client, ascentId);
+    } catch (err: any) {
+        console.error("[getAscentDetails]", err?.bodyText ?? err);
         return null;
     }
-
-    return await response.json();
 };
 
 export default getAscentDetails;

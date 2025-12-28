@@ -3,6 +3,7 @@ import getGoogleIdToken from "@/auth/getGoogleIdToken";
 import { useAuth } from "@/auth/useAuth";
 import getBackendUrl from "@/helpers/getBackendUrl";
 import { revalidatePath } from "next/cache";
+import { createApiClient, endpoints } from "@pathquest/shared/api";
 
 const backendUrl = getBackendUrl();
 
@@ -35,23 +36,20 @@ const reprocessActivity = async (
         };
     }
 
-    const res = await fetch(`${backendUrl}/activities/reprocess`, {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json",
-            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    const client = createApiClient({
+        baseUrl: backendUrl,
+        getAuthHeaders: async () => {
+            const headers: Record<string, string> = {};
+            if (token) headers.Authorization = `Bearer ${token}`;
+            return headers;
         },
-        body: JSON.stringify({
-            activityId,
-        }),
     });
 
-    if (!res.ok) {
-        console.error("[reprocessActivity]", res.status, await res.text());
-        return {
-            success: false,
-            error: res.statusText,
-        };
+    try {
+        await endpoints.reprocessActivity(client, activityId);
+    } catch (err: any) {
+        console.error("[reprocessActivity]", err?.bodyText ?? err);
+        return { success: false, error: err?.message ?? "Failed to reprocess activity" };
     }
 
     revalidatePath(`/activities/${activityId}`);

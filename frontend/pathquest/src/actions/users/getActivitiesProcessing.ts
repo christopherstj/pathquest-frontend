@@ -2,7 +2,8 @@
 import getGoogleIdToken from "@/auth/getGoogleIdToken";
 import { useAuth } from "@/auth/useAuth";
 import getBackendUrl from "@/helpers/getBackendUrl";
-import ServerActionResult from "@/typeDefs/ServerActionResult";
+import { createApiClient, endpoints } from "@pathquest/shared/api";
+import type { ServerActionResult } from "@pathquest/shared/types";
 
 const backendUrl = getBackendUrl();
 
@@ -30,23 +31,25 @@ const getActivitiesProcessing = async (): Promise<
         };
     }
 
-    const res = await fetch(`${backendUrl}/users/${id}/activities-processing`, {
-        method: "GET",
-        headers: {
-            ...(idToken ? { Authorization: `Bearer ${idToken}` } : {}),
+    const client = createApiClient({
+        baseUrl: backendUrl,
+        getAuthHeaders: async () => {
+            const headers: Record<string, string> = {};
+            if (idToken) headers.Authorization = `Bearer ${idToken}`;
+            return headers;
         },
     });
 
-    if (!res.ok) {
+    try {
+        const data = await endpoints.getActivitiesProcessing(client, id);
+        return { success: true, data: data.numProcessing };
+    } catch (err: any) {
+        console.error("[getActivitiesProcessing]", err?.bodyText ?? err);
         return {
             success: false,
             error: "Failed to fetch activities processing count",
         };
     }
-
-    const data: { numProcessing: number } = await res.json();
-
-    return { success: true, data: data.numProcessing };
 };
 
 export default getActivitiesProcessing;

@@ -1,5 +1,6 @@
 import getGoogleIdToken from "@/auth/getGoogleIdToken";
 import getBackendUrl from "@/helpers/getBackendUrl";
+import { createApiClient } from "@pathquest/shared/api";
 import { NextRequest, NextResponse } from "next/server";
 
 export const GET = async (req: NextRequest) => {
@@ -13,31 +14,23 @@ export const GET = async (req: NextRequest) => {
     const url = new URL(req.url);
     const limit = url.searchParams.get("limit") ?? "5";
 
-    const upstreamUrl = `${backendUrl.replace(/\/$/, "")}/peaks/summits/public/recent?limit=${encodeURIComponent(limit)}`;
+    const client = createApiClient({
+        baseUrl: backendUrl,
+        getAuthHeaders: async () => {
+            const headers: Record<string, string> = {};
+            if (token) headers.Authorization = `Bearer ${token}`;
+            return headers;
+        },
+    });
 
     try {
-        const res = await fetch(upstreamUrl, {
-            headers: {
-                ...(token ? { Authorization: `Bearer ${token}` } : {}),
-            },
-        });
-
-        if (!res.ok) {
-            const text = await res.text();
-            console.error("Failed to fetch recent public summits:", text);
-            return NextResponse.json(
-                { message: "Failed to fetch recent public summits" },
-                { status: res.status }
-            );
-        }
-
-        const data = await res.json();
+        const data = await client.fetchJson(`/peaks/summits/public/recent?limit=${encodeURIComponent(limit)}`);
         return NextResponse.json(data, { status: 200 });
     } catch (err: any) {
-        console.error("Error fetching recent public summits:", err);
+        console.error("Error fetching recent public summits:", err?.bodyText ?? err);
         return NextResponse.json(
             { message: err?.message ?? "Upstream error" },
-            { status: 502 }
+            { status: err?.statusCode ?? 502 }
         );
     }
 };

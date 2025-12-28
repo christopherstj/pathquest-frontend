@@ -2,7 +2,8 @@
 import getGoogleIdToken from "@/auth/getGoogleIdToken";
 import { useAuth } from "@/auth/useAuth";
 import getBackendUrl from "@/helpers/getBackendUrl";
-import Peak from "@/typeDefs/Peak";
+import { createApiClient, endpoints } from "@pathquest/shared/api";
+import type { Peak } from "@pathquest/shared/types";
 
 const backendUrl = getBackendUrl();
 
@@ -29,22 +30,20 @@ const searchNearestPeaks = async (
         return [];
     }
 
-    const url = search
-        ? `${backendUrl}/peaks/search/nearest?lat=${lat}&lng=${lng}&page=${page}&search=${search}`
-        : `${backendUrl}/peaks/search/nearest?lat=${lat}&lng=${lng}&page=${page}`;
-
-    const response = await fetch(url, {
-        cache: "no-cache",
-        headers: {
-            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    const client = createApiClient({
+        baseUrl: backendUrl,
+        getAuthHeaders: async () => {
+            const headers: Record<string, string> = {};
+            if (token) headers.Authorization = `Bearer ${token}`;
+            return headers;
         },
     });
 
-    if (!response.ok) {
-        console.error("[searchNearestPeaks]", response.status, await response.text());
+    try {
+        return await endpoints.searchNearestPeaks(client, { lat, lng, page, search }, { cache: "no-cache" } as any);
+    } catch (err: any) {
+        console.error("[searchNearestPeaks]", err?.bodyText ?? err);
         return [];
-    } else {
-        return await response.json();
     }
 };
 

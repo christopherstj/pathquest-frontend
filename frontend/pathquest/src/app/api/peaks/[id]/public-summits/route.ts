@@ -1,5 +1,6 @@
 import getGoogleIdToken from "@/auth/getGoogleIdToken";
 import getBackendUrl from "@/helpers/getBackendUrl";
+import { createApiClient } from "@pathquest/shared/api";
 import { NextRequest, NextResponse } from "next/server";
 
 export const GET = async (
@@ -18,31 +19,23 @@ export const GET = async (
     const searchParams = req.nextUrl.searchParams;
     const queryString = searchParams.toString();
 
-    const upstreamUrl = `${backendUrl.replace(/\/$/, "")}/peaks/${peakId}/public-summits${queryString ? `?${queryString}` : ""}`;
+    const client = createApiClient({
+        baseUrl: backendUrl,
+        getAuthHeaders: async () => {
+            const headers: Record<string, string> = {};
+            if (token) headers.Authorization = `Bearer ${token}`;
+            return headers;
+        },
+    });
 
     try {
-        const res = await fetch(upstreamUrl, {
-            headers: {
-                ...(token ? { Authorization: `Bearer ${token}` } : {}),
-            },
-        });
-
-        if (!res.ok) {
-            const text = await res.text();
-            console.error("Failed to fetch public summits:", text);
-            return NextResponse.json(
-                { message: "Failed to fetch public summits" },
-                { status: res.status }
-            );
-        }
-
-        const data = await res.json();
+        const data = await client.fetchJson(`/peaks/${peakId}/public-summits${queryString ? `?${queryString}` : ""}`);
         return NextResponse.json(data, { status: 200 });
     } catch (err: any) {
-        console.error("Error fetching public summits:", err);
+        console.error("Error fetching public summits:", err?.bodyText ?? err);
         return NextResponse.json(
             { message: err?.message ?? "Upstream error" },
-            { status: 502 }
+            { status: err?.statusCode ?? 502 }
         );
     }
 };

@@ -2,7 +2,8 @@
 import getGoogleIdToken from "@/auth/getGoogleIdToken";
 import { useAuth } from "@/auth/useAuth";
 import getBackendUrl from "@/helpers/getBackendUrl";
-import Peak from "@/typeDefs/Peak";
+import { createApiClient, endpoints } from "@pathquest/shared/api";
+import type { Peak } from "@pathquest/shared/types";
 
 const getUnclimbedPeaks = async (): Promise<Peak[]> => {
     const session = await useAuth();
@@ -24,21 +25,21 @@ const getUnclimbedPeaks = async (): Promise<Peak[]> => {
 
     const backendUrl = getBackendUrl();
 
-    const apiRes = await fetch(`${backendUrl}/peaks/summits/unclimbed/nearest`, {
-        method: "GET",
-        headers: {
-            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    const client = createApiClient({
+        baseUrl: backendUrl,
+        getAuthHeaders: async () => {
+            const headers: Record<string, string> = {};
+            if (token) headers.Authorization = `Bearer ${token}`;
+            return headers;
         },
     });
 
-    if (!apiRes.ok) {
-        console.error("[getUnclimbedPeaks]", apiRes.status, await apiRes.text());
+    try {
+        return await endpoints.getUnclimbedPeaks(client);
+    } catch (err: any) {
+        console.error("[getUnclimbedPeaks]", err?.bodyText ?? err);
         return [];
     }
-
-    const data: Peak[] = await apiRes.json();
-
-    return data;
 };
 
 export default getUnclimbedPeaks;

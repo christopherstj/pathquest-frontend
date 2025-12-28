@@ -2,6 +2,7 @@
 
 import getBackendUrl from "@/helpers/getBackendUrl";
 import getAuthHeaders from "@/helpers/getAuthHeaders";
+import { createApiClient, endpoints } from "@pathquest/shared/api";
 
 const backendUrl = getBackendUrl();
 
@@ -15,19 +16,16 @@ const deleteChallengeFavorite = async (challengeId: string) => {
         };
     }
 
-    const url = `${backendUrl}/challenges/favorite/${challengeId}`;
-
-    const res = await fetch(url, {
-        method: "DELETE",
-        headers,
+    const client = createApiClient({
+        baseUrl: backendUrl,
+        getAuthHeaders: async () => headers,
     });
 
-    if (!res.ok) {
-        console.error(await res.text());
-        return {
-            success: false,
-            error: res.statusText,
-        };
+    try {
+        await endpoints.deleteChallengeFavorite(client, challengeId);
+    } catch (err: any) {
+        console.error(err?.bodyText ?? err);
+        return { success: false, error: err?.message ?? "Failed to unfavorite challenge" };
     }
 
     return {

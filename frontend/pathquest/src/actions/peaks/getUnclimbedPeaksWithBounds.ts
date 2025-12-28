@@ -2,7 +2,8 @@
 import getGoogleIdToken from "@/auth/getGoogleIdToken";
 import { useAuth } from "@/auth/useAuth";
 import getBackendUrl from "@/helpers/getBackendUrl";
-import Peak from "@/typeDefs/Peak";
+import { createApiClient, endpoints } from "@pathquest/shared/api";
+import type { Peak } from "@pathquest/shared/types";
 
 const backendUrl = getBackendUrl();
 
@@ -27,30 +28,24 @@ const getUnclimbedPeaksWithBounds = async (
         return [];
     }
 
-    const searchString = search ? `&search=${encodeURIComponent(search)}` : "";
-
-    const showSummitted = showSummittedPeaks ? "&showSummittedPeaks=true" : "";
-
-    const url = bounds
-        ? `${backendUrl}/peaks/summits/unclimbed?northWestLat=${bounds.northwest[0]}&northWestLng=${bounds.northwest[1]}&southEastLat=${bounds.southeast[0]}&southEastLng=${bounds.southeast[1]}${searchString}${showSummitted}`
-        : `${backendUrl}/peaks/summits/unclimbed?${searchString}${showSummitted}`;
-
-    const apiRes = await fetch(url, {
-        method: "GET",
-        headers: {
-            "Content-Type": "application/json",
-            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    const client = createApiClient({
+        baseUrl: backendUrl,
+        getAuthHeaders: async () => {
+            const headers: Record<string, string> = {};
+            if (token) headers.Authorization = `Bearer ${token}`;
+            return headers;
         },
     });
 
-    if (!apiRes.ok) {
-        console.error("[getUnclimbedPeaksWithBounds]", apiRes.status, await apiRes.text());
+    try {
+        if (!bounds) {
+            return [];
+        }
+        return await endpoints.getUnclimbedPeaksWithBounds(client, { bounds, search, showSummittedPeaks });
+    } catch (err: any) {
+        console.error("[getUnclimbedPeaksWithBounds]", err?.bodyText ?? err);
         return [];
     }
-
-    const data: Peak[] = await apiRes.json();
-
-    return data;
 };
 
 export default getUnclimbedPeaksWithBounds;

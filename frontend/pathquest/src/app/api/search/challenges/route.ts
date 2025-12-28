@@ -1,6 +1,7 @@
 import { authOptions } from "@/auth/authOptions";
 import getGoogleIdToken from "@/auth/getGoogleIdToken";
 import getBackendUrl from "@/helpers/getBackendUrl";
+import { createApiClient, endpoints } from "@pathquest/shared/api";
 import { getServerSession } from "next-auth";
 import { NextRequest, NextResponse } from "next/server";
 
@@ -18,33 +19,31 @@ export const GET = async (req: NextRequest) => {
         return null;
     });
 
-    const url = new URL(
-        `${backendUrl.replace(/\/$/, "")}/challenges/search`
-    );
-    req.nextUrl.searchParams.forEach((value, key) => {
-        url.searchParams.set(key, value);
-    });
-
-    const res = await fetch(url.toString(), {
-        headers: {
-            ...(token ? { Authorization: `Bearer ${token}` } : {}),
-            // Pass user identity via headers - backend uses this to calculate progress
-            ...(session?.user?.id ? { "x-user-id": session.user.id } : {}),
-            ...(session?.user?.email ? { "x-user-email": session.user.email } : {}),
-            ...(session?.user?.name ? { "x-user-name": encodeURIComponent(session.user.name) } : {}),
+    const client = createApiClient({
+        baseUrl: backendUrl,
+        getAuthHeaders: async () => {
+            const headers: Record<string, string> = {};
+            if (token) headers.Authorization = `Bearer ${token}`;
+            if (session?.user?.id) headers["x-user-id"] = session.user.id;
+            if (session?.user?.email) headers["x-user-email"] = session.user.email;
+            if (session?.user?.name) headers["x-user-name"] = encodeURIComponent(session.user.name);
+            return headers;
         },
-    }).catch((err) =>
-        NextResponse.json({ message: err?.message ?? "Upstream error" }, { status: 502 })
-    );
-
-    if (res instanceof NextResponse) return res;
-
-    const text = await res.text();
-    const contentType = res.headers.get("content-type") || "";
-    const isJson = contentType.includes("application/json");
-
-    return NextResponse.json(isJson ? JSON.parse(text) : text, {
-        status: res.status,
     });
+
+    try {
+        const params: any = {};
+        req.nextUrl.searchParams.forEach((value, key) => {
+            params[key] = value;
+        });
+        const data = await endpoints.searchChallenges(client, params);
+        return NextResponse.json(data, { status: 200 });
+    } catch (err: any) {
+        console.error("[challenges/search]", err?.bodyText ?? err);
+        return NextResponse.json(
+            { message: err?.message ?? "Upstream error" },
+            { status: err?.statusCode ?? 502 }
+        );
+    }
 };
 

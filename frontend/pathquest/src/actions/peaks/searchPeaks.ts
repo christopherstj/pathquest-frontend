@@ -2,7 +2,8 @@
 import getGoogleIdToken from "@/auth/getGoogleIdToken";
 import { useAuth } from "@/auth/useAuth";
 import getBackendUrl from "@/helpers/getBackendUrl";
-import Peak from "@/typeDefs/Peak";
+import { createApiClient, endpoints } from "@pathquest/shared/api";
+import type { Peak } from "@pathquest/shared/types";
 
 const backendUrl = getBackendUrl();
 
@@ -24,37 +25,33 @@ const searchPeaks = async (
         return null;
     });
 
-    const url = new URL(`${backendUrl}/peaks/search`);
-
-    if (northWestLat) url.searchParams.append("northWestLat", northWestLat);
-    if (northWestLng) url.searchParams.append("northWestLng", northWestLng);
-    if (southEastLat) url.searchParams.append("southEastLat", southEastLat);
-    if (southEastLng) url.searchParams.append("southEastLng", southEastLng);
-    if (search) url.searchParams.append("search", search);
-    if (page) url.searchParams.append("page", page);
-    if (perPage) url.searchParams.append("perPage", perPage);
-    if (showSummittedPeaks)
-        url.searchParams.append("showSummittedPeaks", showSummittedPeaks);
-
-    const apiRes = await fetch(url.toString(), {
-        method: "GET",
-        headers: {
-            ...(token ? { Authorization: `Bearer ${token}` } : {}),
-            // Pass user info via headers for backend auth (especially in dev)
-            ...(session?.user?.id ? { "x-user-id": session.user.id } : {}),
-            ...(session?.user?.email ? { "x-user-email": session.user.email } : {}),
-            ...(session?.user?.name ? { "x-user-name": encodeURIComponent(session.user.name) } : {}),
+    const client = createApiClient({
+        baseUrl: backendUrl,
+        getAuthHeaders: async () => {
+            const headers: Record<string, string> = {};
+            if (token) headers.Authorization = `Bearer ${token}`;
+            if (session?.user?.id) headers["x-user-id"] = session.user.id;
+            if (session?.user?.email) headers["x-user-email"] = session.user.email;
+            if (session?.user?.name) headers["x-user-name"] = encodeURIComponent(session.user.name);
+            return headers;
         },
     });
 
-    if (!apiRes.ok) {
-        console.error(await apiRes.text());
+    try {
+        return await endpoints.searchPeaks(client, {
+            northWestLat,
+            northWestLng,
+            southEastLat,
+            southEastLng,
+            search,
+            page,
+            perPage,
+            showSummittedPeaks,
+        });
+    } catch (err: any) {
+        console.error("[searchPeaks]", err?.bodyText ?? err);
         return [];
     }
-
-    const data: Peak[] = await apiRes.json();
-
-    return data;
 };
 
 export default searchPeaks;

@@ -3,7 +3,8 @@
 import getGoogleIdToken from "@/auth/getGoogleIdToken";
 import { useAuth } from "@/auth/useAuth";
 import getBackendUrl from "@/helpers/getBackendUrl";
-import Challenge from "@/typeDefs/Challenge";
+import { createApiClient, endpoints } from "@pathquest/shared/api";
+import type { Challenge } from "@pathquest/shared/types";
 
 const getChallenges = async (
     page: number,
@@ -16,22 +17,20 @@ const getChallenges = async (
     // Always generate token for Google IAM authentication (required at infrastructure level)
     const token = await getGoogleIdToken().catch(() => null);
 
-    const url = search
-        ? `${backendUrl}/challenges?page=${page}&perPage=${perPage}&search=${search}`
-        : `${backendUrl}/challenges?page=${page}&perPage=${perPage}`;
-
-    const response = await fetch(url, {
-        cache: "no-cache",
-        headers: {
-            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    const client = createApiClient({
+        baseUrl: backendUrl,
+        getAuthHeaders: async () => {
+            const headers: Record<string, string> = {};
+            if (token) headers.Authorization = `Bearer ${token}`;
+            return headers;
         },
     });
 
-    if (!response.ok) {
-        console.error(await response.text());
+    try {
+        return await endpoints.getChallenges(client, { page, perPage, search }, { cache: "no-cache" } as any);
+    } catch (err: any) {
+        console.error("[getChallenges]", err?.bodyText ?? err);
         return [];
-    } else {
-        return await response.json();
     }
 };
 

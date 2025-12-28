@@ -1,10 +1,8 @@
 "use server";
 import getGoogleIdToken from "@/auth/getGoogleIdToken";
 import getBackendUrl from "@/helpers/getBackendUrl";
-import ServerActionResult from "@/typeDefs/ServerActionResult";
-import { StravaCreds } from "@/typeDefs/StravaCreds";
-import User from "@/typeDefs/User";
-import { revalidatePath } from "next/cache";
+import { createApiClient, endpoints } from "@pathquest/shared/api";
+import type { ServerActionResult, StravaCreds, User } from "@pathquest/shared/types";
 
 const backendUrl = getBackendUrl();
 
@@ -38,50 +36,46 @@ const createUser = async (
         };
     }
 
-    const existingRes = await fetch(`${backendUrl}/users/${user.id}`, {
-        method: "GET",
-        cache: "no-cache",
-        headers: {
-            "Content-Type": "application/json",
-            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    const client = createApiClient({
+        baseUrl: backendUrl,
+        getAuthHeaders: async () => {
+            const headers: Record<string, string> = {};
+            if (token) headers.Authorization = `Bearer ${token}`;
+            return headers;
         },
     });
 
-    if (existingRes.ok) {
-        const existingUser = await existingRes.json();
+    // Check if user already exists
+    try {
+        const existingUser = await endpoints.getUser(client, user.id.toString(), { cache: "no-cache" } as any);
         return {
             success: true,
             data: existingUser,
         };
+    } catch (err: any) {
+        // User doesn't exist, create them
+        if (err?.statusCode !== 404) {
+            console.error("[createUser] Error checking existing user:", err?.bodyText ?? err);
+        }
     }
 
-    const apiRes = await fetch(`${backendUrl}/auth/signup`, {
-        method: "POST",
-        cache: "no-cache",
-        headers: {
-            "Content-Type": "application/json",
-            ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        },
-        body: JSON.stringify({
-            id: user.id.toString(),
+    try {
+        const result = await endpoints.createUser(client, {
+            id: user.id,
             name: user.name,
-            email: null,
-            pic: user.image ?? null,
+            email: user.email,
+            pic: user.image,
             stravaCreds,
-        }),
-    });
-
-    if (!apiRes.ok) {
-        console.error("[createUser]", apiRes.status, await apiRes.text());
+        }, { cache: "no-cache" } as any);
+        return {
+            success: true,
+            data: result.user,
+        };
+    } catch (err: any) {
+        console.error("[createUser]", err?.bodyText ?? err);
         return {
             success: false,
             error: "Failed to create user",
-        };
-    } else {
-        const newUser = (await apiRes.json()).user;
-        return {
-            success: true,
-            data: newUser,
         };
     }
 };

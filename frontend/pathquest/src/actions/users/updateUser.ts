@@ -1,7 +1,8 @@
 "use server";
 import getAuthHeaders from "@/helpers/getAuthHeaders";
 import getBackendUrl from "@/helpers/getBackendUrl";
-import ServerActionResult from "@/typeDefs/ServerActionResult";
+import { createApiClient, endpoints } from "@pathquest/shared/api";
+import type { ServerActionResult } from "@pathquest/shared/types";
 
 const backendUrl = getBackendUrl();
 
@@ -29,26 +30,23 @@ const updateUser = async (updateData: UpdateUserData): Promise<ServerActionResul
         };
     }
 
-    const apiRes = await fetch(`${backendUrl}/users/${id}`, {
-        method: "PUT",
-        cache: "no-cache",
-        headers: {
-            "Content-Type": "application/json",
-            ...headers,
-        },
-        body: JSON.stringify(updateData),
+    const client = createApiClient({
+        baseUrl: backendUrl,
+        getAuthHeaders: async () => headers,
     });
 
-    if (!apiRes.ok) {
-        console.error(await apiRes.text());
+    try {
+        await endpoints.updateUser(client, id, updateData, { cache: "no-cache" } as any);
+        return {
+            success: true,
+        };
+    } catch (err: any) {
+        console.error("[updateUser]", err?.bodyText ?? err);
         return {
             success: false,
-            error: apiRes.statusText,
+            error: err?.statusCode === 404 ? "User not found" : "Error updating user",
         };
     }
-    return {
-        success: true,
-    };
 };
 
 export default updateUser;

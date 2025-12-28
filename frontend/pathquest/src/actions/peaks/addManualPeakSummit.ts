@@ -2,8 +2,8 @@
 import { useAuth } from "@/auth/useAuth";
 import getBackendUrl from "@/helpers/getBackendUrl";
 import getGoogleIdToken from "@/auth/getGoogleIdToken";
-import ManualPeakSummit from "@/typeDefs/ManualPeakSummit";
-import { Difficulty, ExperienceRating } from "@/typeDefs/Summit";
+import { createApiClient, endpoints } from "@pathquest/shared/api";
+import type { Difficulty, ExperienceRating, ManualPeakSummit } from "@pathquest/shared/types";
 
 const backendUrl = getBackendUrl();
 
@@ -41,8 +41,6 @@ const addManualPeakSummit = async ({
     });
     const userId = session.user?.id;
 
-    const url = `${backendUrl}/peaks/summits/manual`;
-
     const data: ManualPeakSummit = {
         id: `${userId}-${peakId}-${summitDate}`,
         user_id: userId,
@@ -56,23 +54,25 @@ const addManualPeakSummit = async ({
         experience_rating: experienceRating,
     };
 
-    const response = await fetch(url, {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json",
-            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    const client = createApiClient({
+        baseUrl: backendUrl,
+        getAuthHeaders: async () => {
+            const headers: Record<string, string> = {};
+            if (token) headers.Authorization = `Bearer ${token}`;
             // Pass user identity via headers for backend auth (works in both dev and prod)
-            ...(userId ? { "x-user-id": userId } : {}),
-            ...(session?.user?.email ? { "x-user-email": session.user.email } : {}),
-            ...(session?.user?.name ? { "x-user-name": encodeURIComponent(session.user.name) } : {}),
+            if (userId) headers["x-user-id"] = userId;
+            if (session?.user?.email) headers["x-user-email"] = session.user.email;
+            if (session?.user?.name) headers["x-user-name"] = encodeURIComponent(session.user.name);
+            return headers;
         },
-        body: JSON.stringify(data),
     });
 
-    if (!response.ok) {
-        const errorText = await response.text();
-        console.error(errorText);
-        return { success: false, error: errorText };
+    try {
+        await endpoints.addManualPeakSummit(client, data);
+    } catch (err: any) {
+        const bodyText = err?.bodyText ? String(err.bodyText) : undefined;
+        console.error(bodyText ?? err);
+        return { success: false, error: bodyText ?? "Failed to add summit" };
     }
 
     return { success: true };

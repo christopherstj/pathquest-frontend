@@ -2,6 +2,7 @@
 import { useAuth } from "@/auth/useAuth";
 import getBackendUrl from "@/helpers/getBackendUrl";
 import getGoogleIdToken from "@/auth/getGoogleIdToken";
+import { createApiClient, endpoints } from "@pathquest/shared/api";
 
 const backendUrl = getBackendUrl();
 
@@ -21,22 +22,22 @@ const deleteAscent = async (
     });
     const userId = session.user?.id;
 
-    const url = `${backendUrl}/peaks/ascent/${ascentId}`;
-
-    const response = await fetch(url, {
-        method: "DELETE",
-        headers: {
-            ...(token ? { Authorization: `Bearer ${token}` } : {}),
-            ...(process.env.NODE_ENV === "development" && userId
-                ? { "x-user-id": userId }
-                : {}),
+    const client = createApiClient({
+        baseUrl: backendUrl,
+        getAuthHeaders: async () => {
+            const headers: Record<string, string> = {};
+            if (token) headers.Authorization = `Bearer ${token}`;
+            if (process.env.NODE_ENV === "development" && userId) headers["x-user-id"] = userId;
+            return headers;
         },
     });
 
-    if (!response.ok) {
-        const errorText = await response.text();
-        console.error(errorText);
-        return { success: false, error: errorText };
+    try {
+        await endpoints.deleteAscent(client, ascentId);
+    } catch (err: any) {
+        const bodyText = err?.bodyText ? String(err.bodyText) : undefined;
+        console.error(bodyText ?? err);
+        return { success: false, error: bodyText ?? "Failed to delete ascent" };
     }
 
     return { success: true };

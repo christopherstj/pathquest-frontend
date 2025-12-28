@@ -2,7 +2,8 @@
 import getGoogleIdToken from "@/auth/getGoogleIdToken";
 import { useAuth } from "@/auth/useAuth";
 import getBackendUrl from "@/helpers/getBackendUrl";
-import ServerActionResult from "@/typeDefs/ServerActionResult";
+import { createApiClient, endpoints } from "@pathquest/shared/api";
+import type { ServerActionResult } from "@pathquest/shared/types";
 
 const backendUrl = getBackendUrl();
 
@@ -21,33 +22,28 @@ const getUserSummitStates = async (
     // Always generate token for Google IAM authentication (required at infrastructure level)
     const token = await getGoogleIdToken().catch(() => null);
 
-    const apiRes = await fetch(
-        `${backendUrl}/users/${userId}/peaks/states`,
-        {
-            method: "GET",
-            cache: "no-cache",
-            headers: {
-                "Content-Type": "application/json",
-                ...(token ? { Authorization: `Bearer ${token}` } : {}),
-            },
-        }
-    );
+    const client = createApiClient({
+        baseUrl: backendUrl,
+        getAuthHeaders: async () => {
+            const headers: Record<string, string> = {};
+            if (token) headers.Authorization = `Bearer ${token}`;
+            return headers;
+        },
+    });
 
-    if (!apiRes.ok) {
-        const errorText = await apiRes.text();
-        console.error("Error getting user summit states:", errorText);
+    try {
+        const data = await endpoints.getUserSummitStates(client, userId, { cache: "no-cache" } as any);
+        return {
+            success: true,
+            data,
+        };
+    } catch (err: any) {
+        console.error("Error getting user summit states:", err?.bodyText ?? err);
         return {
             success: false,
             error: "Error getting states",
         };
     }
-
-    const data: GetUserSummitStatesResult = await apiRes.json();
-
-    return {
-        success: true,
-        data,
-    };
 };
 
 export default getUserSummitStates;

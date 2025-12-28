@@ -2,8 +2,8 @@
 import getGoogleIdToken from "@/auth/getGoogleIdToken";
 import getBackendUrl from "@/helpers/getBackendUrl";
 import { useAuth } from "@/auth/useAuth";
-import Activity from "@/typeDefs/Activity";
-import SummitWithPeak from "@/typeDefs/SummitWithPeak";
+import { createApiClient, endpoints } from "@pathquest/shared/api";
+import type { Activity, SummitWithPeak } from "@pathquest/shared/types";
 
 const backendUrl = getBackendUrl();
 
@@ -19,26 +19,25 @@ const getActivityDetails = async (
     const token = await getGoogleIdToken().catch(() => null);
     const userId = session?.user?.id;
 
-    const url = `${backendUrl}/activities/${activityId}`;
-
-    const res = await fetch(url, {
-        method: "GET",
-        headers: {
-            "Content-Type": "application/json",
-            ...(token ? { Authorization: `Bearer ${token}` } : {}),
-            // Pass user identity via headers for backend auth (works in both dev and prod)
-            ...(userId ? { "x-user-id": userId } : {}),
-            ...(session?.user?.email ? { "x-user-email": session.user.email } : {}),
-            ...(session?.user?.name ? { "x-user-name": encodeURIComponent(session.user.name) } : {}),
+    const client = createApiClient({
+        baseUrl: backendUrl,
+        getAuthHeaders: async () => {
+            const headers: Record<string, string> = {};
+            if (token) headers.Authorization = `Bearer ${token}`;
+            if (userId) headers["x-user-id"] = userId;
+            if (session?.user?.email) headers["x-user-email"] = session.user.email;
+            if (session?.user?.name) headers["x-user-name"] = encodeURIComponent(session.user.name);
+            return headers;
         },
     });
 
-    if (!res.ok) {
-        console.error(await res.text());
+    let data: any;
+    try {
+        data = await endpoints.getActivityDetails(client, activityId);
+    } catch (err: any) {
+        console.error(err?.bodyText ?? err);
         return null;
     }
-
-    const data = await res.json();
 
     // Determine if current user is the owner of this activity
     // Convert both to strings for reliable comparison

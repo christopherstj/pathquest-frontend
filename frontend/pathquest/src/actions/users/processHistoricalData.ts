@@ -2,6 +2,7 @@
 import getGoogleIdToken from "@/auth/getGoogleIdToken";
 import { useAuth } from "@/auth/useAuth";
 import getBackendUrl from "@/helpers/getBackendUrl";
+import { createApiClient, endpoints } from "@pathquest/shared/api";
 
 const backendUrl = getBackendUrl();
 
@@ -34,29 +35,27 @@ const processHistoricalData = async (): Promise<{
         };
     }
 
-    const historicalRes = await fetch(`${backendUrl}/historical-data`, {
-        method: "POST",
-        cache: "no-cache",
-        headers: {
-            "Content-Type": "application/json",
-            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    const client = createApiClient({
+        baseUrl: backendUrl,
+        getAuthHeaders: async () => {
+            const headers: Record<string, string> = {};
+            if (token) headers.Authorization = `Bearer ${token}`;
+            return headers;
         },
-        body: JSON.stringify({
-            userId: user.id.toString(),
-        }),
     });
 
-    if (!historicalRes.ok) {
-        console.error("[processHistoricalData]", historicalRes.status, await historicalRes.text());
+    try {
+        await endpoints.processHistoricalData(client, user.id.toString(), { cache: "no-cache" } as any);
+        return {
+            success: true,
+        };
+    } catch (err: any) {
+        console.error("[processHistoricalData]", err?.bodyText ?? err);
         return {
             success: false,
             error: "Failed to process historical data",
         };
     }
-
-    return {
-        success: true,
-    };
 };
 
 export default processHistoricalData;

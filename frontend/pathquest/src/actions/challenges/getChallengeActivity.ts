@@ -1,7 +1,8 @@
 "use server";
 import getGoogleIdToken from "@/auth/getGoogleIdToken";
 import getBackendUrl from "@/helpers/getBackendUrl";
-import ServerActionResult from "@/typeDefs/ServerActionResult";
+import { createApiClient, endpoints } from "@pathquest/shared/api";
+import type { ServerActionResult } from "@pathquest/shared/types";
 
 const backendUrl = getBackendUrl();
 
@@ -30,24 +31,22 @@ const getChallengeActivity = async (
         return null;
     });
 
-    const url = `${backendUrl}/challenges/${challengeId}/activity`;
-
-    const res = await fetch(url, {
-        method: "GET",
-        headers: {
-            "Content-Type": "application/json",
-            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    const client = createApiClient({
+        baseUrl: backendUrl,
+        getAuthHeaders: async () => {
+            const headers: Record<string, string> = {};
+            if (token) headers.Authorization = `Bearer ${token}`;
+            return headers;
         },
     });
 
-    if (!res.ok) {
-        console.error("[getChallengeActivity]", res.status, await res.text());
+    try {
+        const data = await endpoints.getChallengeActivity(client, challengeId);
+        return { success: true, data };
+    } catch (err: any) {
+        console.error("[getChallengeActivity]", err?.bodyText ?? err);
         return { success: false, error: "Failed to get challenge activity" };
     }
-
-    const data = await res.json();
-
-    return { success: true, data };
 };
 
 export default getChallengeActivity;

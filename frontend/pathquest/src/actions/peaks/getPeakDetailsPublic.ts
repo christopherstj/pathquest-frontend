@@ -1,10 +1,8 @@
 "use server";
 import getGoogleIdToken from "@/auth/getGoogleIdToken";
 import getBackendUrl from "@/helpers/getBackendUrl";
-import Challenge from "@/typeDefs/Challenge";
-import Peak from "@/typeDefs/Peak";
-import ServerActionResult from "@/typeDefs/ServerActionResult";
-import Summit from "@/typeDefs/Summit";
+import { createApiClient, endpoints } from "@pathquest/shared/api";
+import type { Challenge, Peak, ServerActionResult, Summit } from "@pathquest/shared/types";
 
 const backendUrl = getBackendUrl();
 
@@ -25,32 +23,32 @@ const getPeakDetailsPublic = async (
         challenges: Challenge[];
     }>
 > => {
-    // Get token for Google IAM authentication (required at infrastructure level)
-    // No user headers - this is public-only data for static generation
     const token = await getGoogleIdToken().catch((err) => {
         console.error("[getPeakDetailsPublic] Failed to get Google ID token:", err);
         return null;
     });
 
-    const apiRes = await fetch(`${backendUrl}/peaks/${peakId}`, {
-        method: "GET",
-        headers: {
-            ...(token ? { Authorization: `Bearer ${token}` } : {}),
-            // No x-user-* headers - this is public-only data
+    const client = createApiClient({
+        baseUrl: backendUrl,
+        getAuthHeaders: async () => {
+            const headers: Record<string, string> = {};
+            if (token) headers.Authorization = `Bearer ${token}`;
+            return headers;
         },
-        // Cache for ISR
-        next: { revalidate: 86400 },
     });
 
-    if (!apiRes.ok) {
-        console.error("[getPeakDetailsPublic]", await apiRes.text());
-        return {
-            success: false,
-            error: "Failed to fetch peak details",
-        };
+    let data: { peak: Peak; publicSummits: Summit[]; challenges: Challenge[] };
+    try {
+        data = await endpoints.getPeakDetailsPublic(
+            client,
+            peakId,
+            // Next.js-only fetch options for ISR caching.
+            { next: { revalidate: 86400 } } as any
+        );
+    } catch (err: any) {
+        console.error("[getPeakDetailsPublic]", err?.bodyText ?? err);
+        return { success: false, error: "Failed to fetch peak details" };
     }
-
-    const data = await apiRes.json();
 
     return {
         success: true,

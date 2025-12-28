@@ -1,6 +1,7 @@
 import { authOptions } from "@/auth/authOptions";
 import getGoogleIdToken from "@/auth/getGoogleIdToken";
 import getBackendUrl from "@/helpers/getBackendUrl";
+import { createApiClient } from "@pathquest/shared/api";
 import { getServerSession } from "next-auth";
 import { NextRequest, NextResponse } from "next/server";
 
@@ -24,37 +25,26 @@ export const GET = async (req: NextRequest) => {
         return null;
     });
 
-    const url = `${backendUrl.replace(/\/$/, "")}/dashboard/stats`;
+    const client = createApiClient({
+        baseUrl: backendUrl,
+        getAuthHeaders: async () => {
+            const headers: Record<string, string> = {};
+            if (token) headers.Authorization = `Bearer ${token}`;
+            if (session.user.id) headers["x-user-id"] = session.user.id;
+            if (session.user.email) headers["x-user-email"] = session.user.email;
+            if (session.user.name) headers["x-user-name"] = encodeURIComponent(session.user.name);
+            return headers;
+        },
+    });
 
     try {
-        const res = await fetch(url, {
-            headers: {
-                "Content-Type": "application/json",
-                // Use Bearer token if available, otherwise use header-based identity
-                ...(token ? { Authorization: `Bearer ${token}` } : {}),
-                // Always pass user info via headers for backend auth
-                "x-user-id": session.user.id,
-                ...(session.user.email ? { "x-user-email": session.user.email } : {}),
-                ...(session.user.name ? { "x-user-name": encodeURIComponent(session.user.name) } : {}),
-            },
-        });
-
-        if (!res.ok) {
-            const text = await res.text();
-            console.error("Failed to fetch dashboard stats:", text);
-            return NextResponse.json(
-                { message: "Failed to fetch dashboard stats" },
-                { status: res.status }
-            );
-        }
-
-        const data = await res.json();
+        const data = await client.fetchJson("/dashboard/stats");
         return NextResponse.json(data, { status: 200 });
     } catch (err: any) {
-        console.error("Error fetching dashboard stats:", err);
+        console.error("Error fetching dashboard stats:", err?.bodyText ?? err);
         return NextResponse.json(
             { message: err?.message ?? "Upstream error" },
-            { status: 502 }
+            { status: err?.statusCode ?? 502 }
         );
     }
 };

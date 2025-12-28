@@ -2,7 +2,8 @@
 import getGoogleIdToken from "@/auth/getGoogleIdToken";
 import { useAuth } from "@/auth/useAuth";
 import getBackendUrl from "@/helpers/getBackendUrl";
-import Peak from "@/typeDefs/Peak";
+import { createApiClient, endpoints } from "@pathquest/shared/api";
+import type { Peak } from "@pathquest/shared/types";
 
 const getPeakSummits = async (): Promise<Peak[]> => {
     const session = await useAuth();
@@ -26,24 +27,24 @@ const getPeakSummits = async (): Promise<Peak[]> => {
 
     const backendUrl = getBackendUrl();
 
-    const apiRes = await fetch(`${backendUrl}/peaks/summits/${userId}`, {
-        method: "GET",
-        headers: {
-            "Content-Type": "application/json",
-            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    const client = createApiClient({
+        baseUrl: backendUrl,
+        getAuthHeaders: async () => {
+            const headers: Record<string, string> = {};
+            if (token) headers.Authorization = `Bearer ${token}`;
+            return headers;
         },
     });
 
-    if (!apiRes.ok) {
-        console.error("[getPeakSummits]", apiRes.status, await apiRes.text());
+    try {
+        const data = await endpoints.getPeakSummits(client, userId);
+        return data.sort(
+            (a, b) => (b.ascents?.length ?? 0) - (a.ascents?.length ?? 0)
+        );
+    } catch (err: any) {
+        console.error("[getPeakSummits]", err?.bodyText ?? err);
         return [];
     }
-
-    const data: Peak[] = await apiRes.json();
-
-    return data.sort(
-        (a, b) => (b.ascents?.length ?? 0) - (a.ascents?.length ?? 0)
-    );
 };
 
 export default getPeakSummits;

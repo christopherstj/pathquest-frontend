@@ -1,30 +1,23 @@
 "use server";
 
-import { CurrentWeather } from "@/typeDefs/CurrentWeather";
+import getBackendUrl from "@/helpers/getBackendUrl";
+import { createApiClient, endpoints } from "@pathquest/shared/api";
+import type { CurrentWeather } from "@pathquest/shared/types";
 
 const getPeakWeather = async (peakId: string): Promise<CurrentWeather | null> => {
     try {
-        const response = await fetch(
-            `${process.env.NEXT_PUBLIC_PATHQUEST_API_URL}/peaks/${peakId}/weather`,
-            {
-                method: "GET",
-                headers: {
-                    "Content-Type": "application/json",
-                },
-                // Cache for 30 minutes - weather doesn't change that fast
-                next: { revalidate: 1800 },
-            }
-        );
+        const backendUrl = getBackendUrl();
+        const client = createApiClient({
+            baseUrl: backendUrl,
+            getAuthHeaders: async () => ({}),
+        });
 
-        if (!response.ok) {
-            console.error(`Failed to fetch weather for peak ${peakId}: ${response.status}`);
-            return null;
-        }
-
-        const data = await response.json();
-        return data as CurrentWeather;
-    } catch (error) {
-        console.error(`Error fetching weather for peak ${peakId}:`, error);
+        const data = await endpoints.getPeakWeather(client, peakId, {
+            next: { revalidate: 1800 },
+        } as any);
+        return data;
+    } catch (error: any) {
+        console.error(`Error fetching weather for peak ${peakId}:`, error?.bodyText ?? error);
         return null;
     }
 };

@@ -3,7 +3,8 @@
 import getGoogleIdToken from "@/auth/getGoogleIdToken";
 import { useAuth } from "@/auth/useAuth";
 import getBackendUrl from "@/helpers/getBackendUrl";
-import Peak from "@/typeDefs/Peak";
+import { createApiClient, endpoints } from "@pathquest/shared/api";
+import type { Peak } from "@pathquest/shared/types";
 import getActivityDetails from "@/actions/activities/getActivityDetails";
 
 const backendUrl = getBackendUrl();
@@ -70,27 +71,29 @@ const searchPeaksAlongRoute = async (
         return null;
     });
 
-    const url = new URL(`${backendUrl}/peaks/search`);
-    url.searchParams.append("northWestLat", maxLat.toString());
-    url.searchParams.append("northWestLng", minLng.toString());
-    url.searchParams.append("southEastLat", minLat.toString());
-    url.searchParams.append("southEastLng", maxLng.toString());
-    if (search) url.searchParams.append("search", search);
-    url.searchParams.append("perPage", "50");
-
-    const apiRes = await fetch(url.toString(), {
-        method: "GET",
-        headers: {
-            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    const client = createApiClient({
+        baseUrl: backendUrl,
+        getAuthHeaders: async () => {
+            const headers: Record<string, string> = {};
+            if (token) headers.Authorization = `Bearer ${token}`;
+            return headers;
         },
     });
 
-    if (!apiRes.ok) {
-        console.error(await apiRes.text());
+    let peaks: Peak[];
+    try {
+        peaks = await endpoints.searchPeaks(client, {
+            northWestLat: maxLat.toString(),
+            northWestLng: minLng.toString(),
+            southEastLat: minLat.toString(),
+            southEastLng: maxLng.toString(),
+            search,
+            perPage: "50",
+        });
+    } catch (err: any) {
+        console.error("[searchPeaksAlongRoute]", err?.bodyText ?? err);
         return [];
     }
-
-    const peaks: Peak[] = await apiRes.json();
 
     // Calculate distance from route for each peak and sort by distance
     const peaksWithDistance: PeakWithDistance[] = peaks.map((peak) => {

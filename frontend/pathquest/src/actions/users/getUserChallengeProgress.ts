@@ -2,9 +2,8 @@
 import getGoogleIdToken from "@/auth/getGoogleIdToken";
 import { useAuth } from "@/auth/useAuth";
 import getBackendUrl from "@/helpers/getBackendUrl";
-import Challenge from "@/typeDefs/Challenge";
-import Peak from "@/typeDefs/Peak";
-import ServerActionResult from "@/typeDefs/ServerActionResult";
+import { createApiClient, endpoints } from "@pathquest/shared/api";
+import type { Challenge, Peak, ServerActionResult } from "@pathquest/shared/types";
 
 const backendUrl = getBackendUrl();
 
@@ -43,35 +42,30 @@ const getUserChallengeProgress = async (
     const session = await useAuth();
     const token = await getGoogleIdToken().catch(() => null);
 
-    const apiRes = await fetch(
-        `${backendUrl}/users/${userId}/challenges/${challengeId}`,
-        {
-            method: "GET",
-            cache: "no-cache",
-            headers: {
-                "Content-Type": "application/json",
-                ...(token ? { Authorization: `Bearer ${token}` } : {}),
-            },
-        }
-    );
+    const client = createApiClient({
+        baseUrl: backendUrl,
+        getAuthHeaders: async () => {
+            const headers: Record<string, string> = {};
+            if (token) headers.Authorization = `Bearer ${token}`;
+            return headers;
+        },
+    });
 
-    if (!apiRes.ok) {
-        const errorText = await apiRes.text();
-        console.error("Error fetching user challenge progress:", errorText);
+    try {
+        const data = await endpoints.getUserChallengeProgress(client, userId, challengeId, { cache: "no-cache" } as any);
+        return {
+            success: true,
+            data,
+        };
+    } catch (err: any) {
+        console.error("Error fetching user challenge progress:", err?.bodyText ?? err);
         return {
             success: false,
-            error: apiRes.status === 404 
+            error: err?.statusCode === 404 
                 ? "Challenge or user not found" 
                 : "Error fetching challenge progress",
         };
     }
-
-    const data = await apiRes.json();
-
-    return {
-        success: true,
-        data,
-    };
 };
 
 export default getUserChallengeProgress;

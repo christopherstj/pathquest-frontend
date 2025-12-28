@@ -1,6 +1,2 @@
-export default interface PeakActivity {
-    summitsThisWeek: number;
-    summitsThisMonth: number;
-    lastSummitDate: string | null;
-}
+export type { PeakActivity as default } from "@pathquest/shared/types";
 
