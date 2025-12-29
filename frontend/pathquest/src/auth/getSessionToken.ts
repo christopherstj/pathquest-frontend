@@ -17,11 +17,6 @@ import { cookies } from "next/headers";
 const getSessionToken = async (): Promise<string | null> => {
     const cookieStore = await cookies();
     
-    // Debug: list all cookie names
-    const allCookies = cookieStore.getAll();
-    const sessionCookies = allCookies.filter(c => c.name.includes('session') || c.name.includes('next-auth'));
-    console.log(`[getSessionToken] Found ${sessionCookies.length} session-related cookies:`, sessionCookies.map(c => c.name));
-    
     // Try to get the token - check both secure (HTTPS) and non-secure (HTTP) variants
     const cookieNames = [
         "__Secure-next-auth.session-token",
@@ -32,7 +27,6 @@ const getSessionToken = async (): Promise<string | null> => {
         // First try the non-chunked version
         const singleCookie = cookieStore.get(baseName)?.value;
         if (singleCookie) {
-            console.log(`[getSessionToken] Found ${baseName}, length: ${singleCookie.length}`);
             return singleCookie;
         }
         
@@ -47,13 +41,10 @@ const getSessionToken = async (): Promise<string | null> => {
         }
         
         if (chunks.length > 0) {
-            const assembled = chunks.join("");
-            console.log(`[getSessionToken] Assembled ${chunks.length} chunks for ${baseName}, total length: ${assembled.length}`);
-            return assembled;
+            return chunks.join("");
         }
     }
     
-    console.log("[getSessionToken] No session token found in cookies");
     return null;
 };
 

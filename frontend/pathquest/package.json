@@ -10,7 +10,7 @@
   },
   "dependencies": {
     "@mapbox/search-js-react": "^1.3.0",
-    "@pathquest/shared": "git+https://github.com/christopherstj/pathquest-shared.git#db31188ef432b96f985ff893f4e9bd414469ab38",
+    "@pathquest/shared": "git+https://github.com/christopherstj/pathquest-shared.git#3af45e8b4bb0223acef397851e870c79120213ea",
     "@radix-ui/react-alert-dialog": "^1.1.15",
     "@radix-ui/react-dialog": "^1.1.15",
     "@radix-ui/react-dropdown-menu": "^2.1.16",
