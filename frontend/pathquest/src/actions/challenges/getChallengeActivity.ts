@@ -1,5 +1,5 @@
 "use server";
-import getGoogleIdToken from "@/auth/getGoogleIdToken";
+import getSessionToken from "@/auth/getSessionToken";
 import getBackendUrl from "@/helpers/getBackendUrl";
 import { createApiClient, endpoints } from "@pathquest/shared/api";
 import type { ServerActionResult } from "@pathquest/shared/types";
@@ -26,7 +26,7 @@ export interface ChallengeActivity {
 const getChallengeActivity = async (
     challengeId: string
 ): Promise<ServerActionResult<ChallengeActivity>> => {
-    const token = await getGoogleIdToken().catch((err) => {
+    const token = await getSessionToken().catch((err) => {
         console.error("[getChallengeActivity] Failed to get Google ID token:", err);
         return null;
     });

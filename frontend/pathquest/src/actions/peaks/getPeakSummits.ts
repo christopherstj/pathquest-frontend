@@ -1,5 +1,5 @@
 "use server";
-import getGoogleIdToken from "@/auth/getGoogleIdToken";
+import getSessionToken from "@/auth/getSessionToken";
 import { useAuth } from "@/auth/useAuth";
 import getBackendUrl from "@/helpers/getBackendUrl";
 import { createApiClient, endpoints } from "@pathquest/shared/api";
@@ -15,7 +15,7 @@ const getPeakSummits = async (): Promise<Peak[]> => {
     const userId = session.user.id ?? "";
 
     // Always generate token for Google IAM authentication (required at infrastructure level)
-    const token = await getGoogleIdToken().catch((err) => {
+    const token = await getSessionToken().catch((err) => {
         console.error("[getPeakSummits] Failed to get Google ID token:", err);
         return null;
     });

@@ -129,20 +129,20 @@ export const getNewToken = async (): Promise<string | null> => {
  * Note: Cache does NOT persist across serverless function invocations (each Vercel function is a new process).
  * Returns empty string in development (API allows unauthenticated requests in dev).
  */
-const getGoogleIdToken = async (): Promise<string | null> => {
+const getSessionToken = async (): Promise<string | null> => {
     if (process.env.NODE_ENV === "development") {
-        console.log("[getGoogleIdToken] Development mode - returning empty string");
+        console.log("[getSessionToken] Development mode - returning empty string");
         return "";
     }
 
     // Check cached token (only helps within the same function invocation)
     if (cachedToken && tokenExpiry > Date.now()) {
         const remainingMs = tokenExpiry - Date.now();
-        console.log(`[getGoogleIdToken] Returning cached token (expires in ${Math.round(remainingMs / 1000)}s)`);
+        console.log(`[getSessionToken] Returning cached token (expires in ${Math.round(remainingMs / 1000)}s)`);
         return cachedToken;
     }
 
-    console.log("[getGoogleIdToken] No valid cached token, generating new one...");
+    console.log("[getSessionToken] No valid cached token, generating new one...");
 
     // Get new token
     try {
@@ -156,19 +156,19 @@ const getGoogleIdToken = async (): Promise<string | null> => {
                 // Set expiry to 5 minutes before actual expiry for safety
                 tokenExpiry = decodedToken.exp * 1000 - 5 * 60 * 1000;
                 const expiresIn = Math.round((tokenExpiry - Date.now()) / 1000);
-                console.log(`[getGoogleIdToken] SUCCESS: New token cached (expires in ${expiresIn}s)`);
+                console.log(`[getSessionToken] SUCCESS: New token cached (expires in ${expiresIn}s)`);
             } else {
-                console.warn("[getGoogleIdToken] WARNING: Could not decode token expiry, not caching");
+                console.warn("[getSessionToken] WARNING: Could not decode token expiry, not caching");
             }
             return newToken;
         }
 
-        console.error("[getGoogleIdToken] FAILED: getNewToken returned null");
+        console.error("[getSessionToken] FAILED: getNewToken returned null");
         return null;
     } catch (error) {
-        console.error("[getGoogleIdToken] FAILED: Error getting new token:", error);
+        console.error("[getSessionToken] FAILED: Error getting new token:", error);
         return null;
     }
 };
 
-export default getGoogleIdToken;
+export default getSessionToken;

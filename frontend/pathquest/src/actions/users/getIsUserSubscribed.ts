@@ -1,5 +1,5 @@
 "use server";
-import getGoogleIdToken from "@/auth/getGoogleIdToken";
+import getSessionToken from "@/auth/getSessionToken";
 import getBackendUrl from "@/helpers/getBackendUrl";
 import { createApiClient, endpoints } from "@pathquest/shared/api";
 
@@ -7,7 +7,7 @@ const backendUrl = getBackendUrl();
 
 const getIsUserSubscribed = async (userId: string) => {
     // Always generate token for Google IAM authentication (required at infrastructure level)
-    const idToken = await getGoogleIdToken().catch((err) => {
+    const idToken = await getSessionToken().catch((err) => {
         console.error("[getIsUserSubscribed] Failed to get Google ID token:", err);
         return null;
     });

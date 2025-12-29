@@ -1,5 +1,5 @@
 "use server";
-import getGoogleIdToken from "@/auth/getGoogleIdToken";
+import getSessionToken from "@/auth/getSessionToken";
 import getBackendUrl from "@/helpers/getBackendUrl";
 import { useAuth } from "@/auth/useAuth";
 import { createApiClient, endpoints } from "@pathquest/shared/api";
@@ -24,11 +24,8 @@ const getActivityStarts = async (
         return [];
     }
 
-    // Always generate token for Google IAM authentication (required at infrastructure level)
-    const token = await getGoogleIdToken().catch((err) => {
-        console.error("[getActivityStarts] Failed to get Google ID token:", err);
-        return null;
-    });
+    // Get the NextAuth session token from cookies
+    const token = await getSessionToken();
 
     if (!token && process.env.NODE_ENV !== "development") {
         console.error("[getActivityStarts] No token available - cannot make authenticated request");

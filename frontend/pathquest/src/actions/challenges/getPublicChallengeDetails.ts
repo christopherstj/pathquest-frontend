@@ -1,7 +1,7 @@
 "use server";
 
 import getBackendUrl from "@/helpers/getBackendUrl";
-import getGoogleIdToken from "@/auth/getGoogleIdToken";
+import getSessionToken from "@/auth/getSessionToken";
 import { createApiClient, endpoints } from "@pathquest/shared/api";
 import type { Activity, Challenge, Peak, ServerActionResult } from "@pathquest/shared/types";
 import { ChallengeProgressInfo } from "./getChallengeDetails";
@@ -29,7 +29,7 @@ const getPublicChallengeDetails = async (
         }[];
     }>
 > => {
-    const token = await getGoogleIdToken().catch((err) => {
+    const token = await getSessionToken().catch((err) => {
         console.error("[getPublicChallengeDetails] Failed to get Google ID token:", err);
         return null;
     });

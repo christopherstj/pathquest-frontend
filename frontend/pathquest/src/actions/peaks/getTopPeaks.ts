@@ -1,5 +1,4 @@
 "use server";
-import getGoogleIdToken from "@/auth/getGoogleIdToken";
 import getBackendUrl from "@/helpers/getBackendUrl";
 import { createApiClient, endpoints } from "@pathquest/shared/api";
 
@@ -10,19 +9,14 @@ interface TopPeak {
 
 const backendUrl = getBackendUrl();
 
+/**
+ * Gets top peaks by summit count for static generation.
+ * No authentication needed - this is a public endpoint.
+ */
 const getTopPeaks = async (limit: number = 1000): Promise<TopPeak[]> => {
-    const token = await getGoogleIdToken().catch((err) => {
-        console.error("[getTopPeaks] Failed to get Google ID token:", err);
-        return null;
-    });
-
     const client = createApiClient({
         baseUrl: backendUrl,
-        getAuthHeaders: async () => {
-            const headers: Record<string, string> = {};
-            if (token) headers.Authorization = `Bearer ${token}`;
-            return headers;
-        },
+        getAuthHeaders: async () => ({}), // No auth needed for public endpoint
     });
 
     try {
@@ -39,4 +33,3 @@ const getTopPeaks = async (limit: number = 1000): Promise<TopPeak[]> => {
 };
 
 export default getTopPeaks;
-

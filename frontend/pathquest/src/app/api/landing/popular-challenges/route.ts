@@ -1,4 +1,4 @@
-import getGoogleIdToken from "@/auth/getGoogleIdToken";
+import getSessionToken from "@/auth/getSessionToken";
 import getBackendUrl from "@/helpers/getBackendUrl";
 import { createApiClient } from "@pathquest/shared/api";
 import { NextRequest, NextResponse } from "next/server";
@@ -6,7 +6,7 @@ import { NextRequest, NextResponse } from "next/server";
 export const GET = async (req: NextRequest) => {
     const backendUrl = getBackendUrl();
 
-    const token = await getGoogleIdToken().catch((err) => {
+    const token = await getSessionToken().catch((err) => {
         console.error("[landing/popular-challenges] Failed to get Google ID token:", err);
         return null;
     });

@@ -1,5 +1,5 @@
 "use server";
-import getGoogleIdToken from "@/auth/getGoogleIdToken";
+import getSessionToken from "@/auth/getSessionToken";
 import { useAuth } from "@/auth/useAuth";
 import getBackendUrl from "@/helpers/getBackendUrl";
 import { createApiClient, endpoints } from "@pathquest/shared/api";
@@ -20,7 +20,7 @@ const getUserSummitStates = async (
 ): Promise<ServerActionResult<GetUserSummitStatesResult>> => {
     const session = await useAuth();
     // Always generate token for Google IAM authentication (required at infrastructure level)
-    const token = await getGoogleIdToken().catch(() => null);
+    const token = await getSessionToken().catch(() => null);
 
     const client = createApiClient({
         baseUrl: backendUrl,

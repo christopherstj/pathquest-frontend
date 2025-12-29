@@ -1,5 +1,5 @@
 "use server";
-import getGoogleIdToken from "@/auth/getGoogleIdToken";
+import getSessionToken from "@/auth/getSessionToken";
 import { useAuth } from "@/auth/useAuth";
 import getBackendUrl from "@/helpers/getBackendUrl";
 import { revalidatePath } from "next/cache";
@@ -22,11 +22,8 @@ const reprocessActivity = async (
         };
     }
 
-    // Always generate token for Google IAM authentication (required at infrastructure level)
-    const token = await getGoogleIdToken().catch((err) => {
-        console.error("[reprocessActivity] Failed to get Google ID token:", err);
-        return null;
-    });
+    // Get the NextAuth session token from cookies
+    const token = await getSessionToken();
 
     if (!token && process.env.NODE_ENV !== "development") {
         console.error("[reprocessActivity] No token available - cannot make authenticated request");

@@ -1,7 +1,7 @@
 "use server";
 import { useAuth } from "@/auth/useAuth";
 import getBackendUrl from "@/helpers/getBackendUrl";
-import getGoogleIdToken from "@/auth/getGoogleIdToken";
+import getSessionToken from "@/auth/getSessionToken";
 import { createApiClient, endpoints } from "@pathquest/shared/api";
 import type { Difficulty, ExperienceRating, ManualPeakSummit } from "@pathquest/shared/types";
 
@@ -35,7 +35,7 @@ const addManualPeakSummit = async ({
     }
 
     // Always generate token for Google IAM authentication (required at infrastructure level)
-    const token = await getGoogleIdToken().catch((err) => {
+    const token = await getSessionToken().catch((err) => {
         console.error("[addManualPeakSummit] Failed to get Google ID token:", err);
         return null;
     });
@@ -59,10 +59,6 @@ const addManualPeakSummit = async ({
         getAuthHeaders: async () => {
             const headers: Record<string, string> = {};
             if (token) headers.Authorization = `Bearer ${token}`;
-            // Pass user identity via headers for backend auth (works in both dev and prod)
-            if (userId) headers["x-user-id"] = userId;
-            if (session?.user?.email) headers["x-user-email"] = session.user.email;
-            if (session?.user?.name) headers["x-user-name"] = encodeURIComponent(session.user.name);
             return headers;
         },
     });

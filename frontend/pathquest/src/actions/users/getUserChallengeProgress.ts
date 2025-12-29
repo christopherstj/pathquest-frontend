@@ -1,5 +1,5 @@
 "use server";
-import getGoogleIdToken from "@/auth/getGoogleIdToken";
+import getSessionToken from "@/auth/getSessionToken";
 import { useAuth } from "@/auth/useAuth";
 import getBackendUrl from "@/helpers/getBackendUrl";
 import { createApiClient, endpoints } from "@pathquest/shared/api";
@@ -40,7 +40,7 @@ const getUserChallengeProgress = async (
     challengeId: string
 ): Promise<ServerActionResult<UserChallengeData>> => {
     const session = await useAuth();
-    const token = await getGoogleIdToken().catch(() => null);
+    const token = await getSessionToken().catch(() => null);
 
     const client = createApiClient({
         baseUrl: backendUrl,

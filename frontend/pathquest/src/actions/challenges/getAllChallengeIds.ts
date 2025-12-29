@@ -1,12 +1,12 @@
 "use server";
 import getBackendUrl from "@/helpers/getBackendUrl";
-import getGoogleIdToken from "@/auth/getGoogleIdToken";
+import getSessionToken from "@/auth/getSessionToken";
 import { createApiClient, endpoints } from "@pathquest/shared/api";
 
 const backendUrl = getBackendUrl();
 
 const getAllChallengeIds = async (): Promise<{ id: string }[]> => {
-    const token = await getGoogleIdToken().catch((err) => {
+    const token = await getSessionToken().catch((err) => {
         console.error("[getAllChallengeIds] Failed to get Google ID token:", err);
         return null;
     });

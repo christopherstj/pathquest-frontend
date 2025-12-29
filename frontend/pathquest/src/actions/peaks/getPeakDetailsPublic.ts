@@ -1,5 +1,4 @@
 "use server";
-import getGoogleIdToken from "@/auth/getGoogleIdToken";
 import getBackendUrl from "@/helpers/getBackendUrl";
 import { createApiClient, endpoints } from "@pathquest/shared/api";
 import type { Challenge, Peak, ServerActionResult, Summit } from "@pathquest/shared/types";
@@ -12,6 +11,7 @@ const backendUrl = getBackendUrl();
  * This function does NOT use useAuth() or access cookies/headers, making it safe
  * for static generation (ISR) without triggering DYNAMIC_SERVER_USAGE errors.
  * 
+ * No authentication is needed - the API endpoint is public.
  * For authenticated peak details (with user-specific data), use getPeakDetails() instead.
  */
 const getPeakDetailsPublic = async (
@@ -23,18 +23,9 @@ const getPeakDetailsPublic = async (
         challenges: Challenge[];
     }>
 > => {
-    const token = await getGoogleIdToken().catch((err) => {
-        console.error("[getPeakDetailsPublic] Failed to get Google ID token:", err);
-        return null;
-    });
-
     const client = createApiClient({
         baseUrl: backendUrl,
-        getAuthHeaders: async () => {
-            const headers: Record<string, string> = {};
-            if (token) headers.Authorization = `Bearer ${token}`;
-            return headers;
-        },
+        getAuthHeaders: async () => ({}), // No auth needed for public endpoint
     });
 
     let data: { peak: Peak; publicSummits: Summit[]; challenges: Challenge[] };
@@ -57,4 +48,3 @@ const getPeakDetailsPublic = async (
 };
 
 export default getPeakDetailsPublic;
-

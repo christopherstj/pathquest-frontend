@@ -137,7 +137,7 @@ src/app/
 - `queue-status/route.ts` - Fetches count of activities waiting to be processed from event queue
 - `import-status/route.ts` - Fetches detailed import progress: totalActivities, processedActivities, pendingActivities, summitsFound, percentComplete, estimatedHoursRemaining, status, message. Used by ImportProgressCard.
 - `stats/route.ts` - Fetches dashboard quick stats (total peaks, elevation gained, summits this/last month, primary challenge progress)
-- All routes require authentication and use `getGoogleIdToken` for backend auth. These proxy routes now call `pathquest-api` via the shared `@pathquest/shared` ApiClient (`createApiClient` + shared endpoint helpers where available) instead of ad-hoc `fetch()` calls.
+- All routes require authentication. These proxy routes now call `pathquest-api` via the shared `@pathquest/shared` ApiClient (`createApiClient` + shared endpoint helpers where available) with the NextAuth session token as Bearer authentication.
 
 ##### Landing (`api/landing/`)
 - `recent-public-summits/route.ts` - Fetches most recent public summits across the whole community (no auth). Used for guest landing “community is alive” feed.
@@ -153,13 +153,13 @@ src/app/
 - `[id]/confirm/route.ts` - POST: Confirms a summit as valid. Updates `confirmation_status` to `user_confirmed`.
 - `[id]/deny/route.ts` - POST: Denies a summit as invalid. Updates `confirmation_status` to `denied`. Summit is kept for audit but excluded from all counts.
 - `confirm-all/route.ts` - POST: Bulk confirms all unconfirmed summits for the user.
-- All routes require authentication and use `getGoogleIdToken` for backend auth
+- All routes require authentication using the NextAuth session token
 
 ### Actions (`src/actions/`)
-Server actions for data fetching and mutations. Organized by domain. Backend calls now target the `/api` prefix via `getBackendUrl()`; private endpoints include a bearer from `getGoogleIdToken`, while public reads omit the header.
+Server actions for data fetching and mutations. Organized by domain. Backend calls now target the `/api` prefix via `getBackendUrl()`; private endpoints include a bearer token from `getSessionToken` (NextAuth session JWT), while public reads omit the header.
 
 **Static vs Dynamic Actions:**
-- **Public actions** (e.g., `getPeakDetailsPublic`, `getPublicChallengeDetails`, `getTopPeaks`, `getAllChallengeIds`) - Safe for static generation (ISR). Do NOT use `useAuth()` or access cookies/headers. Only use `getGoogleIdToken()` for Google IAM.
+- **Public actions** (e.g., `getPeakDetailsPublic`, `getPublicChallengeDetails`, `getTopPeaks`, `getAllChallengeIds`) - Safe for static generation (ISR). Do NOT use `useAuth()` or access cookies/headers. No authentication needed for these public endpoints.
 - **Authenticated actions** (e.g., `getPeakDetails`, `getChallengeDetails`) - For runtime use only. Use `useAuth()` to get session and pass user headers. Will trigger `DYNAMIC_SERVER_USAGE` if called during static generation.
 
 For static ISR pages (`/peaks/[id]`, `/challenges/[id]`), always use the "Public" variants. The overlay components (runtime) use the authenticated variants for user-specific data.
@@ -527,7 +527,7 @@ Zustand state management stores:
 ### Auth (`src/auth/`)
 Authentication configuration:
 - `authOptions.ts` - NextAuth configuration with Strava provider
-- `getGoogleIdToken.ts` - Google ID token helper (may be unused)
+- `getSessionToken.ts` - Gets NextAuth session JWT from cookies for API authentication
 - `next-auth.d.ts` - NextAuth type definitions
 - `useAuth.ts` - Custom auth hook
 
@@ -768,16 +768,12 @@ This provides a quick preview without forcing navigation, improving exploration 
 - Test endpoint for API testing
 - Likely used during development
 
-### `auth/getGoogleIdToken.ts`
+### `auth/getSessionToken.ts`
 - **Status**: ACTIVELY USED
-- **Directive**: `"use server"` - ensures code runs server-side (required for `getVercelOidcToken`)
-- Google ID token helper for backend authentication via Vercel OIDC → Google Workload Identity Federation
-- Used extensively throughout actions and API routes for Bearer token authentication
-- Returns Google ID token in production, empty string in development (where header-based auth is used)
-- Called via `getAuthHeaders` helper or directly in server actions/API routes
-- Includes comprehensive error logging for debugging token generation failures (including wrapped `getVercelOidcToken` logging)
-- Uses in-memory caching to avoid regenerating tokens on every request
-- Environment variables required: `GCP_PROJECT_NUMBER`, `GCP_SERVICE_ACCOUNT_EMAIL`, `GCP_WORKLOAD_IDENTITY_POOL_ID`, `GCP_WORKLOAD_IDENTITY_POOL_PROVIDER_ID`
+- **Directive**: `"use server"` - ensures code runs server-side (required for cookie access)
+- Gets the NextAuth session JWT from cookies for API authentication
+- Used throughout actions and API routes for Bearer token authentication
+- The session token is verified by `pathquest-api` using the shared `JWT_SECRET`
 
 ### Removed Components (Cleanup December 2024)
 The following legacy components were removed as part of a codebase cleanup:
@@ -800,11 +796,6 @@ Required environment variables:
 - `NEXT_PUBLIC_MAPBOX_TOKEN` - Mapbox access token
 - `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` - Stripe publishable key
 
-Google Cloud authentication (required for production API access):
-- `GCP_PROJECT_NUMBER` - Google Cloud project number
-- `GCP_SERVICE_ACCOUNT_EMAIL` - Service account email for workload identity
-- `GCP_WORKLOAD_IDENTITY_POOL_ID` - Workload identity pool ID
-- `GCP_WORKLOAD_IDENTITY_POOL_PROVIDER_ID` - Workload identity pool provider ID (for Vercel OIDC)
 
 ## Build & Deployment
 
@@ -851,7 +842,7 @@ Google Cloud authentication (required for production API access):
 5. **Missing Stores**: Added `manualSummitStore` and `summitReportStore` to stores documentation
 6. **Missing Components**: Added `AddManualSummitModal`, `SummitReportModal`, `PeakCommunity`, `PeakUserActivity`, and `DashboardContent` to overlays documentation
 7. **Hook Consolidation**: Consolidated `useIsMobile` implementations - legacy helper version removed
-8. **getGoogleIdToken Status**: Corrected from "Possibly unused" to "ACTIVELY USED" - used extensively throughout codebase
+8. **Auth model updated**: Replaced Vercel OIDC/Google token flow with direct NextAuth session token authentication
 9. **Intercepting Routes**: Removed incorrect documentation about `@overlay` parallel routes - the app uses URL-driven overlays via `UrlOverlayManager` instead
 10. **React Query**: Added documentation for `QueryProvider` and expanded React Query usage documentation
 11. **Client Fetchers**: Added missing `api.ts` helper to client fetchers documentation

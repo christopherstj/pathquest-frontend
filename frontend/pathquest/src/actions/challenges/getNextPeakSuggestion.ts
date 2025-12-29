@@ -1,5 +1,5 @@
 "use server";
-import getGoogleIdToken from "@/auth/getGoogleIdToken";
+import getSessionToken from "@/auth/getSessionToken";
 import getBackendUrl from "@/helpers/getBackendUrl";
 import { useAuth } from "@/auth/useAuth";
 import { createApiClient, endpoints } from "@pathquest/shared/api";
@@ -41,7 +41,7 @@ const getNextPeakSuggestion = async (
         return { success: false, error: "Not authenticated" };
     }
 
-    const token = await getGoogleIdToken().catch((err) => {
+    const token = await getSessionToken().catch((err) => {
         console.error("[getNextPeakSuggestion] Failed to get Google ID token:", err);
         return null;
     });

@@ -1,12 +1,12 @@
 "use server";
-import getGoogleIdToken from "@/auth/getGoogleIdToken";
+import getSessionToken from "@/auth/getSessionToken";
 import getBackendUrl from "@/helpers/getBackendUrl";
 
 const backendUrl = getBackendUrl();
 
 const createUserInterest = async (email: string) => {
     // Always generate token for Google IAM authentication (required at infrastructure level)
-    const idToken = await getGoogleIdToken().catch((err) => {
+    const idToken = await getSessionToken().catch((err) => {
         console.error("[createUserInterest] Failed to get Google ID token:", err);
         return null;
     });

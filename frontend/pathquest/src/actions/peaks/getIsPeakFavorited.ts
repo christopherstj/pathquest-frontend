@@ -1,5 +1,5 @@
 "use server";
-import getGoogleIdToken from "@/auth/getGoogleIdToken";
+import getSessionToken from "@/auth/getSessionToken";
 import { useAuth } from "@/auth/useAuth";
 import getBackendUrl from "@/helpers/getBackendUrl";
 import { createApiClient, endpoints } from "@pathquest/shared/api";
@@ -14,7 +14,7 @@ const getIsFavorited = async (peakId: string): Promise<boolean> => {
     }
 
     // Always generate token for Google IAM authentication (required at infrastructure level)
-    const idToken = await getGoogleIdToken().catch((err) => {
+    const idToken = await getSessionToken().catch((err) => {
         console.error("[getIsPeakFavorited] Failed to get Google ID token:", err);
         return null;
     });

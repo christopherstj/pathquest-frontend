@@ -1,5 +1,5 @@
 "use server";
-import getGoogleIdToken from "@/auth/getGoogleIdToken";
+import getSessionToken from "@/auth/getSessionToken";
 import { useAuth } from "@/auth/useAuth";
 import getBackendUrl from "@/helpers/getBackendUrl";
 import { createApiClient, endpoints } from "@pathquest/shared/api";
@@ -23,7 +23,7 @@ const updateAscent = async (
     }
 
     // Always generate token for Google IAM authentication (required at infrastructure level)
-    const token = await getGoogleIdToken().catch((err) => {
+    const token = await getSessionToken().catch((err) => {
         console.error("[updateAscent] Failed to get Google ID token:", err);
         return null;
     });
@@ -34,8 +34,6 @@ const updateAscent = async (
         getAuthHeaders: async () => {
             const headers: Record<string, string> = {};
             if (token) headers.Authorization = `Bearer ${token}`;
-            // Pass user info via headers for backend auth (especially in dev)
-            if (userId) headers["x-user-id"] = userId;
             return headers;
         },
     });

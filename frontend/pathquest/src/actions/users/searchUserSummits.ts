@@ -1,5 +1,5 @@
 "use server";
-import getGoogleIdToken from "@/auth/getGoogleIdToken";
+import getSessionToken from "@/auth/getSessionToken";
 import { useAuth } from "@/auth/useAuth";
 import getBackendUrl from "@/helpers/getBackendUrl";
 import ServerActionResult  from "@/typeDefs/ServerActionResult";
@@ -21,7 +21,7 @@ const searchUserSummits = async (
 ): Promise<ServerActionResult<SearchUserSummitsResult>> => {
     const session = await useAuth();
     // Always generate token for Google IAM authentication (required at infrastructure level)
-    const token = await getGoogleIdToken().catch(() => null);
+    const token = await getSessionToken().catch(() => null);
 
     const client = createApiClient({
         baseUrl: backendUrl,

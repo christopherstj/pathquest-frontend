@@ -1,4 +1,4 @@
-import getGoogleIdToken from "@/auth/getGoogleIdToken";
+import getSessionToken from "@/auth/getSessionToken";
 import getBackendUrl from "@/helpers/getBackendUrl";
 import { createApiClient } from "@pathquest/shared/api";
 import { NextRequest, NextResponse } from "next/server";
@@ -10,7 +10,7 @@ export const GET = async (
     const { id: peakId } = await params;
     const backendUrl = getBackendUrl();
 
-    const token = await getGoogleIdToken().catch((err) => {
+    const token = await getSessionToken().catch((err) => {
         console.error("[peaks/public-summits] Failed to get Google ID token:", err);
         return null;
     });
