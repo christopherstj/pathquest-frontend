@@ -39,3 +39,6 @@ const DetailLoadingState = ({
 export default DetailLoadingState;
 
 
+
+
+

@@ -22,24 +22,20 @@ const createUser = async (
         };
     }
 
-    // Always generate token for Google IAM authentication (required at infrastructure level)
+    // Try to get session token if available, but don't require it
+    // The /api/auth/signup endpoint is PUBLIC and doesn't require authentication
+    // During initial signup, there's no session yet so token will be null - that's expected
     const token = await getSessionToken().catch((err) => {
-        console.error("[createUser] Failed to get Google ID token:", err);
+        // This is expected during signup - user isn't authenticated yet
+        console.log("[createUser] No session token available (expected during signup)");
         return null;
     });
-
-    if (!token && process.env.NODE_ENV !== "development") {
-        console.error("[createUser] No token available - cannot make authenticated request");
-        return {
-            success: false,
-            error: "Authentication token not available",
-        };
-    }
 
     const client = createApiClient({
         baseUrl: backendUrl,
         getAuthHeaders: async () => {
             const headers: Record<string, string> = {};
+            // Only include auth header if we have a token (for checking existing users)
             if (token) headers.Authorization = `Bearer ${token}`;
             return headers;
         },
