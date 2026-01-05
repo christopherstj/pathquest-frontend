@@ -208,6 +208,7 @@ For static ISR pages (`/peaks/[id]`, `/challenges/[id]`), always use the "Public
 - `searchPeaks.ts` - Searches peaks with filters
 - `toggleFavoritePeak.ts` - Toggles peak favorite status
 - `updateAscent.ts` - Updates ascent details
+- `flagPeakForReview.ts` - Flags a peak for coordinate review (sets `needs_review = true`)
 
 #### Users (`actions/users/`)
 - `createUser.ts` - Creates new user account
@@ -247,7 +248,7 @@ For static ISR pages (`/peaks/[id]`, `/challenges/[id]`), always use the "Public
 - `PeakDetailContent.tsx` - Peak detail content with SSR data (used by static pages). Uses shared UI components.
 - `PeakCommunity.tsx` - Community summit history display component. Shows public summits with user names (linking to profile pages when user_id is available), weather conditions, difficulty/experience ratings as pill-style chips, and condition tags as small pills. User avatar and name are clickable links to `/users/[user_id]`. **Note**: Activity links have been removed to comply with Strava API guidelines (Strava data can only be shown to the activity owner). Public summits only display PathQuest-derived data (timestamp, notes, ratings, weather). Uses shared `PublicSummitCard`. **Uses React Query cursor-based infinite scrolling** (`useInfiniteQuery`) for efficient pagination of peaks with hundreds of summits. Fetches from `/api/peaks/[id]/public-summits` endpoint with cursor pagination.
 - `PeakUserActivity.tsx` - User's activity display for a peak (shows user's ascents, activities, and allows editing). Peak **Journal** sub-tab now reuses `JournalEntryCard` styling for summit entries, but displays the **activity title** as the primary title line (owner-only; not a Strava privacy issue). Activity cards link to `/activities/[id]` detail pages.
-- `PeakDetailsTab.tsx` - Peak details tab content showing current weather conditions and challenges the peak belongs to. Used in the "Details" sub-tab of peak detail views. Shows challenge progress bars for authenticated users. Uses shared `ChallengeLinkItem`.
+- `PeakDetailsTab.tsx` - Peak details tab content showing current weather conditions and challenges the peak belongs to. Used in the "Details" sub-tab of peak detail views. Shows challenge progress bars for authenticated users. Uses shared `ChallengeLinkItem`. Includes "Flag Coordinates for Review" button (auth only) to report incorrect peak locations.
 - `ChallengeDetailContent.tsx` - Challenge detail content with SSR data (used by static pages). Uses shared UI components.
 - `DashboardPanel.tsx` - User dashboard panel (authenticated only). Wrapper component that renders DashboardContent.
 - `DashboardContent.tsx` - Dashboard content component (refactored December 2024). When not authenticated, shows login CTA + a guest “community is alive” feed (recent public summits + popular challenges). When authenticated, shows a small Home sub-tab switcher (**Dashboard** / **Recent**) with the selection persisted in localStorage (`pathquest:homeSubTab`):\n+  - **Dashboard** (default): shows:
