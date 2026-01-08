@@ -1,0 +1,26 @@
+warning: in the working copy of 'ARCHITECTURE.md', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'frontend/pathquest/src/components/journal/JournalEntryCard.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'frontend/pathquest/src/components/overlays/PeakCommunity.tsx', LF will be replaced by CRLF the next time Git touches it
+ ARCHITECTURE.md                                    | 30 [32m+++++++++++[m
+ frontend/pathquest/package-lock.json               |  6 [32m+[m[31m--[m
+ frontend/pathquest/package.json                    |  2 [32m+[m[31m-[m
+ .../components/app/summits/OrphanSummitCard.tsx    |  8 [32m++[m[31m-[m
+ .../src/components/app/summits/SummitItem.tsx      |  8 [32m++[m[31m-[m
+ .../src/components/dashboard/HeroSummitCard.tsx    |  5 [32m+[m[31m-[m
+ .../dashboard/UnreviewedSummitsQueue.tsx           |  5 [32m+[m[31m-[m
+ .../components/discovery/empty-discovery-state.tsx |  1 [32m+[m
+ .../src/components/journal/JournalEntryCard.tsx    |  5 [32m+[m[31m-[m
+ .../src/components/journal/PeakJournalCard.tsx     |  2 [32m+[m
+ .../src/components/lists/peak-list-item.tsx        |  1 [32m+[m
+ .../src/components/overlays/PeakCommunity.tsx      |  8 [32m+++[m
+ .../src/components/overlays/SummitReportModal.tsx  | 58 [32m+++++++++++++[m[31m---------[m
+ .../pathquest/src/components/ui/alert-dialog.tsx   |  1 [32m+[m
+ .../src/components/ui/detail-loading-state.tsx     |  1 [32m+[m
+ .../src/components/ui/detail-panel-header.tsx      |  1 [32m+[m
+ .../pathquest/src/components/ui/empty-state.tsx    |  1 [32m+[m
+ frontend/pathquest/src/components/ui/stat-card.tsx |  1 [32m+[m
+ .../pathquest/src/components/ui/stats-grid.tsx     |  1 [32m+[m
+ .../src/helpers/convertChallengesToGeoJSON.ts      |  1 [32m+[m
+ frontend/pathquest/src/hooks/use-drawer-height.ts  |  1 [32m+[m
+ frontend/pathquest/src/store/summitReportStore.ts  |  6 [32m+++[m
+ 22 files changed, 120 insertions(+), 33 deletions(-)

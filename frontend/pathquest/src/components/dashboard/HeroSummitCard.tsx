@@ -7,6 +7,7 @@ import { cn } from "@/lib/utils";
 import { useSummitReportStore } from "@/providers/SummitReportProvider";
 import metersToFt from "@/helpers/metersToFt";
 import dayjs from "@/helpers/dayjs";
+import getSummitType from "@/helpers/getSummitType";
 import ManualPeakSummit from "@/typeDefs/ManualPeakSummit";
 import Peak from "@/typeDefs/Peak";
 
@@ -21,12 +22,13 @@ const HeroSummitCard = ({ summit, className }: HeroSummitCardProps) => {
     const handleAddTripReport = (e: React.MouseEvent) => {
         e.preventDefault();
         e.stopPropagation();
+        const activityId = summit.activity_id || "";
         openSummitReport({
             summit: {
                 id: summit.id,
                 timestamp: summit.timestamp,
                 timezone: summit.timezone,
-                activity_id: summit.activity_id || "",
+                activity_id: activityId,
                 notes: summit.notes,
                 is_public: summit.is_public,
                 difficulty: summit.difficulty,
@@ -34,6 +36,7 @@ const HeroSummitCard = ({ summit, className }: HeroSummitCardProps) => {
             },
             peakId: summit.peak_id,
             peakName: summit.name || "Unknown Peak",
+            summitType: getSummitType(activityId),
         });
     };
 

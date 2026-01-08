@@ -28,6 +28,7 @@ import updateAscent from "@/actions/peaks/updateAscent";
 import { useQueryClient } from "@tanstack/react-query";
 import { ConditionTag, Difficulty, ExperienceRating } from "@/typeDefs/Summit";
 import { useIsAuthenticated } from "@/hooks/useRequireAuth";
+import SummitPhotosSection from "@/components/photos/SummitPhotosSection";
 
 const DIFFICULTY_OPTIONS: {
     value: Difficulty;
@@ -403,32 +404,41 @@ const SummitReportModal = () => {
                                                 <Plus className="w-3 h-3" />
                                             </Button>
                                         </div>
-                                        {/* Display custom tags */}
-                                        {customTags.length > 0 && (
-                                            <div className="flex flex-wrap gap-2">
-                                                {customTags.map((tag) => (
-                                                    <span
-                                                        key={tag}
-                                                        className="px-3 py-1.5 rounded-full border-2 text-xs font-medium bg-primary/10 text-primary border-primary/30 flex items-center gap-1"
-                                                    >
-                                                        {tag}
-                                                        <button
-                                                            type="button"
-                                                            onClick={() => removeCustomTag(tag)}
-                                                            className="hover:text-primary/70 ml-1"
-                                                            disabled={isSubmitting}
-                                                        >
-                                                            <X className="w-3 h-3" />
-                                                        </button>
-                                                    </span>
-                                                ))}
-                                            </div>
-                                        )}
-                                    </div>
-                                </div>
-                            </div>
+                                                {/* Display custom tags */}
+                                                        {customTags.length > 0 && (
+                                                            <div className="flex flex-wrap gap-2">
+                                                                {customTags.map((tag) => (
+                                                                    <span
+                                                                        key={tag}
+                                                                        className="px-3 py-1.5 rounded-full border-2 text-xs font-medium bg-primary/10 text-primary border-primary/30 flex items-center gap-1"
+                                                                    >
+                                                                        {tag}
+                                                                        <button
+                                                                            type="button"
+                                                                            onClick={() => removeCustomTag(tag)}
+                                                                            className="hover:text-primary/70 ml-1"
+                                                                            disabled={isSubmitting}
+                                                                        >
+                                                                            <X className="w-3 h-3" />
+                                                                        </button>
+                                                                    </span>
+                                                                ))}
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                </div>
 
-                            {/* Actions */}
+                                                {/* Photos Section */}
+                                                {data?.summit && data?.summitType && (
+                                                    <SummitPhotosSection
+                                                        summitId={data.summit.id}
+                                                        summitType={data.summitType}
+                                                        disabled={isSubmitting}
+                                                    />
+                                                )}
+                                            </div>
+
+                                            {/* Actions */}
                             <div className="flex gap-3 pt-2">
                                 <Button
                                     variant="outline"

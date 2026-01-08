@@ -7,6 +7,7 @@ import { useInfiniteQuery } from "@tanstack/react-query";
 import { useMapStore } from "@/providers/MapProvider";
 import Summit from "@/typeDefs/Summit";
 import PublicSummitCard, { PublicSummitCardSummit } from "@/components/summits/PublicSummitCard";
+import PeakPhotosGallery from "@/components/photos/PeakPhotosGallery";
 
 // Extended summit type that includes user info from the API
 interface PublicSummit extends Summit {
@@ -104,6 +105,13 @@ const PeakCommunity = () => {
             transition={{ duration: 0.15 }}
             className="space-y-5"
         >
+            {/* Community Photos Section */}
+            {peakId && (
+                <div className="border-b border-border/60">
+                    <PeakPhotosGallery peakId={peakId} limit={6} />
+                </div>
+            )}
+
             {/* Summary */}
             <div className="flex items-center gap-2 text-muted-foreground pb-3 border-b border-border/60">
                 <Users className="w-4 h-4" />

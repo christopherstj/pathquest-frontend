@@ -225,6 +225,15 @@ For static ISR pages (`/peaks/[id]`, `/challenges/[id]`), always use the "Public
 - `searchUserSummits.ts` - Searches user's individual summit entries with pagination
 - `updateUser.ts` - Updates user profile. Supports: `name`, `email`, `pic`, `city`, `state`, `country`, `location_coords`, `update_description`, `is_public`
 
+#### Photos (`actions/photos/`)
+Photo upload and management actions (Stage 4):
+- `getPhotoUploadUrl.ts` - Gets signed GCS URL for direct photo upload
+- `completePhotoUpload.ts` - Confirms upload completion, triggers thumbnail generation
+- `getSummitPhotos.ts` - Gets photos for a specific summit (owner only)
+- `updatePhotoCaption.ts` - Updates photo caption
+- `deletePhoto.ts` - Deletes a photo from storage and database
+- `getPeakPhotos.ts` - Gets public photos for a peak (community gallery, no auth)
+
 #### Root Actions
 - `searchNearestPeaks.ts` - Searches peaks nearest to coordinates
 - `getTimezoneFromCoords.ts` - Gets IANA timezone string for given coordinates (uses geo-tz library)
@@ -267,7 +276,9 @@ For static ISR pages (`/peaks/[id]`, `/challenges/[id]`), always use the "Public
   - Experience rating (tough/good/amazing/epic) with pill buttons
   - Condition tags multi-select (clear, dry, wet, muddy, snow, icy, postholing, windy, foggy, rocky, slippery, overgrown, bushwhack, exposed) with color-coded pills
   - Custom tags input for free-form condition tags (primary green colored pills with remove button)
+  - **Photos section** (Stage 4): Upload JPEG photos, edit captions, delete photos, view in lightbox
   - Saves condition_tags and custom_condition_tags to backend
+  - Now requires `summitType` ("activity" | "manual") in SummitReportData for photo API calls
 - `UserManagementModal.tsx` - Modal for account settings. Features:
   - Location search using Mapbox Search Box (`@mapbox/search-js-react`) configured for places/regions
   - Small Mapbox GL map preview (300x200px) showing user's location with marker
@@ -369,6 +380,25 @@ Unified navigation system (December 2024) with fixed 3-tab structure for both mo
   - Hover callbacks (`onHoverStart`, `onHoverEnd`) for map marker highlighting
   - Visual highlighting for unreported summits when `isOwner=true` (dashed border, tinted background) to encourage trip reports
   - Edit/delete buttons only visible when `isOwner` is true; "Add Trip Report" button for unreported summits
+
+##### Photos (`components/photos/`)
+Photo upload and management components (Stage 4):
+- `SummitPhotosSection.tsx` - Photo management section for SummitReportModal. Features:
+  - Photo grid with thumbnails (3 columns)
+  - Upload button with file picker (JPEG only, 10MB max)
+  - Direct upload to GCS via signed URLs with progress indicator
+  - Inline caption editing on hover
+  - Delete with confirmation dialog
+  - Lightbox for full-size photo viewing
+  - Uses React Query for data fetching and cache invalidation
+  - Server actions: `getPhotoUploadUrl`, `completePhotoUpload`, `getSummitPhotos`, `updatePhotoCaption`, `deletePhoto`
+- `PeakPhotosGallery.tsx` - Community photo gallery for peak detail page. Features:
+  - Compact grid view (3 columns, 6 photos by default)
+  - "View all" button for expanded view
+  - Hover overlay showing photographer name
+  - Lightbox with caption, photographer, and date
+  - Integrated into PeakCommunity component
+  - Server action: `getPeakPhotos`
 
 ##### Challenges (`components/challenges/`)
 - `ChallengeActivityIndicator.tsx` - Shows community activity for a challenge. Displays weekly active users, weekly summit count, and recent completions (with user links). Used in challenge detail views to show social proof and engagement.

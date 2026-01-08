@@ -24,6 +24,7 @@ import SummitWithPeak from "@/typeDefs/SummitWithPeak";
 import Link from "next/link";
 import deleteAscent from "@/actions/peaks/deleteAscent";
 import { cn } from "@/lib/utils";
+import getSummitType from "@/helpers/getSummitType";
 
 // Difficulty display config
 const DIFFICULTY_CONFIG: Record<Difficulty, { label: string; color: string; borderColor: string; bgColor: string }> = {
@@ -177,7 +178,12 @@ const SummitItem = ({ summit, peakId, peakName, showPeakHeader = false, onHoverS
     const handleOpenReport = (e: React.MouseEvent) => {
         e.preventDefault();
         e.stopPropagation();
-        openSummitReport({ summit: summitForReport, peakId: resolvedPeakId, peakName: resolvedPeakName });
+        openSummitReport({
+            summit: summitForReport,
+            peakId: resolvedPeakId,
+            peakName: resolvedPeakName,
+            summitType: getSummitType(summitForReport.activity_id),
+        });
     };
 
     const handleDelete = async (e: React.MouseEvent) => {

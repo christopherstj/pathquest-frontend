@@ -31,6 +31,7 @@ import {
     formatTime,
 } from "@/components/app/summits/SummitItem";
 import deleteAscent from "@/actions/peaks/deleteAscent";
+import getSummitType from "@/helpers/getSummitType";
 
 // Difficulty display config
 const DIFFICULTY_CONFIG: Record<Difficulty, { label: string; color: string; borderColor: string; bgColor: string }> = {
@@ -141,7 +142,12 @@ const OrphanSummitCard = ({
 
     const handleOpenReport = () => {
         if (resolvedPeakId && resolvedPeakName) {
-            openSummitReport({ summit: summitForReport, peakId: resolvedPeakId, peakName: resolvedPeakName });
+            openSummitReport({
+                summit: summitForReport,
+                peakId: resolvedPeakId,
+                peakName: resolvedPeakName,
+                summitType: getSummitType(summitForReport.activity_id),
+            });
         }
     };
 

@@ -27,6 +27,7 @@ import { ConditionTag } from "@/typeDefs/Summit";
 import { useSummitReportStore } from "@/providers/SummitReportProvider";
 import { cn } from "@/lib/utils";
 import deleteAscent from "@/actions/peaks/deleteAscent";
+import getSummitType from "@/helpers/getSummitType";
 
 interface JournalEntryCardProps {
     entry: JournalEntry;
@@ -191,12 +192,13 @@ const JournalEntryCard = ({
 
     const handleEditReport = (e: React.MouseEvent) => {
         e.stopPropagation();
+        const activityId = entry.activity?.id || "";
         openSummitReport({
             summit: {
                 id: entry.id,
                 timestamp: entry.timestamp,
                 timezone: entry.timezone,
-                activity_id: entry.activity?.id || "",
+                activity_id: activityId,
                 notes: entry.notes,
                 difficulty: entry.difficulty,
                 experience_rating: entry.experienceRating,
@@ -209,6 +211,7 @@ const JournalEntryCard = ({
             },
             peakId: entry.peak.id,
             peakName: entry.peak.name,
+            summitType: getSummitType(activityId),
         });
     };
 

@@ -25,6 +25,7 @@ import Summit, { ConditionTag } from "@/typeDefs/Summit";
 import { useSummitReportStore } from "@/providers/SummitReportProvider";
 import { cn } from "@/lib/utils";
 import deleteAscent from "@/actions/peaks/deleteAscent";
+import getSummitType from "@/helpers/getSummitType";
 
 interface PeakJournalCardProps {
     summit: Summit;
@@ -164,6 +165,7 @@ const PeakJournalCard = ({ summit, peakId, peakName, activityTitle, isOwner, onD
             summit,
             peakId,
             peakName,
+            summitType: getSummitType(summit.activity_id),
         });
     };
 

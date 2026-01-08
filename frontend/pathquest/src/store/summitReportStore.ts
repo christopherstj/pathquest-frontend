@@ -1,10 +1,16 @@
 import { createStore } from "zustand/vanilla";
 import Summit from "@/typeDefs/Summit";
+import type { SummitType } from "@pathquest/shared/types";
 
 export interface SummitReportData {
     summit: Summit;
     peakId: string;
     peakName: string;
+    /**
+     * Whether this summit is from a Strava activity ("activity") or manually entered ("manual").
+     * Used to determine the correct photo API endpoint.
+     */
+    summitType: SummitType;
 }
 
 export interface SummitReportState {
