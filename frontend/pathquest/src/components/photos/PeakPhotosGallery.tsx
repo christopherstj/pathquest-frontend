@@ -1,39 +1,96 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useRef, useCallback, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Camera, X, Loader2, User, ImageIcon } from "lucide-react";
-import { useQuery } from "@tanstack/react-query";
+import { useInfiniteQuery } from "@tanstack/react-query";
 import getPeakPhotos from "@/actions/photos/getPeakPhotos";
 import type { PublicPeakPhoto } from "@pathquest/shared/types";
 
 type PeakPhotosGalleryProps = {
     peakId: string;
-    /** Maximum number of photos to show in compact mode */
-    limit?: number;
+    /** Number of photos to show in compact mode before "View all" */
+    compactLimit?: number;
     /** If true, shows a "View all" button when there are more photos */
     showViewAll?: boolean;
 };
 
+const PAGE_SIZE = 20;
+
 const PeakPhotosGallery = ({
     peakId,
-    limit = 6,
+    compactLimit = 6,
     showViewAll = true,
 }: PeakPhotosGalleryProps) => {
     const [lightboxPhoto, setLightboxPhoto] = useState<PublicPeakPhoto | null>(null);
     const [showAll, setShowAll] = useState(false);
+    const loadMoreRef = useRef<HTMLDivElement>(null);
 
-    // Fetch photos for this peak
-    const { data: photosResult, isLoading, isError } = useQuery({
+    // Fetch photos with cursor-based pagination
+    const {
+        data,
+        isLoading,
+        isError,
+        fetchNextPage,
+        hasNextPage,
+        isFetchingNextPage,
+    } = useInfiniteQuery({
         queryKey: ["peakPhotos", peakId],
-        queryFn: () => getPeakPhotos({ peakId, limit: 50 }),
+        queryFn: async ({ pageParam }) => {
+            const result = await getPeakPhotos({
+                peakId,
+                cursor: pageParam,
+                limit: PAGE_SIZE,
+            });
+            if (!result.success || !result.data) {
+                throw new Error(result.error ?? "Failed to fetch photos");
+            }
+            return result.data;
+        },
+        initialPageParam: undefined as string | undefined,
+        getNextPageParam: (lastPage) => lastPage.nextCursor ?? undefined,
         enabled: !!peakId,
         staleTime: 1000 * 60 * 5, // 5 minutes
     });
 
-    const photos = photosResult?.data?.photos ?? [];
-    const displayedPhotos = showAll ? photos : photos.slice(0, limit);
-    const hasMore = photos.length > limit;
+    // Flatten all pages into a single array
+    const allPhotos = data?.pages.flatMap((page) => page.photos) ?? [];
+    const totalCount = data?.pages[0]?.totalCount ?? 0;
+    
+    // In compact mode, only show first compactLimit photos
+    const displayedPhotos = showAll ? allPhotos : allPhotos.slice(0, compactLimit);
+    const hasMoreToShow = totalCount > compactLimit;
+
+    // Infinite scroll: observe the load more trigger
+    const handleLoadMore = useCallback(() => {
+        if (hasNextPage && !isFetchingNextPage && showAll) {
+            fetchNextPage();
+        }
+    }, [hasNextPage, isFetchingNextPage, showAll, fetchNextPage]);
+
+    useEffect(() => {
+        if (!showAll) return;
+        
+        const observer = new IntersectionObserver(
+            (entries) => {
+                if (entries[0].isIntersecting) {
+                    handleLoadMore();
+                }
+            },
+            { threshold: 0.1 }
+        );
+
+        const current = loadMoreRef.current;
+        if (current) {
+            observer.observe(current);
+        }
+
+        return () => {
+            if (current) {
+                observer.unobserve(current);
+            }
+        };
+    }, [handleLoadMore, showAll]);
 
     if (isLoading) {
         return (
@@ -53,7 +110,7 @@ const PeakPhotosGallery = ({
         return null; // Silently fail - photos are not critical
     }
 
-    if (photos.length === 0) {
+    if (allPhotos.length === 0) {
         return (
             <div className="py-4">
                 <div className="flex items-center gap-2 text-muted-foreground mb-3">
@@ -76,10 +133,10 @@ const PeakPhotosGallery = ({
                     <Camera className="w-4 h-4" />
                     <span className="text-sm font-medium">Photos</span>
                     <span className="text-xs text-muted-foreground/70">
-                        ({photos.length})
+                        ({totalCount})
                     </span>
                 </div>
-                {showViewAll && hasMore && !showAll && (
+                {showViewAll && hasMoreToShow && !showAll && (
                     <button
                         onClick={() => setShowAll(true)}
                         className="text-xs text-primary hover:text-primary/80 transition-colors"
@@ -100,8 +157,17 @@ const PeakPhotosGallery = ({
                 ))}
             </div>
 
-            {/* View All Button (alternative) */}
-            {showViewAll && hasMore && showAll && (
+            {/* Load more trigger (invisible sentinel) */}
+            {showAll && hasNextPage && (
+                <div ref={loadMoreRef} className="py-4 flex justify-center">
+                    {isFetchingNextPage && (
+                        <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
+                    )}
+                </div>
+            )}
+
+            {/* Show less button */}
+            {showViewAll && hasMoreToShow && showAll && (
                 <button
                     onClick={() => setShowAll(false)}
                     className="w-full mt-2 py-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"

@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useEffect } from "react";
 import {
     Mountain,
     Trophy,
@@ -14,6 +14,7 @@ import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 import { useIsAuthenticated } from "@/hooks/useRequireAuth";
 import { useAuthModalStore } from "@/providers/AuthModalProvider";
+import { useOnboardingStore } from "@/providers/OnboardingProvider";
 import dayjs from "@/helpers/dayjs";
 import ManualPeakSummit from "@/typeDefs/ManualPeakSummit";
 import Peak from "@/typeDefs/Peak";
@@ -21,6 +22,7 @@ import ChallengeProgress from "@/typeDefs/ChallengeProgress";
 import DashboardStats from "@/typeDefs/DashboardStats";
 import UnconfirmedSummit from "@/typeDefs/UnconfirmedSummit";
 import { QuickStatsBar, HeroSummitCard, UnreviewedSummitsQueue, ProcessingToast, UnconfirmedSummitsCard, ImportProgressCard, ImportStatus } from "@/components/dashboard";
+import { OnboardingModal } from "@/components/onboarding";
 import PublicSummitCard, { PublicSummitCardSummit } from "@/components/summits/PublicSummitCard";
 import ChallengeLinkItem from "@/components/lists/challenge-link-item";
 
@@ -232,6 +234,13 @@ const RecentFeedContent = ({
 const DashboardContent = ({ isActive = true, showHeader = false }: DashboardContentProps) => {
     const { isAuthenticated, isLoading: authLoading, user } = useIsAuthenticated();
     const openLoginModal = useAuthModalStore((state) => state.openLoginModal);
+    
+    // Onboarding state
+    const hasSeenOnboarding = useOnboardingStore((s) => s.hasSeenOnboarding);
+    const showOnboardingModal = useOnboardingStore((s) => s.showOnboardingModal);
+    const isOnboardingInitialized = useOnboardingStore((s) => s.isInitialized);
+    const openOnboarding = useOnboardingStore((s) => s.openOnboarding);
+    const completeOnboarding = useOnboardingStore((s) => s.completeOnboarding);
 
     const [homeSubTab, setHomeSubTab] = React.useState<HomeSubTab>("dashboard");
 
@@ -350,6 +359,27 @@ const DashboardContent = ({ isActive = true, showHeader = false }: DashboardCont
         return unreviewed || null;
     }, [recentSummits]);
 
+    // Show onboarding modal when:
+    // - User is authenticated
+    // - Has not seen onboarding before
+    // - Import is in progress (first time user)
+    // - Onboarding store is initialized
+    useEffect(() => {
+        if (
+            isAuthenticated &&
+            !hasSeenOnboarding &&
+            isOnboardingInitialized &&
+            importStatus?.status === "processing"
+        ) {
+            openOnboarding();
+        }
+    }, [isAuthenticated, hasSeenOnboarding, isOnboardingInitialized, importStatus?.status, openOnboarding]);
+
+    // Calculate time estimate for onboarding modal
+    const estimatedMinutes = importStatus?.estimatedHoursRemaining 
+        ? importStatus.estimatedHoursRemaining * 60 
+        : undefined;
+
     // Show loading state while auth is loading
     if (authLoading) {
         return (
@@ -392,6 +422,14 @@ const DashboardContent = ({ isActive = true, showHeader = false }: DashboardCont
 
     return (
         <div className="space-y-5">
+            {/* Onboarding Modal */}
+            <OnboardingModal
+                open={showOnboardingModal}
+                onComplete={completeOnboarding}
+                totalActivities={importStatus?.totalActivities}
+                estimatedMinutes={estimatedMinutes}
+            />
+
             {/* Optional Header */}
             {showHeader && (
                 <div className="flex items-center gap-3 mb-4">

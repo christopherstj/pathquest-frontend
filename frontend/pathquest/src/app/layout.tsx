@@ -11,6 +11,7 @@ import DashboardProvider from "@/providers/DashboardProvider";
 import SummitReportProvider from "@/providers/SummitReportProvider";
 import ManualSummitProvider from "@/providers/ManualSummitProvider";
 import UserManagementProvider from "@/providers/UserManagementProvider";
+import OnboardingProvider from "@/providers/OnboardingProvider";
 import "./globals.css";
 
 const fraunces = Fraunces({
@@ -70,6 +71,7 @@ const layout = ({ children }: Props) => {
                                         <SummitReportProvider>
                                             <ManualSummitProvider>
                                                 <UserManagementProvider>
+                                                        <OnboardingProvider>
                                                     <main className="relative w-full h-screen overflow-hidden">
                                                         <Suspense fallback={<div className="absolute inset-0 bg-background" />}>
                                                             <MapBackground />
@@ -90,6 +92,7 @@ const layout = ({ children }: Props) => {
                                                         {/* User management modal - for account settings */}
                                                         <UserManagementModal />
                                                     </main>
+                                                        </OnboardingProvider>
                                                 </UserManagementProvider>
                                             </ManualSummitProvider>
                                         </SummitReportProvider>

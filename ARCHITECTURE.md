@@ -232,7 +232,8 @@ Photo upload and management actions (Stage 4):
 - `getSummitPhotos.ts` - Gets photos for a specific summit (owner only)
 - `updatePhotoCaption.ts` - Updates photo caption
 - `deletePhoto.ts` - Deletes a photo from storage and database
-- `getPeakPhotos.ts` - Gets public photos for a peak (community gallery, no auth)
+- `getPeakPhotos.ts` - Gets public photos for a peak with cursor-based pagination (community gallery, no auth). Supports `cursor` and `limit` params.
+- `getPublicSummitPhotos.ts` - Gets public photos for a specific summit (community section, no auth). Used by `PublicSummitPhotoStrip`.
 
 #### Root Actions
 - `searchNearestPeaks.ts` - Searches peaks nearest to coordinates
@@ -312,6 +313,10 @@ Action-oriented dashboard components (December 2024):
 - `UnconfirmedSummitsCard.tsx` - Card showing summits needing user review (low confidence auto-detections). Shows up to 3 items with inline confirm/deny buttons and "View Activity" links. Navigates to Profile → Review tab for full backlog.
 - `ProcessingToast.tsx` - Dismissible toast notification showing activity processing status. Renders via portal to document.body.
 - `ImportProgressCard.tsx` - Progress card for historical Strava import. Shows animated progress bar, summits found so far, estimated time remaining, and user-friendly status message. Polls `/api/dashboard/import-status` every 15 seconds when importing. Priority-based processing shows biggest adventures first.
+
+##### Onboarding Components (`components/onboarding/`)
+New user onboarding flow (January 2026):
+- `OnboardingModal.tsx` - Multi-step modal shown on first login when import is in progress. Three slides: Welcome (scanning adventures), How It Works (summit detection explanation), What to Expect (time estimates). Uses Framer Motion for slide transitions. Persists "seen" state via `onboardingStore` to localStorage.
 
 ##### Journal Components (`components/journal/`)
 Optimized journal system (December 2024) for viewing summit history:
@@ -393,12 +398,28 @@ Photo upload and management components (Stage 4):
   - Uses React Query for data fetching and cache invalidation
   - Server actions: `getPhotoUploadUrl`, `completePhotoUpload`, `getSummitPhotos`, `updatePhotoCaption`, `deletePhoto`
 - `PeakPhotosGallery.tsx` - Community photo gallery for peak detail page. Features:
-  - Compact grid view (3 columns, 6 photos by default)
-  - "View all" button for expanded view
+  - Compact grid view (3 columns, 6 photos by default via `compactLimit` prop)
+  - "View all" button for expanded view with infinite scroll
+  - **Uses React Query cursor-based infinite scrolling** (`useInfiniteQuery`) for efficient pagination of peaks with many photos
+  - Intersection Observer triggers automatic loading of next page
   - Hover overlay showing photographer name
   - Lightbox with caption, photographer, and date
   - Integrated into PeakCommunity component
-  - Server action: `getPeakPhotos`
+  - Server action: `getPeakPhotos` (supports `cursor` and `limit` params)
+- `SummitPhotoStrip.tsx` - Horizontal thumbnail strip for summit list items (owner's own summits). Features:
+  - Shows up to 4 thumbnails with "+N" indicator for more
+  - Lightbox with keyboard navigation (arrow keys, Escape)
+  - Photo counter and previous/next buttons in lightbox
+  - Owner-only display (photos are private to the summit owner)
+  - Uses React Query to fetch photos via `getSummitPhotos` action
+  - Integrated into `SummitItem.tsx` component
+- `PublicSummitPhotoStrip.tsx` - Horizontal thumbnail strip for public summit cards (community section). Features:
+  - Shows up to 4 thumbnails with "+N" indicator for more
+  - Lightbox with keyboard navigation (arrow keys, Escape)
+  - Photo counter and previous/next buttons in lightbox
+  - No auth required - only shows photos from public summits by public users
+  - Uses React Query to fetch photos via `getPublicSummitPhotos` action
+  - Integrated into `PublicSummitCard.tsx` component
 
 ##### Challenges (`components/challenges/`)
 - `ChallengeActivityIndicator.tsx` - Shows community activity for a challenge. Displays weekly active users, weekly summit count, and recent completions (with user links). Used in challenge detail views to show social proof and engagement.
@@ -528,6 +549,7 @@ React context providers:
 - `ManualSummitProvider.tsx` - Manual summit modal state provider
 - `SummitReportProvider.tsx` - Summit report/edit modal state provider
 - `UserManagementProvider.tsx` - User management modal state provider (isOpen, openModal, closeModal)
+- `OnboardingProvider.tsx` - Onboarding modal state provider (hasSeenOnboarding, showOnboardingModal, localStorage persistence)
 
 ### Store (`src/store/`)
 Zustand state management stores:
@@ -554,6 +576,7 @@ Zustand state management stores:
 - `manualSummitStore.ts` - Manual summit modal state
 - `summitReportStore.ts` - Summit report/edit modal state
 - `userManagementStore.ts` - User management modal state (isOpen, openModal, closeModal)
+- `onboardingStore.ts` - Onboarding modal state (hasSeenOnboarding, showOnboardingModal, localStorage persistence)
 
 ### Auth (`src/auth/`)
 Authentication configuration:

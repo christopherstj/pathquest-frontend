@@ -25,6 +25,7 @@ import Link from "next/link";
 import deleteAscent from "@/actions/peaks/deleteAscent";
 import { cn } from "@/lib/utils";
 import getSummitType from "@/helpers/getSummitType";
+import SummitPhotoStrip from "@/components/photos/SummitPhotoStrip";
 
 // Difficulty display config
 const DIFFICULTY_CONFIG: Record<Difficulty, { label: string; color: string; borderColor: string; bgColor: string }> = {
@@ -391,6 +392,15 @@ const SummitItem = ({ summit, peakId, peakName, showPeakHeader = false, onHoverS
                         {summit.notes}
                     </p>
                 </div>
+            )}
+
+            {/* Photos (owner only) */}
+            {isOwner && (
+                <SummitPhotoStrip
+                    summitId={summit.id}
+                    summitType={getSummitType(summitForReport.activity_id)}
+                    maxThumbnails={4}
+                />
             )}
         </div>
     );

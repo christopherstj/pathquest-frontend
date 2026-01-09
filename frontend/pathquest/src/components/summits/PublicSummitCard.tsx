@@ -1,9 +1,12 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import Link from "next/link";
+import { motion, AnimatePresence } from "framer-motion";
 import {
     Calendar,
+    ChevronLeft,
+    ChevronRight,
     Cloud,
     Droplets,
     Flame,
@@ -13,6 +16,7 @@ import {
     Thermometer,
     User,
     Wind,
+    X,
     Zap,
 } from "lucide-react";
 import Summit, {
@@ -185,11 +189,18 @@ const CONDITION_CONFIG: Record<
     },
 };
 
+export interface SummitPhoto {
+    thumbnailUrl: string;
+    fullUrl: string;
+}
+
 export type PublicSummitCardSummit = Summit & {
     user_id?: string;
     user_name?: string;
     peak_id?: string;
     peak_name?: string;
+    summit_type?: "activity" | "manual";
+    photos?: SummitPhoto[];
 };
 
 // Weather code to description mapping (WMO codes)
@@ -271,10 +282,14 @@ export const PublicSummitCard = ({
     showPeakHeader = false,
 }: PublicSummitCardProps) => {
     const { user: currentUser } = useIsAuthenticated();
+    const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
 
     const isCurrentUser =
         currentUser?.id && String(currentUser.id) === String(summit.user_id);
     const profileHref = isCurrentUser ? "/profile" : `/users/${summit.user_id}`;
+    
+    const photos = summit.photos ?? [];
+
 
     const userInfo = (
         <div className="flex items-center gap-2">
@@ -308,6 +323,7 @@ export const PublicSummitCard = ({
     );
 
     return (
+        <>
         <div className="p-4 rounded-xl bg-card border border-border/70">
             {showPeakHeader && summit.peak_id && summit.peak_name && (
                 <div className="mb-3 pb-3 border-b border-border/50">
@@ -322,6 +338,30 @@ export const PublicSummitCard = ({
             )}
 
             {userSection}
+
+            {/* Photos (if available) */}
+            {photos.length > 0 && (
+                <div className="flex gap-1 mt-3">
+                    {photos.slice(0, 4).map((photo, index) => (
+                        <button
+                            key={index}
+                            type="button"
+                            onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                setLightboxIndex(index);
+                            }}
+                            className="relative w-10 h-10 rounded overflow-hidden bg-muted hover:ring-2 hover:ring-primary/50 transition-all flex-shrink-0"
+                        >
+                            <img
+                                src={photo.thumbnailUrl}
+                                alt={`Summit photo ${index + 1}`}
+                                className="w-full h-full object-cover"
+                            />
+                        </button>
+                    ))}
+                </div>
+            )}
 
             {/* Difficulty & Experience Ratings (if available) */}
             {(summit.difficulty || summit.experience_rating) && (
@@ -450,7 +490,128 @@ export const PublicSummitCard = ({
                     </p>
                 </div>
             )}
+
         </div>
+
+        {/* Photo Lightbox */}
+        <AnimatePresence>
+            {lightboxIndex !== null && photos.length > 0 && (
+                <PhotoLightbox
+                    photos={photos}
+                    currentIndex={lightboxIndex}
+                    onClose={() => setLightboxIndex(null)}
+                    onPrevious={() => lightboxIndex > 0 && setLightboxIndex(lightboxIndex - 1)}
+                    onNext={() => lightboxIndex < photos.length - 1 && setLightboxIndex(lightboxIndex + 1)}
+                />
+            )}
+        </AnimatePresence>
+    </>
+    );
+};
+
+// Photo Lightbox Component
+type PhotoLightboxProps = {
+    photos: SummitPhoto[];
+    currentIndex: number;
+    onClose: () => void;
+    onPrevious: () => void;
+    onNext: () => void;
+};
+
+const PhotoLightbox = ({
+    photos,
+    currentIndex,
+    onClose,
+    onPrevious,
+    onNext,
+}: PhotoLightboxProps) => {
+    const photo = photos[currentIndex];
+    const hasPrevious = currentIndex > 0;
+    const hasNext = currentIndex < photos.length - 1;
+
+    // Handle keyboard navigation
+    React.useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (e.key === "Escape") {
+                onClose();
+            } else if (e.key === "ArrowLeft" && hasPrevious) {
+                onPrevious();
+            } else if (e.key === "ArrowRight" && hasNext) {
+                onNext();
+            }
+        };
+
+        window.addEventListener("keydown", handleKeyDown);
+        return () => window.removeEventListener("keydown", handleKeyDown);
+    }, [onClose, onPrevious, onNext, hasPrevious, hasNext]);
+
+    return (
+        <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[120] bg-black/95 flex items-center justify-center"
+            onClick={onClose}
+        >
+            {/* Close button */}
+            <button
+                type="button"
+                onClick={onClose}
+                className="absolute top-4 right-4 p-2 rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors z-10"
+            >
+                <X className="w-6 h-6" />
+            </button>
+
+            {/* Counter */}
+            <div className="absolute top-4 left-4 text-white/70 text-sm z-10">
+                {currentIndex + 1} / {photos.length}
+            </div>
+
+            {/* Previous button */}
+            {hasPrevious && (
+                <button
+                    type="button"
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        onPrevious();
+                    }}
+                    className="absolute left-4 top-1/2 -translate-y-1/2 p-3 rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors z-10"
+                >
+                    <ChevronLeft className="w-6 h-6" />
+                </button>
+            )}
+
+            {/* Next button */}
+            {hasNext && (
+                <button
+                    type="button"
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        onNext();
+                    }}
+                    className="absolute right-4 top-1/2 -translate-y-1/2 p-3 rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors z-10"
+                >
+                    <ChevronRight className="w-6 h-6" />
+                </button>
+            )}
+
+            {/* Image */}
+            <motion.div
+                key={currentIndex}
+                initial={{ scale: 0.9, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.9, opacity: 0 }}
+                transition={{ duration: 0.2 }}
+                className="max-w-full max-h-full p-4"
+                onClick={(e) => e.stopPropagation()}
+            >
+                <img
+                    src={photo.fullUrl}
+                    alt={`Summit photo ${currentIndex + 1}`}
+                    className="max-w-full max-h-[85vh] object-contain rounded-lg"
+                />
+            </motion.div>
+        </motion.div>
     );
 };
 

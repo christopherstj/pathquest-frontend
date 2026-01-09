@@ -7,6 +7,9 @@ const backendUrl = getBackendUrl();
 
 export type GetPeakPhotosParams = {
     peakId: string;
+    /** ISO timestamp cursor for pagination. Omit for first page. */
+    cursor?: string;
+    /** Max photos per page (default 20, max 100). */
     limit?: number;
 };
 
@@ -17,7 +20,7 @@ export type GetPeakPhotosResult = {
 };
 
 /**
- * Get public photos for a peak (community gallery).
+ * Get public photos for a peak (community gallery) with cursor-based pagination.
  * No authentication required - returns only public photos.
  */
 const getPeakPhotos = async (
@@ -30,6 +33,7 @@ const getPeakPhotos = async (
     try {
         const data = await endpoints.getPeakPhotos(client, {
             peakId: params.peakId,
+            cursor: params.cursor,
             limit: params.limit,
         });
         return { success: true, data };

@@ -108,7 +108,7 @@ const PeakCommunity = () => {
             {/* Community Photos Section */}
             {peakId && (
                 <div className="border-b border-border/60">
-                    <PeakPhotosGallery peakId={peakId} limit={6} />
+                    <PeakPhotosGallery peakId={peakId} compactLimit={6} />
                 </div>
             )}
 
