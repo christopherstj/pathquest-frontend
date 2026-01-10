@@ -199,7 +199,7 @@ const SummitReportModal = () => {
             activity_id: data.summit.activity_id,
             peak_id: data.peakId,
             notes: notes || "",
-            is_public: data.summit.is_public || false,
+            is_public: data.summit.is_public ?? true,
             timezone: data.summit.timezone || "",
             difficulty,
             experience_rating: experience,
