@@ -125,17 +125,40 @@ const SummitPhotosSection = ({
             // 3. Upload file directly to GCS
             setUploadProgress(25);
             setUploadStatus("Uploading photo...");
-            const uploadRes = await fetch(uploadUrl, {
-                method: "PUT",
-                headers: {
-                    "Content-Type": "image/jpeg",
-                },
-                body: jpegBlob,
-            });
+            
+            let uploadRes: Response;
+            try {
+                uploadRes = await fetch(uploadUrl, {
+                    method: "PUT",
+                    headers: {
+                        "Content-Type": "image/jpeg",
+                    },
+                    body: jpegBlob,
+                });
+            } catch (fetchError: any) {
+                // Network-level error (e.g., "load failed" on Safari)
+                console.error("[SummitPhotosSection] Fetch error:", fetchError);
+                const errorMsg = fetchError?.message || String(fetchError);
+                
+                // Provide more helpful error messages for common issues
+                if (errorMsg.toLowerCase().includes("load failed") || errorMsg.toLowerCase().includes("failed to fetch")) {
+                    throw new Error(
+                        "Upload failed - please check your internet connection and try again. " +
+                        "If the problem persists, try a smaller photo or different network."
+                    );
+                }
+                throw new Error(`Upload failed: ${errorMsg}`);
+            }
 
             if (!uploadRes.ok) {
                 const errorText = await uploadRes.text().catch(() => "");
                 console.error("[SummitPhotosSection] GCS upload failed:", uploadRes.status, errorText);
+                
+                if (uploadRes.status === 403) {
+                    throw new Error("Upload permission denied. Please try again or contact support.");
+                } else if (uploadRes.status === 413) {
+                    throw new Error("Photo is too large. Please use a smaller photo.");
+                }
                 throw new Error("Failed to upload photo to storage");
             }
 
