@@ -40,7 +40,18 @@ type SummitPhotosSectionProps = {
 };
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
-const ACCEPTED_TYPES = ["image/jpeg"];
+const MAX_CONVERTED_SIZE = 10 * 1024 * 1024; // 10MB after conversion
+// Accept all common image types - we'll convert to JPEG
+const ACCEPTED_TYPES = [
+    "image/jpeg",
+    "image/png",
+    "image/webp",
+    "image/heic",
+    "image/heif",
+];
+// Also accept these via file extension (for browsers that don't report HEIC mime type)
+const ACCEPTED_EXTENSIONS = [".jpg", ".jpeg", ".png", ".webp", ".heic", ".heif"];
+const JPEG_QUALITY = 0.9; // Quality for JPEG conversion
 
 const SummitPhotosSection = ({
     summitId,
@@ -50,6 +61,7 @@ const SummitPhotosSection = ({
     const queryClient = useQueryClient();
     const fileInputRef = useRef<HTMLInputElement>(null);
     const [uploadProgress, setUploadProgress] = useState<number | null>(null);
+    const [uploadStatus, setUploadStatus] = useState<string>("Uploading photo...");
     const [uploadError, setUploadError] = useState<string | null>(null);
     const [editingPhotoId, setEditingPhotoId] = useState<string | null>(null);
     const [editCaption, setEditCaption] = useState("");
@@ -69,13 +81,39 @@ const SummitPhotosSection = ({
     const uploadMutation = useMutation({
         mutationFn: async (file: File) => {
             setUploadProgress(0);
+            setUploadStatus("Preparing photo...");
             setUploadError(null);
 
-            // 1. Get signed upload URL
+            // 1. Convert to JPEG if needed
+            let jpegBlob: Blob;
+            let dimensions: { width: number; height: number };
+            
+            if (file.type === "image/jpeg") {
+                // Already JPEG, just use as-is
+                jpegBlob = file;
+                dimensions = await getImageDimensions(file);
+            } else {
+                // Convert to JPEG using canvas
+                setUploadStatus("Converting to JPEG...");
+                setUploadProgress(5);
+                const converted = await convertToJpeg(file);
+                jpegBlob = converted.blob;
+                dimensions = { width: converted.width, height: converted.height };
+            }
+
+            // Check converted size
+            if (jpegBlob.size > MAX_CONVERTED_SIZE) {
+                throw new Error(`Photo is too large (${Math.round(jpegBlob.size / 1024 / 1024)}MB). Please use a smaller photo.`);
+            }
+
+            setUploadProgress(15);
+            setUploadStatus("Getting upload URL...");
+
+            // 2. Get signed upload URL
             const urlResult = await getPhotoUploadUrl({
                 summitType,
                 summitId,
-                filename: file.name,
+                filename: file.name.replace(/\.[^.]+$/, ".jpg"), // Change extension to .jpg
             });
 
             if (!urlResult.success || !urlResult.data) {
@@ -84,24 +122,25 @@ const SummitPhotosSection = ({
 
             const { uploadUrl, photoId } = urlResult.data;
 
-            // 2. Upload file directly to GCS
-            setUploadProgress(10);
+            // 3. Upload file directly to GCS
+            setUploadProgress(25);
+            setUploadStatus("Uploading photo...");
             const uploadRes = await fetch(uploadUrl, {
                 method: "PUT",
                 headers: {
                     "Content-Type": "image/jpeg",
                 },
-                body: file,
+                body: jpegBlob,
             });
 
             if (!uploadRes.ok) {
+                const errorText = await uploadRes.text().catch(() => "");
+                console.error("[SummitPhotosSection] GCS upload failed:", uploadRes.status, errorText);
                 throw new Error("Failed to upload photo to storage");
             }
 
-            setUploadProgress(70);
-
-            // 3. Get image dimensions
-            const dimensions = await getImageDimensions(file);
+            setUploadProgress(75);
+            setUploadStatus("Processing...");
 
             // 4. Complete the upload (server generates thumbnail)
             setUploadProgress(85);
@@ -116,16 +155,19 @@ const SummitPhotosSection = ({
             }
 
             setUploadProgress(100);
+            setUploadStatus("Done!");
             return completeResult;
         },
         onSuccess: () => {
             setUploadProgress(null);
+            setUploadStatus("Uploading photo...");
             queryClient.invalidateQueries({
                 queryKey: ["summitPhotos", summitType, summitId],
             });
         },
         onError: (err: Error) => {
             setUploadProgress(null);
+            setUploadStatus("Uploading photo...");
             setUploadError(err.message);
         },
     });
@@ -172,15 +214,22 @@ const SummitPhotosSection = ({
             // Reset input so same file can be selected again
             e.target.value = "";
 
-            // Validate file type
-            if (!ACCEPTED_TYPES.includes(file.type)) {
-                setUploadError("Only JPEG images are supported");
+            // Validate file type - check both mime type and extension
+            const extension = file.name.toLowerCase().match(/\.[^.]+$/)?.[0] ?? "";
+            const isValidType = ACCEPTED_TYPES.includes(file.type) || ACCEPTED_EXTENSIONS.includes(extension);
+            
+            // Some browsers (especially mobile) may report empty or generic mime type
+            // for HEIC files, so also check if it looks like an image
+            const looksLikeImage = file.type.startsWith("image/") || file.type === "" || file.type === "application/octet-stream";
+            
+            if (!isValidType && !looksLikeImage) {
+                setUploadError("Please select an image file (JPEG, PNG, WebP, or HEIC)");
                 return;
             }
 
-            // Validate file size
-            if (file.size > MAX_FILE_SIZE) {
-                setUploadError("File size must be under 10MB");
+            // Validate file size (before conversion - we'll check again after)
+            if (file.size > MAX_FILE_SIZE * 2) { // Allow larger files since we'll compress
+                setUploadError("File size must be under 20MB");
                 return;
             }
 
@@ -239,11 +288,11 @@ const SummitPhotosSection = ({
                 </Button>
             </div>
 
-            {/* Hidden file input */}
+            {/* Hidden file input - accept all image types, we convert to JPEG */}
             <input
                 ref={fileInputRef}
                 type="file"
-                accept="image/jpeg"
+                accept="image/jpeg,image/png,image/webp,image/heic,image/heif,.jpg,.jpeg,.png,.webp,.heic,.heif"
                 onChange={handleFileSelect}
                 className="hidden"
             />
@@ -259,7 +308,7 @@ const SummitPhotosSection = ({
                     >
                         <div className="flex items-center gap-2 text-sm text-primary">
                             <Loader2 className="w-4 h-4 animate-spin" />
-                            <span>Uploading photo...</span>
+                            <span>{uploadStatus}</span>
                             <span className="ml-auto font-medium">{uploadProgress}%</span>
                         </div>
                         <div className="mt-2 h-1.5 bg-primary/20 rounded-full overflow-hidden">
@@ -541,7 +590,7 @@ const PhotoLightbox = ({ photo, onClose }: PhotoLightboxProps) => {
 /**
  * Get image dimensions from a File object.
  */
-function getImageDimensions(file: File): Promise<{ width: number; height: number }> {
+function getImageDimensions(file: File | Blob): Promise<{ width: number; height: number }> {
     return new Promise((resolve, reject) => {
         const img = new Image();
         img.onload = () => {
@@ -553,6 +602,67 @@ function getImageDimensions(file: File): Promise<{ width: number; height: number
             URL.revokeObjectURL(img.src);
         };
         img.src = URL.createObjectURL(file);
+    });
+}
+
+/**
+ * Convert any image file to JPEG using canvas.
+ * This handles HEIC, PNG, WebP, etc. and converts them to JPEG.
+ */
+function convertToJpeg(file: File): Promise<{ blob: Blob; width: number; height: number }> {
+    return new Promise((resolve, reject) => {
+        const img = new Image();
+        const objectUrl = URL.createObjectURL(file);
+        
+        img.onload = () => {
+            URL.revokeObjectURL(objectUrl);
+            
+            const canvas = document.createElement("canvas");
+            canvas.width = img.naturalWidth;
+            canvas.height = img.naturalHeight;
+            
+            const ctx = canvas.getContext("2d");
+            if (!ctx) {
+                reject(new Error("Failed to get canvas context"));
+                return;
+            }
+            
+            // Fill with white background (for transparent PNGs)
+            ctx.fillStyle = "#FFFFFF";
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // Draw the image
+            ctx.drawImage(img, 0, 0);
+            
+            // Convert to JPEG blob
+            canvas.toBlob(
+                (blob) => {
+                    if (!blob) {
+                        reject(new Error("Failed to convert image to JPEG"));
+                        return;
+                    }
+                    resolve({
+                        blob,
+                        width: img.naturalWidth,
+                        height: img.naturalHeight,
+                    });
+                },
+                "image/jpeg",
+                JPEG_QUALITY
+            );
+        };
+        
+        img.onerror = () => {
+            URL.revokeObjectURL(objectUrl);
+            // If the browser can't load the image (e.g., HEIC on non-Safari),
+            // provide a helpful error message
+            reject(new Error(
+                "Unable to load this image format. " +
+                "Try converting to JPEG first, or use Safari on iPhone."
+            ));
+        };
+        
+        img.src = objectUrl;
     });
 }
 

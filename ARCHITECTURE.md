@@ -390,8 +390,10 @@ Unified navigation system (December 2024) with fixed 3-tab structure for both mo
 Photo upload and management components (Stage 4):
 - `SummitPhotosSection.tsx` - Photo management section for SummitReportModal. Features:
   - Photo grid with thumbnails (3 columns)
-  - Upload button with file picker (JPEG only, 10MB max)
-  - Direct upload to GCS via signed URLs with progress indicator
+  - Upload button with file picker (accepts JPEG, PNG, WebP, HEIC/HEIF)
+  - **Client-side JPEG conversion**: All images are converted to JPEG before upload using canvas. This ensures compatibility across browsers (especially Brave on iOS which doesn't auto-convert HEIC).
+  - Direct upload to GCS via signed URLs with progress indicator showing conversion/upload status
+  - 10MB max file size after conversion (accepts up to 20MB before conversion)
   - Inline caption editing on hover
   - Delete with confirmation dialog
   - Lightbox for full-size photo viewing
