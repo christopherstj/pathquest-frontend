@@ -1,7 +1,7 @@
 import { Metadata } from "next";
 import Link from "next/link";
 import Logo from "@/components/brand/Logo";
-import { Zap, Trophy, Users, MapPin, Activity, ArrowLeft } from "lucide-react";
+import { Zap, Trophy, Users, MapPin, Activity, ArrowLeft, Mountain } from "lucide-react";
 
 export const metadata: Metadata = {
     title: "About PathQuest | Peak Bagging & Summit Tracking",

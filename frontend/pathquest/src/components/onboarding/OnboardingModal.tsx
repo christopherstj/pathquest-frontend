@@ -174,7 +174,7 @@ const OnboardingModal = ({
                             {/* Icon */}
                             <div className="flex justify-center mb-5">
                                 <div className="w-18 h-18 rounded-2xl bg-primary/10 flex items-center justify-center">
-                                    {slide.icon ? (
+                                    {Icon ? (
                                         <Icon className="w-9 h-9 text-primary" />
                                     ) : (
                                         <Logo size={36} className="text-primary" />
