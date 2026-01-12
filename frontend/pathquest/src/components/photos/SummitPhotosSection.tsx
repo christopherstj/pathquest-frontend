@@ -122,45 +122,15 @@ const SummitPhotosSection = ({
 
             const { uploadUrl, photoId } = urlResult.data;
 
-            // 3. Upload file directly to GCS
+            // 3. Upload file directly to GCS with progress tracking
             setUploadProgress(25);
             setUploadStatus("Uploading photo...");
             
-            let uploadRes: Response;
-            try {
-                uploadRes = await fetch(uploadUrl, {
-                    method: "PUT",
-                    headers: {
-                        "Content-Type": "image/jpeg",
-                    },
-                    body: jpegBlob,
-                });
-            } catch (fetchError: any) {
-                // Network-level error (e.g., "load failed" on Safari)
-                console.error("[SummitPhotosSection] Fetch error:", fetchError);
-                const errorMsg = fetchError?.message || String(fetchError);
-                
-                // Provide more helpful error messages for common issues
-                if (errorMsg.toLowerCase().includes("load failed") || errorMsg.toLowerCase().includes("failed to fetch")) {
-                    throw new Error(
-                        "Upload failed - please check your internet connection and try again. " +
-                        "If the problem persists, try a smaller photo or different network."
-                    );
-                }
-                throw new Error(`Upload failed: ${errorMsg}`);
-            }
-
-            if (!uploadRes.ok) {
-                const errorText = await uploadRes.text().catch(() => "");
-                console.error("[SummitPhotosSection] GCS upload failed:", uploadRes.status, errorText);
-                
-                if (uploadRes.status === 403) {
-                    throw new Error("Upload permission denied. Please try again or contact support.");
-                } else if (uploadRes.status === 413) {
-                    throw new Error("Photo is too large. Please use a smaller photo.");
-                }
-                throw new Error("Failed to upload photo to storage");
-            }
+            await uploadWithProgress(uploadUrl, jpegBlob, (uploadPercent) => {
+                // Map 0-100% upload progress to 25-75% overall progress
+                const overallPercent = 25 + Math.round(uploadPercent * 0.5);
+                setUploadProgress(overallPercent);
+            });
 
             setUploadProgress(75);
             setUploadStatus("Processing...");
@@ -686,6 +656,43 @@ function convertToJpeg(file: File): Promise<{ blob: Blob; width: number; height:
         };
         
         img.src = objectUrl;
+    });
+}
+
+/**
+ * Upload a blob to a URL with progress tracking using XMLHttpRequest.
+ * fetch() doesn't support upload progress, so we use XHR instead.
+ */
+function uploadWithProgress(
+    url: string,
+    blob: Blob,
+    onProgress: (percent: number) => void
+): Promise<void> {
+    return new Promise((resolve, reject) => {
+        const xhr = new XMLHttpRequest();
+
+        xhr.upload.onprogress = (event) => {
+            if (event.lengthComputable) {
+                const percent = Math.round((event.loaded / event.total) * 100);
+                onProgress(percent);
+            }
+        };
+
+        xhr.onload = () => {
+            if (xhr.status >= 200 && xhr.status < 300) {
+                resolve();
+            } else {
+                reject(new Error(`Upload failed with status ${xhr.status}`));
+            }
+        };
+
+        xhr.onerror = () => {
+            reject(new Error("Upload failed - please check your internet connection and try again."));
+        };
+
+        xhr.open("PUT", url);
+        xhr.setRequestHeader("Content-Type", "image/jpeg");
+        xhr.send(blob);
     });
 }
 
