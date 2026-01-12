@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { Cloud, Trophy, Flag, Check } from "lucide-react";
+import { Cloud, Trophy, Flag, Check, Trees, Mountain, Shield, Landmark } from "lucide-react";
 import Peak from "@/typeDefs/Peak";
 import Challenge from "@/typeDefs/Challenge";
 import CurrentConditions from "@/components/app/peaks/CurrentConditions";
@@ -15,8 +15,54 @@ interface PeakDetailsTabProps {
 }
 
 /**
+ * Get the appropriate icon for a public land type
+ */
+const getPublicLandIcon = (type: string) => {
+    switch (type) {
+        case "NP":
+        case "NM":
+        case "NRA":
+        case "NCA":
+            return Landmark; // National Parks, Monuments, Recreation/Conservation Areas
+        case "NF":
+        case "NG":
+        case "SF":
+            return Trees; // National/State Forests and Grasslands
+        case "WILD":
+        case "WSA":
+        case "SW":
+            return Shield; // Wilderness Areas
+        case "SP":
+        case "SRA":
+            return Mountain; // State Parks and Recreation Areas
+        case "NWR":
+            return Trees; // Wildlife Refuges
+        default:
+            return Landmark;
+    }
+};
+
+/**
+ * Get a friendly short name for the land manager
+ */
+const getManagerDisplayName = (manager: string): string => {
+    const managerMap: Record<string, string> = {
+        "NPS": "National Park Service",
+        "USFS": "US Forest Service",
+        "BLM": "Bureau of Land Management",
+        "FWS": "US Fish & Wildlife Service",
+        "USACE": "US Army Corps of Engineers",
+        "DOD": "Dept. of Defense",
+        "TVA": "Tennessee Valley Authority",
+        "USBR": "Bureau of Reclamation",
+    };
+    return managerMap[manager] || manager;
+};
+
+/**
  * Peak Details tab content showing:
  * - Current weather conditions
+ * - Public land information (if applicable)
  * - Challenges this peak is part of (with progress if authenticated)
  */
 const PeakDetailsTab = ({ peak, challenges }: PeakDetailsTabProps) => {
@@ -47,6 +93,38 @@ const PeakDetailsTab = ({ peak, challenges }: PeakDetailsTabProps) => {
                         lat={peak.location_coords[1]}
                         lng={peak.location_coords[0]}
                     />
+                </div>
+            )}
+
+            {/* Public Land Section */}
+            {peak.publicLand && (
+                <div className="space-y-3">
+                    <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
+                        {React.createElement(getPublicLandIcon(peak.publicLand.type), { className: "w-4 h-4" })}
+                        Public Land
+                    </h3>
+                    <div className="p-4 rounded-lg bg-card border border-border/70">
+                        <div className="flex items-start gap-3">
+                            <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                                {React.createElement(getPublicLandIcon(peak.publicLand.type), { 
+                                    className: "w-5 h-5 text-primary" 
+                                })}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                                <h4 className="font-semibold text-foreground leading-tight">
+                                    {peak.publicLand.name}
+                                </h4>
+                                <div className="flex flex-wrap items-center gap-2 mt-1.5">
+                                    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-primary/10 text-primary border border-primary/20">
+                                        {peak.publicLand.typeName}
+                                    </span>
+                                    <span className="text-xs text-muted-foreground">
+                                        {getManagerDisplayName(peak.publicLand.manager)}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             )}
 

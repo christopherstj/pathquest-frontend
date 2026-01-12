@@ -9,6 +9,7 @@ import { useTabStore, getTabStore, type TabType } from "@/store/tabStore";
 import HomeTabContent from "./HomeTabContent";
 import ExploreTabContent from "./ExploreTabContent";
 import ProfileTabContent from "./ProfileTabContent";
+import Footer from "@/components/app/layout/Footer";
 
 const PANEL_WIDTH_EXPANDED = 380;
 const PANEL_WIDTH_COLLAPSED = 64;
@@ -259,7 +260,11 @@ const DesktopNavLayout = () => {
             {/* Content Area */}
             {!isCollapsed && (
                 <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden custom-scrollbar">
-                    {renderContent()}
+                    <div className="flex min-h-full flex-col">
+                        {renderContent()}
+                        {/* Pane footer (visible when scrolled to bottom) */}
+                        <Footer />
+                    </div>
                 </div>
             )}
 

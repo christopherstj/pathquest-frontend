@@ -45,9 +45,9 @@ const GlobalNavigation = () => {
             >
                 <Logo
                     size={28}
-                    className="text-secondary group-hover:text-primary transition-colors"
+                    className="text-primary transition-colors"
                 />
-                <span className="text-xs font-semibold uppercase tracking-[0.15em] text-secondary/70 group-hover:text-primary/80 transition-colors">
+                <span className="text-sm font-semibold text-foreground dark:text-white transition-colors" style={{ fontFamily: "var(--font-display)" }}>
                     PathQuest
                 </span>
             </Link>

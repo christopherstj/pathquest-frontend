@@ -2,8 +2,9 @@
 
 import React, { useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Mountain } from "lucide-react";
+import { X } from "lucide-react";
 import { usePathname } from "next/navigation";
+import Logo from "@/components/brand/Logo";
 import { useDashboardStore } from "@/providers/DashboardProvider";
 import { useIsAuthenticated } from "@/hooks/useRequireAuth";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -68,7 +69,7 @@ const DashboardPanel = () => {
 
                             <div className="flex items-center gap-3">
                                 <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
-                                    <Mountain className="w-5 h-5 text-primary" />
+                                    <Logo size={20} className="text-primary" />
                                 </div>
                                 <div>
                                     <h1

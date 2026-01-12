@@ -4,6 +4,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import { motion, useAnimation, PanInfo } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { useTabStore } from "@/store/tabStore";
+import Footer from "@/components/app/layout/Footer";
 
 export type DrawerHeight = "collapsed" | "halfway" | "expanded";
 
@@ -167,7 +168,11 @@ const ContentSheet = ({
                         drawerHeight === "collapsed" && "overflow-hidden"
                     )}
                 >
-                    {children}
+                    <div className="flex min-h-full flex-col">
+                        {children}
+                        {/* Pane footer (visible when scrolled to bottom) */}
+                        <Footer />
+                    </div>
                 </div>
             </div>
         </motion.div>

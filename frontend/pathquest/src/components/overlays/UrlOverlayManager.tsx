@@ -1,9 +1,23 @@
 "use client";
 
 import React, { Suspense } from "react";
+import { usePathname } from "next/navigation";
 import MobileNavLayout from "@/components/navigation/MobileNavLayout";
 import DesktopNavLayout from "@/components/navigation/DesktopNavLayout";
 import { useIsMobile } from "@/hooks/use-mobile";
+
+/**
+ * Static/standalone routes that should NOT show the map overlay UI.
+ * These pages render as full-screen standalone pages for better SEO and UX.
+ */
+const STANDALONE_ROUTES = ["/about", "/faq", "/contact"];
+
+/**
+ * Check if the current pathname is a standalone route (no overlay UI).
+ */
+const isStandaloneRoute = (pathname: string): boolean => {
+    return STANDALONE_ROUTES.some((route) => pathname === route);
+};
 
 /**
  * URL-driven overlay manager that renders the appropriate navigation layout
@@ -23,9 +37,18 @@ import { useIsMobile } from "@/hooks/use-mobile";
  * 
  * The overlays are rendered via this component (in root layout),
  * not via parallel routes or page content, ensuring the map never reloads.
+ * 
+ * **Standalone routes** (about, faq, contact) render as full-screen pages
+ * without the overlay UI or map for better SEO and reading experience.
  */
 const UrlOverlayManagerContent = () => {
+    const pathname = usePathname();
     const isMobile = useIsMobile(1024);
+
+    // Don't render overlay UI for standalone pages (about, faq, contact)
+    if (isStandaloneRoute(pathname)) {
+        return null;
+    }
 
     if (isMobile) {
         return <MobileNavLayout />;

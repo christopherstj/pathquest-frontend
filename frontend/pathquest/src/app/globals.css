@@ -31,27 +31,27 @@
 }
 
 :root {
-    /* Retro Topographic Palette */
-    --background: oklch(0.94 0.03 90); /* Aged parchment */
-    --foreground: oklch(0.26 0.06 70); /* Deep umber ink */
+    /* Summit Register Palette - Warm trail journal aesthetic */
+    --background: oklch(0.92 0.025 75); /* Warm cream, aged paper */
+    --foreground: oklch(0.18 0.04 55); /* Rich sepia ink */
 
-    --card: oklch(0.93 0.02 95 / 0.92);
-    --card-foreground: oklch(0.25 0.05 70);
+    --card: oklch(0.97 0.015 80 / 0.95); /* Paper layer, slightly brighter */
+    --card-foreground: oklch(0.18 0.04 55);
 
-    --popover: oklch(0.93 0.02 95 / 0.92);
-    --popover-foreground: oklch(0.25 0.05 70);
+    --popover: oklch(0.98 0.01 80 / 0.98); /* Brightest layer, elevated */
+    --popover-foreground: oklch(0.18 0.04 55);
 
-    --primary: oklch(0.53 0.12 140); /* Forest green */
+    --primary: oklch(0.53 0.12 140); /* Forest green - anchor color */
     --primary-foreground: oklch(0.95 0.01 90);
 
     --secondary: oklch(0.65 0.12 65); /* Rust/umber */
-    --secondary-foreground: oklch(0.2 0.05 60);
+    --secondary-foreground: oklch(0.18 0.04 55);
 
-    --muted: oklch(0.88 0.02 95);
-    --muted-foreground: oklch(0.45 0.05 70);
+    --muted: oklch(0.88 0.02 75); /* Warmer muted tone */
+    --muted-foreground: oklch(0.38 0.03 55); /* Darker, more readable */
 
-    --accent: oklch(0.78 0.05 115); /* Moss highlight */
-    --accent-foreground: oklch(0.22 0.04 70);
+    --accent: oklch(0.85 0.06 90); /* Warmer highlight */
+    --accent-foreground: oklch(0.18 0.04 55);
 
     --destructive: oklch(0.55 0.18 30);
     --destructive-foreground: oklch(0.97 0.01 90);
@@ -59,11 +59,16 @@
     --summited: oklch(0.65 0.10 220); /* Sky blue - for summited peaks */
     --summited-foreground: oklch(0.95 0.01 90);
 
-    --border: oklch(0.8 0.03 90 / 0.7);
-    --input: oklch(0.9 0.02 90);
+    --border: oklch(0.72 0.04 65 / 0.6); /* Pencil-line feel, warmer */
+    --input: oklch(0.96 0.015 80); /* Bright input fields */
     --ring: oklch(0.53 0.12 140 / 0.5);
 
     --radius: 0.625rem;
+    
+    /* Light mode shadow for elevation */
+    --shadow-card: 0 1px 3px rgba(100, 70, 40, 0.08);
+    --shadow-elevated: 0 2px 8px -2px rgba(100, 70, 40, 0.12), 
+                       0 4px 16px -4px rgba(100, 70, 40, 0.08);
 }
 
 .dark {
@@ -97,18 +102,52 @@
     }
     body {
         @apply bg-background text-foreground font-sans;
+        /* Light mode: warm sepia topo pattern, prominent and tactile */
+        background-image:
+            radial-gradient(circle at 10% 20%, rgba(120,90,60,0.06) 0, transparent 32%),
+            radial-gradient(circle at 80% 0%, rgba(120,90,60,0.05) 0, transparent 28%),
+            linear-gradient(180deg, rgba(120,90,60,0.05), rgba(120,90,60,0.02)),
+            url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160' viewBox='0 0 160 160'%3E%3Cpath d='M0 80c40-30 80-30 120 0s80 30 120 0' fill='none' stroke='%23a08060' stroke-width='0.7' opacity='0.5'/%3E%3C/svg%3E");
+        background-size: cover, cover, 100% 100%, 320px 320px;
+        background-attachment: fixed;
+    }
+    /* Dark mode: cooler, subtler topo pattern */
+    .dark body {
         background-image:
             radial-gradient(circle at 10% 20%, rgba(0,0,0,0.04) 0, transparent 32%),
             radial-gradient(circle at 80% 0%, rgba(0,0,0,0.035) 0, transparent 28%),
             linear-gradient(180deg, rgba(0,0,0,0.04), rgba(0,0,0,0.02)),
             url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160' viewBox='0 0 160 160'%3E%3Cpath d='M0 80c40-30 80-30 120 0s80 30 120 0' fill='none' stroke='%23b9a484' stroke-width='0.6' opacity='0.35'/%3E%3C/svg%3E");
-        background-size: cover, cover, 100% 100%, 320px 320px;
-        background-attachment: fixed;
     }
 }
 
 .glass {
     @apply backdrop-blur-md bg-background/70 border border-border shadow-lg;
+}
+
+/* Light mode card elevation - warm sepia shadows */
+:root .bg-card,
+:root [class*="bg-card"] {
+    box-shadow: var(--shadow-card);
+}
+
+:root .bg-popover,
+:root [class*="bg-popover"] {
+    box-shadow: var(--shadow-elevated);
+}
+
+/* Utility class for elevated elements in light mode */
+.light-elevated {
+    box-shadow: var(--shadow-elevated);
+}
+
+/* Remove shadows in dark mode - rely on borders/backdrop blur */
+.dark .bg-card,
+.dark [class*="bg-card"],
+.dark .bg-popover,
+.dark [class*="bg-popover"],
+.dark .light-elevated {
+    box-shadow: none;
 }
 
 /* Mapbox Overrides */

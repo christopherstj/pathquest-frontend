@@ -3,7 +3,8 @@
 import React, { useEffect, useState } from "react";
 import { signIn, useSession } from "next-auth/react";
 import Image from "next/image";
-import { Mountain, MapPin, Trophy, Loader2 } from "lucide-react";
+import { MapPin, Trophy, Loader2 } from "lucide-react";
+import Logo from "@/components/brand/Logo";
 import {
     Dialog,
     DialogContent,
@@ -149,7 +150,7 @@ const LoginContent = ({ onStravaLogin }: LoginContentProps) => {
         <>
             <DialogHeader className="text-center items-center">
                 <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-2">
-                    <Mountain className="w-8 h-8 text-primary" />
+                    <Logo size={32} className="text-primary" />
                 </div>
                 <DialogTitle className="text-2xl font-display">
                     Join PathQuest
@@ -238,7 +239,7 @@ const EmailContent = ({
         <>
             <DialogHeader className="text-center items-center">
                 <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-2">
-                    <Mountain className="w-8 h-8 text-primary" />
+                    <Logo size={32} className="text-primary" />
                 </div>
                 <DialogTitle className="text-2xl font-display">
                     Almost there!

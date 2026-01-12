@@ -10,8 +10,9 @@
  */
 
 import React, { useState, useCallback } from "react";
-import { Mountain, MapPin, Clock, ChevronRight, ChevronLeft, Sparkles, Check } from "lucide-react";
+import { MapPin, Clock, ChevronRight, ChevronLeft, Sparkles, Check } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import Logo from "@/components/brand/Logo";
 import {
     Dialog,
     DialogContent,
@@ -21,7 +22,7 @@ import { cn } from "@/lib/utils";
 
 interface OnboardingSlide {
     id: string;
-    icon: React.ElementType;
+    icon: React.ElementType | null; // null means use Logo component
     title: string;
     description: string;
     highlight?: string;
@@ -30,7 +31,7 @@ interface OnboardingSlide {
 const SLIDES: OnboardingSlide[] = [
     {
         id: "welcome",
-        icon: Mountain,
+        icon: null, // Use Logo component instead
         title: "Scanning Your Adventures",
         description: "We're analyzing your entire Strava history to find every peak you've summited. This happens automatically in the background.",
         highlight: "Your summits will appear as we find them!",
@@ -173,7 +174,11 @@ const OnboardingModal = ({
                             {/* Icon */}
                             <div className="flex justify-center mb-5">
                                 <div className="w-18 h-18 rounded-2xl bg-primary/10 flex items-center justify-center">
-                                    <Icon className="w-9 h-9 text-primary" />
+                                    {slide.icon ? (
+                                        <Icon className="w-9 h-9 text-primary" />
+                                    ) : (
+                                        <Logo size={36} className="text-primary" />
+                                    )}
                                 </div>
                             </div>
 

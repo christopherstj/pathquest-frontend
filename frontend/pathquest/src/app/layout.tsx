@@ -12,6 +12,7 @@ import SummitReportProvider from "@/providers/SummitReportProvider";
 import ManualSummitProvider from "@/providers/ManualSummitProvider";
 import UserManagementProvider from "@/providers/UserManagementProvider";
 import OnboardingProvider from "@/providers/OnboardingProvider";
+import AppShell from "@/components/app/layout/AppShell";
 import "./globals.css";
 
 const fraunces = Fraunces({
@@ -37,15 +38,6 @@ type Props = {
     children: React.ReactNode;
 };
 
-import MapBackground from "@/components/map/MapBackground";
-import GlobalNavigation from "@/components/app/layout/GlobalNavigation";
-import UrlOverlayManager from "@/components/overlays/UrlOverlayManager";
-import AuthModal from "@/components/auth/AuthModal";
-import SummitReportModal from "@/components/overlays/SummitReportModal";
-import AddManualSummitModal from "@/components/overlays/AddManualSummitModal";
-import UserManagementModal from "@/components/overlays/UserManagementModal";
-import { Suspense } from "react";
-
 const layout = ({ children }: Props) => {
     return (
         <html lang="en" suppressHydrationWarning>
@@ -56,7 +48,7 @@ const layout = ({ children }: Props) => {
                 />
             </head>
             <body
-                className={`${fraunces.variable} ${plexMono.variable} antialiased bg-background text-foreground overflow-hidden`}
+                className={`${fraunces.variable} ${plexMono.variable} antialiased bg-background text-foreground`}
             >
                 <NextAuthProvider>
                     <QueryProvider>
@@ -71,28 +63,11 @@ const layout = ({ children }: Props) => {
                                         <SummitReportProvider>
                                             <ManualSummitProvider>
                                                 <UserManagementProvider>
-                                                        <OnboardingProvider>
-                                                    <main className="relative w-full h-screen overflow-hidden">
-                                                        <Suspense fallback={<div className="absolute inset-0 bg-background" />}>
-                                                            <MapBackground />
-                                                        </Suspense>
-                                                        <GlobalNavigation />
-                                                        {/* URL-driven overlay manager - renders discovery drawer (desktop) or bottom sheet (mobile) and detail panels */}
-                                                        <UrlOverlayManager />
-                                                        {/* SEO content from static pages (hidden from view, visible to crawlers) */}
-                                                        <div className="relative z-10 w-full h-full pointer-events-none">
+                                                    <OnboardingProvider>
+                                                        <AppShell>
                                                             {children}
-                                                        </div>
-                                                        {/* Auth modal - triggered by useRequireAuth hook */}
-                                                        <AuthModal />
-                                                        {/* Summit report modal - for editing summit experiences */}
-                                                        <SummitReportModal />
-                                                        {/* Manual summit modal - for logging new summits */}
-                                                        <AddManualSummitModal />
-                                                        {/* User management modal - for account settings */}
-                                                        <UserManagementModal />
-                                                    </main>
-                                                        </OnboardingProvider>
+                                                        </AppShell>
+                                                    </OnboardingProvider>
                                                 </UserManagementProvider>
                                             </ManualSummitProvider>
                                         </SummitReportProvider>

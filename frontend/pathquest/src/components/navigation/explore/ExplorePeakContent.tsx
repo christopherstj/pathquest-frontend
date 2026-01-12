@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { BookOpen, CheckCircle, LogIn, Mountain, Plus } from "lucide-react";
+import { BookOpen, CheckCircle, LogIn, Mountain, Plus, Trees, Shield, Landmark } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import metersToFt from "@/helpers/metersToFt";
 import Peak from "@/typeDefs/Peak";
@@ -11,6 +11,41 @@ import PeakUserActivity from "@/components/overlays/PeakUserActivity";
 import PeakCommunity from "@/components/overlays/PeakCommunity";
 import PeakDetailsTab from "@/components/overlays/PeakDetailsTab";
 import { ExploreSubTab } from "@/store/tabStore";
+
+/**
+ * Notable public land types that warrant a badge in the header
+ * (National Parks, Wilderness, Monuments - the "prestigious" ones)
+ */
+const NOTABLE_LAND_TYPES = ["NP", "NM", "WILD", "WSA"];
+
+/**
+ * Get compact icon for public land badge
+ */
+const getPublicLandBadgeIcon = (type: string) => {
+    switch (type) {
+        case "NP":
+        case "NM":
+            return Landmark;
+        case "WILD":
+        case "WSA":
+            return Shield;
+        default:
+            return Trees;
+    }
+};
+
+/**
+ * Get short abbreviation for land type
+ */
+const getLandTypeAbbrev = (type: string): string => {
+    const abbrevMap: Record<string, string> = {
+        "NP": "NP",
+        "NM": "NM",
+        "WILD": "Wilderness",
+        "WSA": "WSA",
+    };
+    return abbrevMap[type] || type;
+};
 
 interface ExplorePeakContentProps {
     peak: Peak | null;
@@ -64,6 +99,17 @@ export const ExplorePeakContent = ({
                         <p className="text-sm text-muted-foreground">
                             {peak.elevation ? `${Math.round(metersToFt(peak.elevation)).toLocaleString()} ft` : ""}
                         </p>
+                        {/* Public Land Badge - only for notable lands */}
+                        {peak.publicLand && NOTABLE_LAND_TYPES.includes(peak.publicLand.type) && (
+                            <div className="mt-1 inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-amber-500/10 border border-amber-500/30">
+                                {React.createElement(getPublicLandBadgeIcon(peak.publicLand.type), {
+                                    className: "w-3 h-3 text-amber-600"
+                                })}
+                                <span className="text-xs font-medium text-amber-700 truncate max-w-[180px]" title={peak.publicLand.name}>
+                                    {peak.publicLand.name.replace(/ (National Park|National Monument|Wilderness|Wilderness Study Area)$/i, "")} {getLandTypeAbbrev(peak.publicLand.type)}
+                                </span>
+                            </div>
+                        )}
                     </div>
                     {peakId && <PeakActivityIndicator peakId={peakId} compact />}
                 </div>

@@ -2,7 +2,6 @@
 
 import React, { useEffect } from "react";
 import {
-    Mountain,
     Trophy,
     Loader2,
     Calendar,
@@ -10,6 +9,7 @@ import {
     Users,
     BarChart3,
 } from "lucide-react";
+import Logo from "@/components/brand/Logo";
 import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 import { useIsAuthenticated } from "@/hooks/useRequireAuth";
@@ -394,7 +394,7 @@ const DashboardContent = ({ isActive = true, showHeader = false }: DashboardCont
         return (
             <div className="space-y-6">
                 <div className="text-center py-8">
-                    <Mountain className="w-12 h-12 text-muted-foreground mx-auto mb-3" />
+                    <Logo size={48} className="text-muted-foreground mx-auto mb-3" />
                     <p className="text-foreground font-medium">
                         Sign in to track your summits
                     </p>
@@ -434,7 +434,7 @@ const DashboardContent = ({ isActive = true, showHeader = false }: DashboardCont
             {showHeader && (
                 <div className="flex items-center gap-3 mb-4">
                     <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
-                        <Mountain className="w-5 h-5 text-primary" />
+                        <Logo size={20} className="text-primary" />
                     </div>
                     <div>
                         <h1

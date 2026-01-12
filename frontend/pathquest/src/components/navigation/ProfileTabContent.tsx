@@ -3,6 +3,7 @@
 import React from "react";
 import { Mountain, BookOpen, Trophy, ClipboardCheck, BarChart3, LogIn } from "lucide-react";
 import { cn } from "@/lib/utils";
+import Logo from "@/components/brand/Logo";
 import { useTabStore, ProfileSubTab } from "@/store/tabStore";
 import { useIsAuthenticated } from "@/hooks/useRequireAuth";
 import { useAuthModalStore } from "@/providers/AuthModalProvider";
@@ -71,7 +72,7 @@ const ProfileTabContent = ({ isActive }: ProfileTabContentProps) => {
     if (!isAuthenticated || !userId) {
         return (
             <div className="text-center py-10 px-4">
-                <Mountain className="w-12 h-12 text-muted-foreground mx-auto mb-3" />
+                <Logo size={48} className="text-muted-foreground mx-auto mb-3" />
                 <p className="text-foreground font-medium">Sign in to view your profile</p>
                 <p className="text-sm text-muted-foreground mt-1">
                     Track your peaks, summit journal, and challenges

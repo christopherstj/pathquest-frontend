@@ -16,6 +16,8 @@ import {
     Loader2,
     AlertTriangle,
     Search,
+    Sun,
+    Moon,
 } from "lucide-react";
 import {
     Dialog,
@@ -39,6 +41,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { useUserManagementStore } from "@/providers/UserManagementProvider";
+import { useTheme } from "next-themes";
 import getUser from "@/actions/users/getUser";
 import updateUser from "@/actions/users/updateUser";
 import deleteUser from "@/actions/users/deleteUser";
@@ -75,6 +78,7 @@ const UserManagementModal = () => {
     const { data: session, status } = useSession();
     const isOpen = useUserManagementStore((state) => state.isOpen);
     const closeModal = useUserManagementStore((state) => state.closeModal);
+    const { theme, setTheme } = useTheme();
 
     // Form state
     const [isLoading, setIsLoading] = useState(true);
@@ -512,6 +516,33 @@ const UserManagementModal = () => {
 
                             {/* Toggle Settings */}
                             <div className="space-y-4">
+                                {/* Dark Mode Toggle */}
+                                <div className="flex items-center justify-between">
+                                    <div className="flex items-start gap-3">
+                                        {theme === "dark" ? (
+                                            <Moon className="w-4 h-4 text-muted-foreground mt-0.5" />
+                                        ) : (
+                                            <Sun className="w-4 h-4 text-muted-foreground mt-0.5" />
+                                        )}
+                                        <div className="space-y-0.5">
+                                            <label
+                                                htmlFor="dark-mode"
+                                                className="text-sm font-medium cursor-pointer"
+                                            >
+                                                Dark Mode
+                                            </label>
+                                            <p className="text-xs text-muted-foreground">
+                                                Switch between light and dark themes
+                                            </p>
+                                        </div>
+                                    </div>
+                                    <Switch
+                                        id="dark-mode"
+                                        checked={theme === "dark"}
+                                        onCheckedChange={(checked) => setTheme(checked ? "dark" : "light")}
+                                    />
+                                </div>
+
                                 {/* Update Strava Descriptions */}
                                 <div className="flex items-center justify-between">
                                     <div className="flex items-start gap-3">

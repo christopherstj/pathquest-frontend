@@ -25,10 +25,12 @@ Next.js 16 App Router structure with route groups and parallel routes.
 #### Root Layout (`layout.tsx`)
 - Provides theme provider (dark mode by default, retro topo palette)
 - NextAuth session provider
-- Persistent MapProvider with Mapbox background (map stays mounted while overlays change)
+- Persistent MapProvider (map context available app-wide)
 - Analytics integration (Vercel Analytics)
 - Global fonts configuration (Fraunces + IBM Plex Mono)
-- Parallel route slot `@overlay` for intercepted routes (peak/challenge details)
+- **Uses `AppShell` component** to conditionally render:
+  - **App routes** (`/`, `/explore`, `/peaks/*`, etc.): Map background, overlay manager, modals
+  - **Standalone routes** (`/about`, `/faq`, `/contact`): Full-screen scrollable pages (no map, no overlay UI)
 
 #### Static Detail Pages
 
@@ -106,6 +108,31 @@ src/app/
   - All summited peaks displayed on map via `useProfileMapEffects` hook (only when viewing the Profile **Peaks** sub-tab)
   - Searchable peaks and summits lists
 
+##### Standalone Pages (Full-Screen, No Map)
+
+The following routes are **standalone pages** that render as traditional full-screen web pages without the map or overlay UI. This is handled by `AppShell`, which detects these routes and renders children directly instead of the map+overlay layout. This approach provides:
+- Better SEO (clean HTML, fast LCP, no competing JS)
+- Better reading experience (no map distraction, full-width content)
+- Proper scrolling for long-form content and forms
+
+###### `/about` (About Page - Static/SEO)
+- Static page with SEO metadata and Schema.org `WebApplication` structured data
+- Content sections: Hero, What is PathQuest, Key Features, How It Works
+- Links to FAQ and Contact pages
+
+###### `/faq` (FAQ Page - Static/SEO)
+- Static page with SEO metadata and Schema.org `FAQPage` structured data for Google rich snippets
+- Accordion-style FAQ organized by category: Getting Started, Strava Integration, Summit Detection, Challenges, Privacy & Data
+- Client component with expand/collapse state
+- Links to Contact page
+
+###### `/contact` (Contact Page)
+- Contact form with Name, Email, Message fields
+- Client-side validation with error states
+- Honeypot field for spam prevention
+- Submits to `/api/contact` route for Resend email delivery
+- Success/error states with friendly messaging
+
 ##### Legacy Routes (Removed)
 - `/login`, `/signup`, `/signup/email-form`, `/m/*` routes have been removed
 - Auth is now handled via the `AuthModal` component (modal overlay)
@@ -130,6 +157,14 @@ src/app/
 - Returns: `{ lat, lng, city, region, country }` or `null` if unavailable
 - Used by `useInitialMapLocation` hook as part of the location fallback chain
 - Note: Vercel geo headers are only available in production/preview deployments, not local dev
+
+##### Contact (`api/contact/route.ts`)
+- POST endpoint for contact form submissions
+- Validates name, email, message fields
+- Honeypot field check for spam prevention
+- Rate limiting: 5 requests per hour per IP (in-memory store)
+- Sends email via Resend API with HTML and plain text versions
+- Environment variables: `RESEND_API_KEY`, `CONTACT_EMAIL`
 
 ##### Dashboard (`api/dashboard/`)
 - `favorite-challenges/route.ts` - Fetches user's favorite challenges (in-progress/not-started only). Now includes `lastProgressDate` and `lastProgressCount` fields.
@@ -244,8 +279,10 @@ Photo upload and management actions (Stage 4):
 #### App Components (`components/app/`)
 
 ##### Layout (`components/app/layout/`)
+- `AppShell.tsx` - **Conditional layout wrapper** that detects standalone vs app routes. For app routes (`/`, `/explore`, `/peaks/*`, etc.), renders the map background, global navigation, overlay manager, and modals. For standalone routes (`/about`, `/faq`, `/contact`), renders children as full-screen scrollable pages without map or overlay UI. This provides better SEO and reading experience for static content pages.
 - `GlobalNavigation.tsx` - Top navigation bar with logo, search omnibar, and user menu. User dropdown includes Profile, Settings (opens UserManagementModal), and Logout options.
 - `SidebarLink.tsx` - Sidebar link component
+- `Footer.tsx` - Pane footer links (About/FAQ/Contact). Rendered at the bottom of the scrollable "display pane" (desktop side panel + mobile sheet) so it appears when the user scrolls to the bottom.
 
 ##### Brand (`components/brand/`)
 - `Logo.tsx` - SVG logo component with topographic contour-line mountain design. Uses currentColor for theming, supports size prop.
@@ -258,7 +295,7 @@ Photo upload and management actions (Stage 4):
 - `PeakDetailContent.tsx` - Peak detail content with SSR data (used by static pages). Uses shared UI components.
 - `PeakCommunity.tsx` - Community summit history display component. Shows public summits with user names (linking to profile pages when user_id is available), weather conditions, difficulty/experience ratings as pill-style chips, and condition tags as small pills. User avatar and name are clickable links to `/users/[user_id]`. **Note**: Activity links have been removed to comply with Strava API guidelines (Strava data can only be shown to the activity owner). Public summits only display PathQuest-derived data (timestamp, notes, ratings, weather). Uses shared `PublicSummitCard`. **Uses React Query cursor-based infinite scrolling** (`useInfiniteQuery`) for efficient pagination of peaks with hundreds of summits. Fetches from `/api/peaks/[id]/public-summits` endpoint with cursor pagination.
 - `PeakUserActivity.tsx` - User's activity display for a peak (shows user's ascents, activities, and allows editing). Peak **Journal** sub-tab now reuses `JournalEntryCard` styling for summit entries, but displays the **activity title** as the primary title line (owner-only; not a Strava privacy issue). Activity cards link to `/activities/[id]` detail pages.
-- `PeakDetailsTab.tsx` - Peak details tab content showing current weather conditions and challenges the peak belongs to. Used in the "Details" sub-tab of peak detail views. Shows challenge progress bars for authenticated users. Uses shared `ChallengeLinkItem`. Includes "Flag Coordinates for Review" button (auth only) that calls `flagPeakForReview` action to set `needs_review = true` for manual review via the review tool. Shows confirmation message after successful flagging.
+- `PeakDetailsTab.tsx` - Peak details tab content showing current weather conditions, public land information, and challenges the peak belongs to. Used in the "Details" sub-tab of peak detail views. Shows challenge progress bars for authenticated users. Uses shared `ChallengeLinkItem`. **Public Land Section**: When a peak is within a public land (National Park, Wilderness, National Forest, etc.), displays the land name, designation type badge, and managing agency. Uses icon mapping for different land types (Landmark for parks/monuments, Trees for forests, Shield for wilderness). Includes "Flag Coordinates for Review" button (auth only) that calls `flagPeakForReview` action to set `needs_review = true` for manual review via the review tool. Shows confirmation message after successful flagging.
 - `ChallengeDetailContent.tsx` - Challenge detail content with SSR data (used by static pages). Uses shared UI components.
 - `DashboardPanel.tsx` - User dashboard panel (authenticated only). Wrapper component that renders DashboardContent.
 - `DashboardContent.tsx` - Dashboard content component (refactored December 2024). When not authenticated, shows login CTA + a guest “community is alive” feed (recent public summits + popular challenges). When authenticated, shows a small Home sub-tab switcher (**Dashboard** / **Recent**) with the selection persisted in localStorage (`pathquest:homeSubTab`):\n+  - **Dashboard** (default): shows:
@@ -852,6 +889,10 @@ Required environment variables:
 - `NEXT_PUBLIC_MAPBOX_TOKEN` - Mapbox access token
 - `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` - Stripe publishable key
 
+Optional environment variables:
+- `RESEND_API_KEY` - Resend API key for contact form email delivery
+- `CONTACT_EMAIL` - Email address to receive contact form submissions (default: hello@pathquest.app)
+
 
 ## Build & Deployment
 
@@ -980,7 +1021,7 @@ Several components have grown large and handle multiple responsibilities, making
      - Extracted Explore UI modules into `components/navigation/explore/`:
        - `ExploreContent.tsx` (content router)
        - `ExploreDiscoveryContent.tsx`
-       - `ExplorePeakContent.tsx`
+       - `ExplorePeakContent.tsx` (peak detail view with public land badge for notable lands like National Parks, Wilderness Areas)
        - `ExploreChallengeContent.tsx`
        - `ExploreUserChallengeContent.tsx`
        - `ExploreActivityContent.tsx`
