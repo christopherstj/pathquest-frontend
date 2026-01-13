@@ -357,6 +357,18 @@ export default function ContactPage() {
                             FAQ
                         </Link>
                         <Link
+                            href="/privacy"
+                            className="text-muted-foreground hover:text-foreground transition-colors"
+                        >
+                            Privacy
+                        </Link>
+                        <Link
+                            href="/terms"
+                            className="text-muted-foreground hover:text-foreground transition-colors"
+                        >
+                            Terms
+                        </Link>
+                        <Link
                             href="/contact"
                             className="text-foreground font-medium"
                         >

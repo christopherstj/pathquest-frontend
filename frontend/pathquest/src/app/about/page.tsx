@@ -279,34 +279,46 @@ export default function AboutPage() {
                     </div>
                 </section>
 
-                {/* Footer Navigation */}
-                <footer className="py-8 px-6 border-t border-border/50">
-                    <div className="max-w-4xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
-                        <nav className="flex items-center gap-6 text-sm">
-                            <Link
-                                href="/about"
-                                className="text-foreground font-medium"
-                            >
-                                About
-                            </Link>
-                            <Link
-                                href="/faq"
-                                className="text-muted-foreground hover:text-foreground transition-colors"
-                            >
-                                FAQ
-                            </Link>
-                            <Link
-                                href="/contact"
-                                className="text-muted-foreground hover:text-foreground transition-colors"
-                            >
-                                Contact
-                            </Link>
-                        </nav>
-                        <p className="text-sm text-muted-foreground">
-                            &copy; {new Date().getFullYear()} PathQuest
-                        </p>
-                    </div>
-                </footer>
+            {/* Footer Navigation */}
+            <footer className="py-8 px-6 border-t border-border/50">
+                <div className="max-w-4xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
+                    <nav className="flex items-center gap-6 text-sm">
+                        <Link
+                            href="/about"
+                            className="text-foreground font-medium"
+                        >
+                            About
+                        </Link>
+                        <Link
+                            href="/faq"
+                            className="text-muted-foreground hover:text-foreground transition-colors"
+                        >
+                            FAQ
+                        </Link>
+                        <Link
+                            href="/privacy"
+                            className="text-muted-foreground hover:text-foreground transition-colors"
+                        >
+                            Privacy
+                        </Link>
+                        <Link
+                            href="/terms"
+                            className="text-muted-foreground hover:text-foreground transition-colors"
+                        >
+                            Terms
+                        </Link>
+                        <Link
+                            href="/contact"
+                            className="text-muted-foreground hover:text-foreground transition-colors"
+                        >
+                            Contact
+                        </Link>
+                    </nav>
+                    <p className="text-sm text-muted-foreground">
+                        &copy; {new Date().getFullYear()} PathQuest
+                    </p>
+                </div>
+            </footer>
             </div>
         </>
     );

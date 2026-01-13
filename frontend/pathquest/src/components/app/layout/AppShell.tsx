@@ -14,7 +14,7 @@ import UserManagementModal from "@/components/overlays/UserManagementModal";
  * Static/standalone routes that render as full-screen pages.
  * These pages don't show the map, overlay UI, or navigation.
  */
-const STANDALONE_ROUTES = ["/about", "/faq", "/contact"];
+const STANDALONE_ROUTES = ["/about", "/faq", "/contact", "/privacy", "/terms"];
 
 /**
  * Check if the current pathname is a standalone route.

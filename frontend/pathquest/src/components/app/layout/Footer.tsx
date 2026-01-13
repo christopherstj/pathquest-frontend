@@ -14,7 +14,7 @@ const Footer = () => {
 
     return (
         <footer className="mt-10 border-t border-border/50 px-4 py-6">
-            <nav className="flex items-center justify-center gap-4 text-sm">
+            <nav className="flex items-center justify-center gap-4 text-sm flex-wrap">
                 <Link
                     href="/about"
                     className="text-muted-foreground hover:text-foreground transition-colors"
@@ -27,6 +27,20 @@ const Footer = () => {
                     className="text-muted-foreground hover:text-foreground transition-colors"
                 >
                     FAQ
+                </Link>
+                <span className="text-border">|</span>
+                <Link
+                    href="/privacy"
+                    className="text-muted-foreground hover:text-foreground transition-colors"
+                >
+                    Privacy
+                </Link>
+                <span className="text-border">|</span>
+                <Link
+                    href="/terms"
+                    className="text-muted-foreground hover:text-foreground transition-colors"
+                >
+                    Terms
                 </Link>
                 <span className="text-border">|</span>
                 <Link
