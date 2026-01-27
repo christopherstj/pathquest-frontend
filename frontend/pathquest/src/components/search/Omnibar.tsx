@@ -7,12 +7,9 @@ import { useRouterRef } from "@/hooks/use-stable-ref";
 import { cn } from "@/lib/utils";
 import { useMapStore } from "@/providers/MapProvider";
 import { useQuery } from "@tanstack/react-query";
-import Peak from "@/typeDefs/Peak";
-import ChallengeProgress from "@/typeDefs/ChallengeProgress";
 import { useRouter, usePathname } from "next/navigation";
-import { searchPeaksClient } from "@/lib/client/searchPeaksClient";
-import { searchChallengesClient } from "@/lib/client/searchChallengesClient";
-import { expandSearchQuery, extractStateFromQuery } from "@/helpers/stateAbbreviations";
+import { unifiedSearchClient } from "@/lib/client/unifiedSearchClient";
+import type { PeakSearchResult, ChallengeSearchResult, UnifiedSearchResult } from "@pathquest/shared/types";
 import metersToFt from "@/helpers/metersToFt";
 import { getMapboxToken } from "@/lib/map/getMapboxToken";
 
@@ -27,7 +24,7 @@ interface SearchResult {
 
 // Maximum results per category to prevent one type from dominating
 const MAX_CHALLENGES = 4;
-const MAX_PEAKS = 3;
+const MAX_PEAKS = 6;
 const MAX_PLACES = 3;
 
 // Debounce delay in milliseconds
@@ -59,173 +56,72 @@ const Omnibar = () => {
             if (debouncedQuery.length < 2) return [];
 
             const bounds = map?.getBounds();
-            const nw = bounds?.getNorthWest();
-            const se = bounds?.getSouthEast();
+            const center = map?.getCenter();
             
-            const boundsParams = nw && se ? {
-                 nw: { lat: nw.lat, lng: nw.lng },
-                 se: { lat: se.lat, lng: se.lng },
-            } : undefined;
+            // Build bounds array for viewport boosting [minLng, minLat, maxLng, maxLat]
+            const boundsArray = bounds ? [
+                bounds.getWest(),
+                bounds.getSouth(),
+                bounds.getEast(),
+                bounds.getNorth(),
+            ] as [number, number, number, number] : undefined;
 
-            // Extract state filter from query (e.g., "mount washington nh" → search: "mount washington", state: "New Hampshire")
-            const { search: peakSearch, state: stateFilter } = extractStateFromQuery(debouncedQuery);
-            
-            // Expand search query to include state abbreviation variants (for challenges)
-            const searchTerms = expandSearchQuery(debouncedQuery);
-            const primarySearch = searchTerms[0];
-            const expandedSearch = searchTerms.length > 1 ? searchTerms[1] : null;
-
-            // Run searches in parallel
-            // For peaks: Always search without state filter for broad name matching
-            // If state is detected, also search with state filter to prioritize those results
-            const searchPromises = [
-                // Visible Challenges (primary search)
-                boundsParams ? searchChallengesClient({
-                    search: primarySearch,
-                    bounds: boundsParams,
-                }) : Promise.resolve([]),
-                // Global Challenges (primary search)
-                searchChallengesClient({
-                    search: primarySearch,
+            // Run unified search and Mapbox places search in parallel
+            const [unifiedResults, places] = await Promise.all([
+                // Unified search - handles peaks and challenges with relevancy scoring
+                // The API now matches against name + state + country, so "mt washington nh" works naturally
+                unifiedSearchClient({
+                    query: debouncedQuery,
+                    lat: center?.lat,
+                    lng: center?.lng,
+                    bounds: boundsArray,
+                    limit: 15,
+                    includePeaks: true,
+                    includeChallenges: true,
                 }),
-                // Visible Peaks (WITHOUT state filter - broad name matching)
-                boundsParams ? searchPeaksClient({
-                    search: debouncedQuery,
-                    bounds: boundsParams,
-                    perPage: "10",
-                    showSummitted: true,
-                }) : Promise.resolve([]),
-                // Global Peaks (WITHOUT state filter - broad name matching)
-                searchPeaksClient({
-                    search: debouncedQuery,
-                    perPage: "10",
-                    showSummitted: true,
-                }),
-                // Places - include region (states) and poi (national parks, forests, etc.)
+                // Mapbox places search for geographic locations
                 fetch(
-                    `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(primarySearch)}.json?access_token=${getMapboxToken()}&types=region,place,poi,locality&country=us`
+                    `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(debouncedQuery)}.json?access_token=${getMapboxToken()}&types=region,place,poi,locality&country=us`
                 ).then(res => res.json()),
-                // State-filtered Peaks (only if state detected) - these get priority
-                stateFilter ? searchPeaksClient({
-                    search: peakSearch || debouncedQuery,
-                    state: stateFilter,
-                    perPage: "10",
-                    showSummitted: true,
-                }) : Promise.resolve([]),
-            ];
+            ]);
 
-            // Add expanded search if we have state abbreviation variants
-            if (expandedSearch) {
-                searchPromises.push(
-                    // Expanded Challenges
-                    searchChallengesClient({
-                        search: expandedSearch,
-                    }),
-                    // Expanded Peaks
-                    searchPeaksClient({
-                        search: expandedSearch,
-                        perPage: "5",
-                        showSummitted: true,
-                    }),
-                );
-            }
-
-            const results = await Promise.all(searchPromises);
-
-            const [
-                visibleChallenges,
-                globalChallenges,
-                visiblePeaks,
-                globalPeaks,
-                places,
-                stateFilteredPeaks,
-                expandedChallenges,
-                expandedPeaks,
-            ] = results as [
-                ChallengeProgress[],
-                ChallengeProgress[],
-                Peak[],
-                Peak[],
-                any,
-                Peak[],
-                ChallengeProgress[] | undefined,
-                Peak[] | undefined,
-            ];
-
-            // Deduplicate Challenges (visible first, then global, then expanded)
-            const challengeMap = new Map<string, ChallengeProgress>();
-            (visibleChallenges || []).forEach((c) => challengeMap.set(c.id, c));
-            (globalChallenges || []).forEach((c) => {
-                if (!challengeMap.has(c.id)) challengeMap.set(c.id, c);
-            });
-            (expandedChallenges || []).forEach((c) => {
-                if (!challengeMap.has(c.id)) challengeMap.set(c.id, c);
-            });
-            const challenges = Array.from(challengeMap.values());
-
-            // Deduplicate and prioritize Peaks while preserving backend relevancy order:
-            // Backend already sorts by relevancy, so we preserve that order when merging
-            // For name-based searches (like "mt whitney"), prioritize global results over map-bounded results
-            // to avoid showing irrelevant local peaks just because they're on the map
-            // 1. State-filtered peaks first (if state was detected in query) - already sorted by relevancy
-            // 2. Then global peaks - prioritize these for name searches to avoid map location bias
-            // 3. Then visible peaks in bounds - only add if not already in results
-            // 4. Then expanded search peaks - already sorted by relevancy
-            const seenPeakIds = new Set<string>();
-            const peaks: Peak[] = [];
-            
-            // Add peaks in order, skipping duplicates (preserves relevancy order from backend)
-            const addPeaksIfNew = (peakList: Peak[]) => {
-                peakList.forEach((p) => {
-                    if (!seenPeakIds.has(p.id)) {
-                        seenPeakIds.add(p.id);
-                        peaks.push(p);
-                    }
-                });
-            };
-            
-            // Add state-filtered peaks first (highest priority, already sorted by relevancy)
-            if (stateFilteredPeaks) {
-                addPeaksIfNew(stateFilteredPeaks);
-            }
-            
-            // Add global peaks BEFORE visible peaks to prioritize name matches over map location
-            // This ensures "mt whitney" shows Mount Whitney (CA) even when map is centered on NH
-            if (globalPeaks) {
-                addPeaksIfNew(globalPeaks);
-            }
-            
-            // Add visible peaks (only if not already added from global search)
-            // This reduces map location bias for specific name searches
-            if (visiblePeaks) {
-                addPeaksIfNew(visiblePeaks);
-            }
-            
-            // Add expanded search peaks (already sorted by relevancy)
-            if (expandedPeaks) {
-                addPeaksIfNew(expandedPeaks);
-            }
+            // Separate peaks and challenges from unified results
+            const peaks = unifiedResults.results.filter(
+                (r): r is PeakSearchResult => r.type === "peak"
+            );
+            const challenges = unifiedResults.results.filter(
+                (r): r is ChallengeSearchResult => r.type === "challenge"
+            );
 
             // Convert to SearchResult format
             const challengeResults: SearchResult[] = challenges
                 .slice(0, MAX_CHALLENGES)
-                .map((c: ChallengeProgress) => ({
+                .map((c) => ({
                     id: `challenge-${c.id}`,
                     type: "challenge" as const,
                     title: c.name,
-                    subtitle: `${c.num_peaks || c.total} Peaks${c.region ? ` • ${c.region}` : ''}`,
+                    subtitle: `${c.numPeaks} Peaks${c.region ? ` • ${c.region}` : ''}`,
                     data: c
                 }));
 
             const peakResults: SearchResult[] = peaks
                 .slice(0, MAX_PEAKS)
-                .map((p: Peak) => ({
+                .map((p) => ({
                     id: `peak-${p.id}`,
                     type: "peak" as const,
                     title: p.name || "Unknown Peak",
                     subtitle: `${p.elevation ? `${Math.round(metersToFt(p.elevation)).toLocaleString()} ft` : ''}${p.state ? ` • ${p.state}` : ''}`,
                     coords: p.location_coords,
-                    data: p
+                    data: {
+                        id: p.id,
+                        name: p.name,
+                        elevation: p.elevation,
+                        state: p.state,
+                        country: p.country,
+                        location_coords: p.location_coords,
+                        public_summits: p.publicSummits,
+                        summits: p.userSummits,
+                    }
                 }));
 
             // Filter places to prioritize outdoor-relevant results
@@ -395,9 +291,9 @@ const Omnibar = () => {
                     <div className="py-2">
                         {results.map((result) => {
                             // Check summit status for peaks
-                            const peak = result.type === 'peak' ? result.data as Peak : null;
-                            const hasSummited = peak && isAuthenticated && (peak.summits ?? 0) > 0;
-                            const hasPublicSummits = peak && (peak.public_summits ?? 0) > 0;
+                            const peakData = result.type === 'peak' ? result.data : null;
+                            const hasSummited = peakData && isAuthenticated && (peakData.summits ?? 0) > 0;
+                            const hasPublicSummits = peakData && (peakData.public_summits ?? 0) > 0;
                             
                             return (
                                 <button
@@ -434,7 +330,7 @@ const Omnibar = () => {
                                                     <div className="flex items-center gap-1 text-xs text-muted-foreground">
                                                         <Users className="w-3 h-3" />
                                                         <span>
-                                                            {peak?.public_summits} {peak?.public_summits === 1 ? "summit" : "summits"}
+                                                            {peakData?.public_summits} {peakData?.public_summits === 1 ? "summit" : "summits"}
                                                         </span>
                                                     </div>
                                                 )}
@@ -442,7 +338,7 @@ const Omnibar = () => {
                                                     <div className="flex items-center gap-1 text-xs text-summited font-medium">
                                                         <User className="w-3 h-3" />
                                                         <span>
-                                                            {peak?.summits} {peak?.summits === 1 ? "summit" : "summits"}
+                                                            {peakData?.summits} {peakData?.summits === 1 ? "summit" : "summits"}
                                                         </span>
                                                     </div>
                                                 )}

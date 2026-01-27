@@ -560,7 +560,8 @@ Utility functions for common operations.
 
 #### Client Fetchers (`lib/client/`)
 - `api.ts` - Client-safe fetch helper utilities (`buildUrl`, `fetchLocalJson`) for local Next route proxies
-- `searchPeaksClient.ts` - Client search for peaks (supports bounds, pagination, showSummitted flag) via `/api/search/peaks`
+- `unifiedSearchClient.ts` - Client-side unified search for peaks and challenges via `/api/search` (uses relevancy-based scoring, matches against name + state + country)
+- `searchPeaksClient.ts` - Legacy client search for peaks (supports bounds, pagination, showSummitted flag) via `/api/search/peaks`
 - `searchChallengesClient.ts` - Client search for challenges (supports bounds, favorites, type filters) via `/api/search/challenges`
 
 #### Map (`lib/map/`)
@@ -691,9 +692,11 @@ Next.js middleware for legacy route redirects:
 
 ### Omnibar Search Flow
 1. User types into the Omnibar (global navigation).
-2. Search query is expanded using state abbreviation utilities (e.g., "nh" also searches "new hampshire").
-3. State extraction is smart: only extracts state if remaining search term is meaningful (e.g., "mount washington" keeps the full term, "mount washington nh" extracts NH).
-4. Peak searches always include broad name matching (without state filter). If state is detected, an additional state-filtered search runs in parallel.
+2. Search query is sent to the unified search API (`/api/search`) which provides relevancy-based ranking.
+3. The API matches against a searchable text field combining peak name + state abbreviation + full state name + country (e.g., "Mount Washington NH New Hampshire United States").
+4. This allows natural searches like "mt washington nh" without complex client-side state parsing.
+5. Results are ranked by: text match quality, geographic proximity, public popularity, and personal relevance (if authenticated).
+6. Mapbox Places API is queried in parallel for geographic locations (states, cities, parks).
 5. Client fetchers call REST API for challenges (with case-insensitive name AND region matching) and peaks.
 6. Mapbox geocoding searches for regions (states), places (cities), POIs (national parks/forests), and localities.
 7. Results are prioritized: Challenges first (max 4), then Peaks (max 3, with state-matched peaks first), then Places (max 3).
