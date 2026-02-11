@@ -213,6 +213,7 @@ const MapBackground = () => {
         applyTerrainSettings();
         
         function applyTerrainSettings() {
+            if (!map) return;
             // Ensure DEM source exists
             if (!map.getSource('mapbox-dem')) {
                 map.addSource('mapbox-dem', {

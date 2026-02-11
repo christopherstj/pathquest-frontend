@@ -2,14 +2,14 @@
 
 import getSessionToken from "@/auth/getSessionToken";
 import getBackendUrl from "@/helpers/getBackendUrl";
-import { createApiClient, endpoints, UpdateActivityReportInput } from "@pathquest/shared/api";
+import { createApiClient, endpoints } from "@pathquest/shared/api";
 import type { Activity } from "@pathquest/shared/types";
 
 const backendUrl = getBackendUrl();
 
 const updateActivityReport = async (
     activityId: string,
-    data: UpdateActivityReportInput
+    data: Parameters<typeof endpoints.updateActivityReport>[2]
 ): Promise<Activity | null> => {
     const token = await getSessionToken();
 
