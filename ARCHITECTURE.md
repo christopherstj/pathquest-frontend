@@ -244,6 +244,7 @@ For static ISR pages (`/peaks/[id]`, `/challenges/[id]`), always use the "Public
 - `toggleFavoritePeak.ts` - Toggles peak favorite status
 - `updateAscent.ts` - Updates ascent details
 - `flagPeakForReview.ts` - Flags a peak for coordinate review (sets `needs_review = true`). Calls `POST /api/peaks/:id/flag-for-review` endpoint. Used by `PeakDetailsTab` component to allow users to report incorrect peak locations.
+- `getPeakConditions.ts` - Fetches full peak conditions (weather, recent weather, summit window). Calls `endpoints.getPeakConditions()` from shared package. Used by `EnhancedConditions` component via React Query.
 
 #### Users (`actions/users/`)
 - `createUser.ts` - Creates new user account
@@ -402,7 +403,16 @@ Unified navigation system (December 2024) with fixed 3-tab structure for both mo
 - `MapBackground.tsx` - Main Mapbox map component with persistent background. Handles map initialization, 3D terrain, satellite mode, peak/challenge data loading, URL state synchronization, and **map padding based on drawer height** (mobile only). Uses `getTrueMapCenter()` to calculate the true geographic center accounting for padding when updating URL state. **Location-aware initialization** via `useInitialMapLocation` hook - map initializes at Boulder then flies to user's resolved location (browser geolocation → IP geolocation → user profile → Boulder default). URL writes are suppressed until location resolution completes to prevent baking default coordinates into URL.
 
 ##### Peaks (`components/app/peaks/`)
-- `CurrentConditions.tsx` - Live weather display for peak detail panels. Fetches from `/api/weather` route (Open-Meteo). Shows temperature, feels like, conditions, wind, humidity.
+- `CurrentConditions.tsx` - **DEPRECATED** — Replaced by `EnhancedConditions.tsx`. Legacy live weather display for peak detail panels.
+
+##### Peak Conditions (`components/peaks/conditions/`)
+- `CurrentWeatherSection.tsx` - Current weather card showing temperature, feels like, weather description, wind speed, humidity, precipitation probability. Converts Celsius→Fahrenheit and km/h→mph.
+- `SummitWindowStrip.tsx` - 7-day color-coded summit window score strip. Shows best-day callout, per-day scores (0-100) with labels (Excellent/Good/Marginal/Poor/Dangerous), and Go/Caution/Avoid legend.
+- `ForecastSection.tsx` - 7-day daily forecast with weather icons, high/low temps, precipitation probability, and wind speed.
+- `RecentWeatherSection.tsx` - Last 7 days observed weather summary showing total precipitation, snowfall, and daily breakdown.
+
+##### Peak Conditions Parent (`components/peaks/`)
+- `EnhancedConditions.tsx` - Main conditions component that replaces `CurrentConditions`. Uses React Query (`queryKey: ["peakConditions", peakId]`, 15min stale time) via `getPeakConditions` server action. Composes CurrentWeatherSection, SummitWindowStrip, ForecastSection, and RecentWeatherSection. Props: `{ peakId: string }`.
 
 ##### Peak Components (`components/peaks/`)
 - `PeakActivityIndicator.tsx` - Shows recent summit activity on a peak. Fetches from `/api/peaks/[id]/activity`. Displays fire icon + "X this week" or trending icon + "X this month". Shows "Be the first this week!" when no recent activity. Supports `compact` prop for inline display.
