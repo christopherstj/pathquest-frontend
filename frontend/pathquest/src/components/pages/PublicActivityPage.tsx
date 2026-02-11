@@ -10,7 +10,7 @@ import {
     MapPin,
     ArrowLeft,
 } from "lucide-react";
-import { format } from "date-fns";
+import dayjs from "@/helpers/dayjs";
 import type { PublicActivity } from "@pathquest/shared/types";
 import metersToFt from "@/helpers/metersToFt";
 import { cn } from "@/lib/utils";
@@ -49,7 +49,7 @@ const PublicActivityPage = ({ activity }: PublicActivityPageProps) => {
     // Format the date
     const formattedDate = React.useMemo(() => {
         try {
-            return format(new Date(activity.start_time), "MMMM d, yyyy");
+            return dayjs(activity.start_time).format("MMMM D, YYYY");
         } catch {
             return "";
         }

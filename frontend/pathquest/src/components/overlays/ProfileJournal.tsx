@@ -2,7 +2,7 @@
 
 import React, { useState, useRef, useEffect, useMemo } from "react";
 import { motion } from "framer-motion";
-import { format } from "date-fns";
+import dayjs from "@/helpers/dayjs";
 import Link from "next/link";
 import { BookOpen, Loader2, LayoutList, Layers, Mountain, FileText, Plus, Calendar, ChevronRight } from "lucide-react";
 import { useInfiniteQuery, useQueryClient } from "@tanstack/react-query";
@@ -235,7 +235,7 @@ const ProfileJournal = ({ userId }: ProfileJournalProps) => {
                             
                             const formattedDate = (() => {
                                 try {
-                                    return format(new Date(firstEntry.timestamp), "MMM d, yyyy");
+                                    return dayjs(firstEntry.timestamp).format("MMM D, YYYY");
                                 } catch {
                                     return "";
                                 }
@@ -316,8 +316,8 @@ const ProfileJournal = ({ userId }: ProfileJournalProps) => {
                     </motion.div>
                 )}
 
-                {/* Sentinel element for infinite scroll (only in summit view) */}
-                {viewMode === "summit" && <div ref={loadMoreRef} className="h-1" />}
+                {/* Sentinel element for infinite scroll */}
+                <div ref={loadMoreRef} className="h-1" />
 
                 {/* Loading More Indicator */}
                 {isFetchingNextPage && (

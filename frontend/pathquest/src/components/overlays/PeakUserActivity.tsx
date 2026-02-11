@@ -13,7 +13,7 @@ import {
     ChevronRight,
 } from "lucide-react";
 import Link from "next/link";
-import { format } from "date-fns";
+import dayjs from "@/helpers/dayjs";
 import { useMapStore } from "@/providers/MapProvider";
 import { useManualSummitStore } from "@/providers/ManualSummitProvider";
 import { useQueryClient } from "@tanstack/react-query";
@@ -245,7 +245,7 @@ const PeakUserActivity = ({ highlightedActivityId, onHighlightActivity }: PeakUs
                         
                         const formattedDate = (() => {
                             try {
-                                return format(new Date(firstSummit.timestamp), "MMM d, yyyy");
+                                return dayjs(firstSummit.timestamp).format("MMM D, YYYY");
                             } catch {
                                 return "";
                             }

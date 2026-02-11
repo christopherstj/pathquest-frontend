@@ -20,8 +20,7 @@ interface ForecastSectionProps {
     className?: string;
 }
 
-const celsiusToFahrenheit = (c: number) => Math.round((c * 9) / 5 + 32);
-const kmhToMph = (kmh: number) => Math.round(kmh * 0.621371);
+import { celsiusToFahrenheit, kmhToMph } from "@/components/app/summits/SummitItem";
 
 const getWeatherIcon = (code: number | null, size = "w-4 h-4") => {
     if (code === null) return <Cloud className={cn(size, "text-gray-400")} />;
@@ -69,11 +68,11 @@ const ForecastSection = ({ daily, className }: ForecastSectionProps) => {
                     {/* Temp range */}
                     <div className="flex items-baseline gap-1 min-w-[4.5rem]">
                         <span className="font-mono text-foreground">
-                            {day.tempHigh !== null ? celsiusToFahrenheit(day.tempHigh) : "--"}°
+                            {day.tempHigh !== null ? Math.round(celsiusToFahrenheit(day.tempHigh)) : "--"}°
                         </span>
                         <span className="text-xs text-muted-foreground">/</span>
                         <span className="font-mono text-muted-foreground text-xs">
-                            {day.tempLow !== null ? celsiusToFahrenheit(day.tempLow) : "--"}°
+                            {day.tempLow !== null ? Math.round(celsiusToFahrenheit(day.tempLow)) : "--"}°
                         </span>
                     </div>
 
@@ -89,7 +88,7 @@ const ForecastSection = ({ daily, className }: ForecastSectionProps) => {
                     {day.windSpeed !== null && (
                         <div className="flex items-center gap-0.5 text-xs text-muted-foreground ml-auto">
                             <Wind className="w-3 h-3" />
-                            {kmhToMph(day.windSpeed)}
+                            {Math.round(kmhToMph(day.windSpeed))}
                         </div>
                     )}
                 </div>

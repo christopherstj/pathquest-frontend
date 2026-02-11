@@ -9,7 +9,6 @@ import {
     CloudSnow,
     CloudFog,
     CloudLightning,
-    Thermometer,
     Wind,
     Droplets,
 } from "lucide-react";
@@ -21,8 +20,7 @@ interface CurrentWeatherSectionProps {
     className?: string;
 }
 
-const celsiusToFahrenheit = (c: number) => Math.round((c * 9) / 5 + 32);
-const kmhToMph = (kmh: number) => Math.round(kmh * 0.621371);
+import { celsiusToFahrenheit, kmhToMph } from "@/components/app/summits/SummitItem";
 
 const getWeatherIcon = (code: number | null, isDay: boolean | null) => {
     if (code === null) return <Cloud className="w-6 h-6 text-gray-400" />;
@@ -83,9 +81,9 @@ const getWeatherDescription = (code: number | null): string => {
 const CurrentWeatherSection = ({ current, className }: CurrentWeatherSectionProps) => {
     if (current.temperature === null) return null;
 
-    const tempF = celsiusToFahrenheit(current.temperature);
-    const feelsLikeF = current.feelsLike !== null ? celsiusToFahrenheit(current.feelsLike) : null;
-    const windMph = current.windSpeed !== null ? kmhToMph(current.windSpeed) : null;
+    const tempF = Math.round(celsiusToFahrenheit(current.temperature));
+    const feelsLikeF = current.feelsLike !== null ? Math.round(celsiusToFahrenheit(current.feelsLike)) : null;
+    const windMph = current.windSpeed !== null ? Math.round(kmhToMph(current.windSpeed)) : null;
 
     return (
         <div className={cn("p-4 rounded-xl bg-card border border-border/70", className)}>
@@ -125,7 +123,7 @@ const CurrentWeatherSection = ({ current, className }: CurrentWeatherSectionProp
                 )}
                 {current.precipitationProbability !== null && (
                     <div className="flex items-center gap-1.5 text-muted-foreground">
-                        <Thermometer className="w-3.5 h-3.5 text-orange-400" />
+                        <CloudRain className="w-3.5 h-3.5 text-blue-400" />
                         <span>{current.precipitationProbability}% precip</span>
                     </div>
                 )}

@@ -53,6 +53,7 @@ const MapBackground = () => {
     const router = useRouter();
     const searchParams = useSearchParams();
     const isInitialStyleSet = useRef(false);
+    const isInitial3DSet = useRef(false);
     // Initialize as false to suppress URL writes until location is resolved
     const isUserInteraction = useRef(false);
     // Track if we've already handled location resolution
@@ -190,7 +191,13 @@ const MapBackground = () => {
     // Toggle 3D terrain when is3D state changes
     useEffect(() => {
         if (!map) return;
-        
+
+        // Skip initial render to avoid overriding URL pitch
+        if (!isInitial3DSet.current) {
+            isInitial3DSet.current = true;
+            return;
+        }
+
         // Wait for style to be loaded before modifying sources/layers
         if (!map.isStyleLoaded()) {
             // If style isn't loaded yet, wait for it
