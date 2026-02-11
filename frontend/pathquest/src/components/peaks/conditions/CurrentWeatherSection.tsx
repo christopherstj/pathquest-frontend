@@ -12,11 +12,11 @@ import {
     Wind,
     Droplets,
 } from "lucide-react";
-import type { WeatherForecastCurrent } from "@pathquest/shared/types";
+import type { CurrentWeather } from "@pathquest/shared/types";
 import { cn } from "@/lib/utils";
 
 interface CurrentWeatherSectionProps {
-    current: WeatherForecastCurrent;
+    current: CurrentWeather;
     className?: string;
 }
 
