@@ -4,7 +4,7 @@ import React, { useState } from "react";
 import { Cloud, Trophy, Flag, Check, Trees, Mountain, Shield, Landmark } from "lucide-react";
 import Peak from "@/typeDefs/Peak";
 import Challenge from "@/typeDefs/Challenge";
-import CurrentConditions from "@/components/app/peaks/CurrentConditions";
+import EnhancedConditions from "@/components/peaks/EnhancedConditions";
 import { useIsAuthenticated } from "@/hooks/useRequireAuth";
 import ChallengeLinkItem from "@/components/lists/challenge-link-item";
 import flagPeakForReview from "@/actions/peaks/flagPeakForReview";
@@ -82,19 +82,14 @@ const PeakDetailsTab = ({ peak, challenges }: PeakDetailsTabProps) => {
 
     return (
         <div className="space-y-6">
-            {/* Current Conditions Section */}
-            {peak.location_coords && (
-                <div className="space-y-3">
-                    <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
-                        <Cloud className="w-4 h-4" />
-                        Current Conditions
-                    </h3>
-                    <CurrentConditions
-                        lat={peak.location_coords[1]}
-                        lng={peak.location_coords[0]}
-                    />
-                </div>
-            )}
+            {/* Conditions Section */}
+            <div className="space-y-3">
+                <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
+                    <Cloud className="w-4 h-4" />
+                    Conditions
+                </h3>
+                <EnhancedConditions peakId={peak.id} />
+            </div>
 
             {/* Public Land Section */}
             {peak.publicLand && (

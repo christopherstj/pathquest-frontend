@@ -81,6 +81,7 @@ export const ExploreActivityContent = ({
                 onClose={onClose}
                 onShowOnMap={onShowOnMap}
                 onHover={onHoverCoords}
+                isOwner={isActivityOwner}
             />
         </div>
     );

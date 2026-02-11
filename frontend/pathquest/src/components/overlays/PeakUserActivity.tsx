@@ -1,20 +1,30 @@
 "use client";
 
-import React from "react";
+import React, { useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import {
     Mountain,
     Route,
     Plus,
+    LayoutList,
+    Layers,
+    FileText,
+    Calendar,
+    ChevronRight,
 } from "lucide-react";
+import Link from "next/link";
+import { format } from "date-fns";
 import { useMapStore } from "@/providers/MapProvider";
 import { useManualSummitStore } from "@/providers/ManualSummitProvider";
 import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 import Summit from "@/typeDefs/Summit";
 import ActivityWithSummits from "@/components/app/activities/ActivityWithSummits";
 import { JournalEntryCard } from "@/components/journal";
 import { JournalEntry } from "@/typeDefs/JournalEntry";
+
+type ViewMode = "summit" | "activity";
 
 type PeakUserActivityProps = {
     highlightedActivityId?: string | null;
@@ -25,6 +35,36 @@ const PeakUserActivity = ({ highlightedActivityId, onHighlightActivity }: PeakUs
     const selectedPeakUserData = useMapStore((state) => state.selectedPeakUserData);
     const openManualSummit = useManualSummitStore((state) => state.openManualSummit);
     const queryClient = useQueryClient();
+    const [viewMode, setViewMode] = useState<ViewMode>("summit");
+
+    // Group ascents by activity for activity view
+    const groupedByActivity = useMemo(() => {
+        if (!selectedPeakUserData) return [];
+        
+        const groups: Map<string | null, Summit[]> = new Map();
+        
+        selectedPeakUserData.ascents.forEach((ascent) => {
+            const activityId = ascent.activity_id ? String(ascent.activity_id) : null;
+            if (!groups.has(activityId)) {
+                groups.set(activityId, []);
+            }
+            groups.get(activityId)!.push(ascent);
+        });
+        
+        // Convert to array and sort by most recent summit in each group
+        return Array.from(groups.entries())
+            .map(([activityId, summits]) => ({
+                activityId,
+                summits: summits.sort((a, b) => 
+                    new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+                ),
+                mostRecentTimestamp: summits.reduce((latest, s) => {
+                    const ts = new Date(s.timestamp).getTime();
+                    return ts > latest ? ts : latest;
+                }, 0),
+            }))
+            .sort((a, b) => b.mostRecentTimestamp - a.mostRecentTimestamp);
+    }, [selectedPeakUserData]);
 
     if (!selectedPeakUserData) {
         return (
@@ -87,13 +127,44 @@ const PeakUserActivity = ({ highlightedActivityId, onHighlightActivity }: PeakUs
             transition={{ duration: 0.15 }}
             className="space-y-5"
         >
-            {/* Summary */}
-            <div className="flex items-center gap-2 text-muted-foreground pb-3 border-b border-border/60">
-                <Mountain className="w-4 h-4" />
-                <span className="text-sm">
-                    {totalSummits} summit{totalSummits !== 1 ? "s" : ""}
-                    {totalActivities > 0 && ` • ${totalActivities} activit${totalActivities !== 1 ? "ies" : "y"}`}
-                </span>
+            {/* Summary with view toggle */}
+            <div className="flex items-center justify-between pb-3 border-b border-border/60">
+                <div className="flex items-center gap-2 text-muted-foreground">
+                    <Mountain className="w-4 h-4" />
+                    <span className="text-sm">
+                        {totalSummits} summit{totalSummits !== 1 ? "s" : ""}
+                    </span>
+                </div>
+                
+                {/* View mode toggle */}
+                {totalSummits > 0 && (
+                    <div className="flex rounded-md border border-border overflow-hidden">
+                        <button
+                            onClick={() => setViewMode("summit")}
+                            className={cn(
+                                "flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium transition-colors",
+                                viewMode === "summit"
+                                    ? "bg-summited/15 text-summited"
+                                    : "text-muted-foreground hover:text-foreground"
+                            )}
+                        >
+                            <LayoutList className="w-3.5 h-3.5" />
+                            Summits
+                        </button>
+                        <button
+                            onClick={() => setViewMode("activity")}
+                            className={cn(
+                                "flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium transition-colors border-l border-border",
+                                viewMode === "activity"
+                                    ? "bg-summited/15 text-summited"
+                                    : "text-muted-foreground hover:text-foreground"
+                            )}
+                        >
+                            <Layers className="w-3.5 h-3.5" />
+                            Activities
+                        </button>
+                    </div>
+                )}
             </div>
 
             {/* Log Summit CTA */}
@@ -105,8 +176,8 @@ const PeakUserActivity = ({ highlightedActivityId, onHighlightActivity }: PeakUs
                 Log Summit
             </Button>
 
-            {/* All Summits - Journal Style */}
-            {sortedSummits.length > 0 && (
+            {/* Summit View - Individual summit cards */}
+            {viewMode === "summit" && sortedSummits.length > 0 && (
                 <section className="space-y-2">
                     {sortedSummits.map((summit, idx) => {
                         const activity = summit.activity_id 
@@ -162,8 +233,97 @@ const PeakUserActivity = ({ highlightedActivityId, onHighlightActivity }: PeakUs
                 </section>
             )}
 
-            {/* Activities without summits */}
-            {activitiesWithoutSummits.length > 0 && (
+            {/* Activity View - Grouped by activity */}
+            {viewMode === "activity" && groupedByActivity.length > 0 && (
+                <section className="space-y-3">
+                    {groupedByActivity.map((group) => {
+                        const isManual = group.activityId === null;
+                        const activity = group.activityId 
+                            ? activityMap.get(group.activityId) 
+                            : undefined;
+                        const firstSummit = group.summits[0];
+                        
+                        const formattedDate = (() => {
+                            try {
+                                return format(new Date(firstSummit.timestamp), "MMM d, yyyy");
+                            } catch {
+                                return "";
+                            }
+                        })();
+
+                        return (
+                            <div 
+                                key={group.activityId ?? "manual"} 
+                                className="rounded-lg border border-border bg-card overflow-hidden"
+                            >
+                                {/* Activity header */}
+                                {isManual ? (
+                                    <div className="p-3 border-b border-border bg-muted/30">
+                                        <div className="flex items-center gap-2">
+                                            <Plus className="w-4 h-4 text-muted-foreground" />
+                                            <span className="text-sm font-medium text-foreground">Manual Summits</span>
+                                        </div>
+                                        <p className="text-xs text-muted-foreground mt-0.5">
+                                            {group.summits.length} summit{group.summits.length !== 1 ? "s" : ""}
+                                        </p>
+                                    </div>
+                                ) : (
+                                    <Link
+                                        href={`/activities/${group.activityId}`}
+                                        className="block p-3 border-b border-border bg-muted/30 hover:bg-muted/50 transition-colors"
+                                    >
+                                        <div className="flex items-center justify-between">
+                                            <div>
+                                                <div className="flex items-center gap-2">
+                                                    <Calendar className="w-4 h-4 text-muted-foreground" />
+                                                    <span className="text-sm font-medium text-foreground">
+                                                        {formattedDate}
+                                                    </span>
+                                                </div>
+                                                <p className="text-xs text-muted-foreground mt-0.5">
+                                                    {group.summits.length} summit{group.summits.length !== 1 ? "s" : ""} · Tap to view activity
+                                                </p>
+                                            </div>
+                                            <ChevronRight className="w-4 h-4 text-muted-foreground" />
+                                        </div>
+                                    </Link>
+                                )}
+                                
+                                {/* Summits in this group */}
+                                <div className="divide-y divide-border">
+                                    {group.summits.map((summit) => {
+                                        const hasReport = !!(summit.notes || summit.difficulty || summit.experience_rating || (summit.condition_tags && summit.condition_tags.length > 0));
+                                        
+                                        return (
+                                            <div key={summit.id} className="p-3 flex items-center gap-3">
+                                                <div className="w-8 h-8 rounded-md bg-summited/15 flex items-center justify-center flex-shrink-0">
+                                                    <Mountain className="w-4 h-4 text-summited" />
+                                                </div>
+                                                <div className="flex-1 min-w-0">
+                                                    <p className="text-sm font-medium text-foreground truncate">
+                                                        {peakName}
+                                                    </p>
+                                                    <p className="text-xs text-muted-foreground">
+                                                        {hasReport ? "Has trip report" : "No report yet"}
+                                                    </p>
+                                                </div>
+                                                {hasReport ? (
+                                                    <FileText className="w-4 h-4 text-summited flex-shrink-0" />
+                                                ) : (
+                                                    <Plus className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+                                                )}
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+                        );
+                    })}
+                </section>
+            )}
+
+            {/* Activities without summits (only show in summit view) */}
+            {viewMode === "summit" && activitiesWithoutSummits.length > 0 && (
                 <section>
                     <div className="flex items-center gap-2 mb-3">
                         <Route className="w-4 h-4 text-primary" />

@@ -11,6 +11,7 @@ import Activity from "@/typeDefs/Activity";
 import { useMapStore } from "@/providers/MapProvider";
 import { useRouter } from "next/navigation";
 import useRequireAuth, { useIsAuthenticated } from "@/hooks/useRequireAuth";
+import { useManualSummitStore } from "@/providers/ManualSummitProvider";
 import DetailPanelHeader from "@/components/ui/detail-panel-header";
 import StatsGrid from "@/components/ui/stats-grid";
 import StatCard from "@/components/ui/stat-card";
@@ -29,6 +30,19 @@ const PeakDetailContent = ({ peak, publicSummits, challenges, activities }: Prop
     const router = useRouter();
     const { isAuthenticated } = useIsAuthenticated();
     const requireAuth = useRequireAuth();
+    const openManualSummit = useManualSummitStore((state) => state.openManualSummit);
+
+    const handleLogSummit = () => {
+        if (!isAuthenticated) {
+            requireAuth(() => {});
+            return;
+        }
+        openManualSummit({
+            peakId: peak.id,
+            peakName: peak.name || "Unknown Peak",
+            peakCoords: peak.location_coords || [0, 0],
+        });
+    };
 
     // Convert Challenge[] to ChallengeProgress[] for DiscoveryChallengesList
     // The API returns num_completed for logged-in users, but it's not in the Challenge type
@@ -103,15 +117,13 @@ const PeakDetailContent = ({ peak, publicSummits, challenges, activities }: Prop
 
                     {/* Actions */}
                     <div className="flex flex-col gap-3">
-                        {!isAuthenticated && (
-                            <Button 
-                                onClick={() => requireAuth(() => {})}
-                                className="w-full gap-2 bg-green-600 hover:bg-green-700 text-white"
-                            >
-                                <Plus className="w-4 h-4" />
-                                Log Summit
-                            </Button>
-                        )}
+                        <Button 
+                            onClick={handleLogSummit}
+                            className="w-full gap-2 bg-green-600 hover:bg-green-700 text-white"
+                        >
+                            <Plus className="w-4 h-4" />
+                            Log Summit
+                        </Button>
                         <Button
                             variant="outline"
                             onClick={handleFlyToPeak}

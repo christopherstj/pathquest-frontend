@@ -32,7 +32,8 @@ const debounce = <T extends (...args: any[]) => any>(
 // Default map center (Boulder, CO)
 const DEFAULT_CENTER: [number, number] = [-105.2705, 40.015];
 const DEFAULT_ZOOM = 11;
-const DEFAULT_PITCH = 45;
+const DEFAULT_PITCH_2D = 0;
+const DEFAULT_PITCH_3D = 45;
 const DEFAULT_BEARING = 0;
 
 // Minimum zoom level for searching peaks/challenges
@@ -48,6 +49,7 @@ const MapBackground = () => {
     const map = useMapStore((state) => state.map);
     const isSatellite = useMapStore((state) => state.isSatellite);
     const setIsSatellite = useMapStore((state) => state.setIsSatellite);
+    const is3D = useMapStore((state) => state.is3D);
     const router = useRouter();
     const searchParams = useSearchParams();
     const isInitialStyleSet = useRef(false);
@@ -71,12 +73,16 @@ const MapBackground = () => {
     // Active popup ref - allows closing previous popup when a new one is opened
     const activePopupRef = useRef<mapboxgl.Popup | null>(null);
     
+    // Ref to track is3D state for use in map initialization and effects
+    const is3DRef = useRef(is3D);
+    
     // Keep store function refs up to date
     useEffect(() => {
         setMapRef.current = setMap;
         setVisiblePeaksRef.current = setVisiblePeaks;
         setVisibleChallengesRef.current = setVisibleChallenges;
         setIsZoomedOutTooFarRef.current = setIsZoomedOutTooFar;
+        is3DRef.current = is3D;
     });
 
     // Map padding based on UI layout (mobile drawer / desktop panel)
@@ -181,6 +187,69 @@ const MapBackground = () => {
         );
     }, [isSatellite, map]);
 
+    // Toggle 3D terrain when is3D state changes
+    useEffect(() => {
+        if (!map) return;
+        
+        // Wait for style to be loaded before modifying sources/layers
+        if (!map.isStyleLoaded()) {
+            // If style isn't loaded yet, wait for it
+            const handleStyleLoad = () => {
+                applyTerrainSettings();
+            };
+            map.once('style.load', handleStyleLoad);
+            return () => {
+                map.off('style.load', handleStyleLoad);
+            };
+        }
+        
+        applyTerrainSettings();
+        
+        function applyTerrainSettings() {
+            // Ensure DEM source exists
+            if (!map.getSource('mapbox-dem')) {
+                map.addSource('mapbox-dem', {
+                    'type': 'raster-dem',
+                    'url': 'mapbox://mapbox.mapbox-terrain-dem-v1',
+                    'tileSize': 512,
+                    'maxzoom': 14
+                });
+            }
+            
+            if (is3D) {
+                // Enable 3D terrain
+                map.setTerrain({ 'source': 'mapbox-dem', 'exaggeration': 1.5 });
+                
+                // Add sky layer if not present
+                if (!map.getLayer('sky')) {
+                    map.addLayer({
+                        'id': 'sky',
+                        'type': 'sky',
+                        'paint': {
+                            'sky-type': 'atmosphere',
+                            'sky-atmosphere-sun': [0.0, 0.0],
+                            'sky-atmosphere-sun-intensity': 15
+                        }
+                    });
+                }
+                
+                // Animate to 3D pitch
+                map.easeTo({ pitch: DEFAULT_PITCH_3D, duration: 500 });
+            } else {
+                // Disable 3D terrain
+                map.setTerrain(null);
+                
+                // Remove sky layer if present
+                if (map.getLayer('sky')) {
+                    map.removeLayer('sky');
+                }
+                
+                // Animate to flat pitch
+                map.easeTo({ pitch: DEFAULT_PITCH_2D, duration: 500 });
+            }
+        }
+    }, [is3D, map]);
+
     // Handle flying to resolved location after location hook completes
     // This runs once after the location fallback chain resolves
     useEffect(() => {
@@ -196,7 +265,7 @@ const MapBackground = () => {
             map.flyTo({
                 center: initialLocation.center,
                 zoom: initialLocation.zoom,
-                pitch: DEFAULT_PITCH,
+                pitch: DEFAULT_PITCH_2D, // Default to 2D
                 essential: true,
             });
         } else {
@@ -225,7 +294,7 @@ const MapBackground = () => {
         const mapState = getMapStateFromURL(searchParams);
         const initialCenter = mapState.center ?? DEFAULT_CENTER;
         const initialZoom = mapState.zoom ?? DEFAULT_ZOOM;
-        const initialPitch = mapState.pitch || DEFAULT_PITCH;
+        const initialPitch = mapState.pitch || DEFAULT_PITCH_2D; // Default to 2D (flat)
         const initialBearing = mapState.bearing || DEFAULT_BEARING;
         const initialSatellite = mapState.isSatellite;
 
@@ -252,7 +321,7 @@ const MapBackground = () => {
         });
 
         newMap.on("style.load", () => {
-             // Add 3D terrain
+            // Add terrain DEM source (needed for both 2D contours and 3D terrain)
             if (!newMap.getSource('mapbox-dem')) {
                 newMap.addSource('mapbox-dem', {
                     'type': 'raster-dem',
@@ -261,19 +330,23 @@ const MapBackground = () => {
                     'maxzoom': 14
                 });
             }
-            newMap.setTerrain({ 'source': 'mapbox-dem', 'exaggeration': 1.5 });
             
-            // Add Sky layer for atmosphere
-            if (!newMap.getLayer('sky')) {
-                newMap.addLayer({
-                    'id': 'sky',
-                    'type': 'sky',
-                    'paint': {
-                        'sky-type': 'atmosphere',
-                        'sky-atmosphere-sun': [0.0, 0.0],
-                        'sky-atmosphere-sun-intensity': 15
-                    }
-                });
+            // Only enable 3D terrain and sky layer if is3D is true
+            if (is3DRef.current) {
+                newMap.setTerrain({ 'source': 'mapbox-dem', 'exaggeration': 1.5 });
+                
+                // Add Sky layer for atmosphere
+                if (!newMap.getLayer('sky')) {
+                    newMap.addLayer({
+                        'id': 'sky',
+                        'type': 'sky',
+                        'paint': {
+                            'sky-type': 'atmosphere',
+                            'sky-atmosphere-sun': [0.0, 0.0],
+                            'sky-atmosphere-sun-intensity': 15
+                        }
+                    });
+                }
             }
 
             // Peaks Source

@@ -22,6 +22,8 @@ import ChallengeProgress from "@/typeDefs/ChallengeProgress";
 import DashboardStats from "@/typeDefs/DashboardStats";
 import UnconfirmedSummit from "@/typeDefs/UnconfirmedSummit";
 import { QuickStatsBar, HeroSummitCard, UnreviewedSummitsQueue, ProcessingToast, UnconfirmedSummitsCard, ImportProgressCard, ImportStatus } from "@/components/dashboard";
+import UnreviewedActivitiesCard from "@/components/dashboard/UnreviewedActivitiesCard";
+import type { UnreviewedActivity } from "@pathquest/shared/types";
 import { OnboardingModal } from "@/components/onboarding";
 import PublicSummitCard, { PublicSummitCardSummit } from "@/components/summits/PublicSummitCard";
 import ChallengeLinkItem from "@/components/lists/challenge-link-item";
@@ -93,6 +95,18 @@ const fetchUnconfirmedSummits = async (): Promise<UnconfirmedSummit[]> => {
     });
     if (!res.ok) {
         console.error("Failed to fetch unconfirmed summits:", res.status);
+        return [];
+    }
+    return res.json();
+};
+
+// Fetch unreviewed activities (activities needing trip reports)
+const fetchUnreviewedActivities = async (): Promise<UnreviewedActivity[]> => {
+    const res = await fetch("/api/activities/unreviewed?limit=5", {
+        credentials: "include",
+    });
+    if (!res.ok) {
+        console.error("Failed to fetch unreviewed activities:", res.status);
         return [];
     }
     return res.json();
@@ -331,6 +345,14 @@ const DashboardContent = ({ isActive = true, showHeader = false }: DashboardCont
         staleTime: 30000,
     });
 
+    // Fetch unreviewed activities that need trip reports
+    const { data: unreviewedActivities } = useQuery({
+        queryKey: ["unreviewedActivities"],
+        queryFn: fetchUnreviewedActivities,
+        enabled: shouldFetchDashboard,
+        staleTime: 30000,
+    });
+
     const { data: recentPublicSummits, isLoading: publicSummitsLoading } = useQuery({
         queryKey: ["landingRecentPublicSummits"],
         queryFn: fetchRecentPublicSummits,
@@ -505,6 +527,11 @@ const DashboardContent = ({ isActive = true, showHeader = false }: DashboardCont
                     {/* Unreviewed Summits Queue (older summits without reports) */}
                     {recentSummits && recentSummits.length > 0 && (
                         <UnreviewedSummitsQueue summits={recentSummits} />
+                    )}
+
+                    {/* Unreviewed Activities Card (activities needing trip reports) */}
+                    {unreviewedActivities && unreviewedActivities.length > 0 && (
+                        <UnreviewedActivitiesCard activities={unreviewedActivities} />
                     )}
 
                     {/* Challenge Progress */}

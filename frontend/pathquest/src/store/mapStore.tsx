@@ -31,6 +31,7 @@ export type MapState = {
     visiblePeaks: Peak[];
     visibleChallenges: ChallengeProgress[];
     isSatellite: boolean;
+    is3D: boolean;
     disablePeaksSearch: boolean;
     summitHistoryPeakId: string | null;
     isZoomedOutTooFar: boolean;
@@ -45,6 +46,7 @@ export type MapActions = {
     setVisiblePeaks: (peaks: Peak[]) => void;
     setVisibleChallenges: (challenges: ChallengeProgress[]) => void;
     setIsSatellite: (isSatellite: boolean) => void;
+    setIs3D: (is3D: boolean) => void;
     setDisablePeaksSearch: (disable: boolean) => void;
     setSummitHistoryPeakId: (peakId: string | null) => void;
     setIsZoomedOutTooFar: (isZoomedOut: boolean) => void;
@@ -62,6 +64,7 @@ export const createMapStore = (
         visiblePeaks: [],
         visibleChallenges: [],
         isSatellite: false,
+        is3D: false, // Default to 2D
         disablePeaksSearch: false,
         summitHistoryPeakId: null,
         isZoomedOutTooFar: false,
@@ -77,6 +80,7 @@ export const createMapStore = (
         setVisiblePeaks: (visiblePeaks) => set({ visiblePeaks }),
         setVisibleChallenges: (visibleChallenges) => set({ visibleChallenges }),
         setIsSatellite: (isSatellite) => set({ isSatellite }),
+        setIs3D: (is3D) => set({ is3D }),
         setDisablePeaksSearch: (disablePeaksSearch) => set({ disablePeaksSearch }),
         setSummitHistoryPeakId: (summitHistoryPeakId) => set({ summitHistoryPeakId }),
         setIsZoomedOutTooFar: (isZoomedOutTooFar) => set({ isZoomedOutTooFar }),

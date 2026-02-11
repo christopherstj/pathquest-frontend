@@ -3,6 +3,7 @@
 import React, { Suspense } from "react";
 import { usePathname } from "next/navigation";
 import MapBackground from "@/components/map/MapBackground";
+import MapControls from "@/components/map/MapControls";
 import GlobalNavigation from "@/components/app/layout/GlobalNavigation";
 import UrlOverlayManager from "@/components/overlays/UrlOverlayManager";
 import AuthModal from "@/components/auth/AuthModal";
@@ -61,6 +62,7 @@ const AppShell = ({ children }: AppShellProps) => {
             <Suspense fallback={<div className="absolute inset-0 bg-background" />}>
                 <MapBackground />
             </Suspense>
+            <MapControls />
             <GlobalNavigation />
             {/* URL-driven overlay manager - renders discovery drawer (desktop) or bottom sheet (mobile) and detail panels */}
             <UrlOverlayManager />
