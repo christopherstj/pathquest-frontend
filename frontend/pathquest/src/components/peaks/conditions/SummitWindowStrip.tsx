@@ -1,7 +1,8 @@
 "use client";
 
 import React from "react";
-import type { SummitWindow, SummitWindowDay } from "@pathquest/shared/types";
+import { AlertTriangle, Flame, Wind, CircleAlert } from "lucide-react";
+import type { SummitWindow, SummitWindowDay, HazardFlag, HazardType } from "@pathquest/shared/types";
 import { cn } from "@/lib/utils";
 
 interface SummitWindowStripProps {
@@ -37,6 +38,35 @@ const getDayLabel = (dateStr: string): string => {
     if (diffDays === 0) return "Today";
     if (diffDays === 1) return "Tmrw";
     return date.toLocaleDateString("en-US", { weekday: "short" });
+};
+
+const hazardIconMap: Record<HazardType, typeof AlertTriangle> = {
+    avalanche: AlertTriangle,
+    fire: Flame,
+    air_quality: Wind,
+};
+
+const severityColorMap = {
+    caution: "text-amber-400",
+    warning: "text-orange-400",
+    danger: "text-red-400",
+};
+
+const HazardIndicator = ({ hazards }: { hazards: HazardFlag[] }) => {
+    // Show the most severe hazard
+    const severityRank = { danger: 3, warning: 2, caution: 1 };
+    const worst = hazards.reduce((a, b) =>
+        severityRank[b.severity] > severityRank[a.severity] ? b : a
+    );
+    const Icon = hazardIconMap[worst.type] ?? CircleAlert;
+    const color = severityColorMap[worst.severity];
+    const title = hazards.map((h) => h.message).join("; ");
+
+    return (
+        <div className="flex justify-center" title={title}>
+            <Icon className={cn("w-3 h-3", color)} />
+        </div>
+    );
 };
 
 const SummitWindowStrip = ({ summitWindow, className }: SummitWindowStripProps) => {
@@ -76,6 +106,11 @@ const SummitWindowStrip = ({ summitWindow, className }: SummitWindowStripProps) 
                         <span className="text-[10px] text-muted-foreground">
                             {getDayLabel(day.date)}
                         </span>
+                        {day.hazards && day.hazards.length > 0 ? (
+                            <HazardIndicator hazards={day.hazards} />
+                        ) : (
+                            <div className="h-3" />
+                        )}
                         <div
                             className={cn(
                                 "w-full h-2 rounded-full",
@@ -94,19 +129,18 @@ const SummitWindowStrip = ({ summitWindow, className }: SummitWindowStripProps) 
 
             {/* Legend */}
             <div className="flex items-center justify-between text-[9px] text-muted-foreground/60 px-1">
-                <span>Summit Window Score</span>
+                <span>Relative conditions score</span>
                 <div className="flex items-center gap-2">
                     <span className="flex items-center gap-1">
-                        <span className="w-2 h-2 rounded-full bg-emerald-500" />
-                        Go
-                    </span>
-                    <span className="flex items-center gap-1">
-                        <span className="w-2 h-2 rounded-full bg-amber-500" />
-                        Caution
-                    </span>
-                    <span className="flex items-center gap-1">
                         <span className="w-2 h-2 rounded-full bg-red-500" />
-                        Avoid
+                        Worst
+                    </span>
+                    <span className="flex items-center gap-1">
+                        <span className="w-8 h-0.5 bg-gradient-to-r from-red-500 via-amber-500 to-emerald-500 rounded-full" />
+                    </span>
+                    <span className="flex items-center gap-1">
+                        <span className="w-2 h-2 rounded-full bg-emerald-500" />
+                        Best
                     </span>
                 </div>
             </div>
