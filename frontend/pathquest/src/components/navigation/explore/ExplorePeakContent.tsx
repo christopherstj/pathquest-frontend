@@ -9,7 +9,7 @@ import Challenge from "@/typeDefs/Challenge";
 import { PeakActivityIndicator } from "@/components/peaks";
 import PeakUserActivity from "@/components/overlays/PeakUserActivity";
 import PeakCommunity from "@/components/overlays/PeakCommunity";
-import PeakDetailsTab from "@/components/overlays/PeakDetailsTab";
+import ConditionsDashboard from "@/components/peaks/ConditionsDashboard";
 import { ExploreSubTab } from "@/store/tabStore";
 import { useManualSummitStore } from "@/providers/ManualSummitProvider";
 import { useMapStore } from "@/providers/MapProvider";
@@ -174,7 +174,12 @@ export const ExplorePeakContent = ({
 
             {/* Tab Content */}
             <div className="flex-1 overflow-y-auto px-2">
-                {exploreSubTab === "myActivity" ? (
+                {exploreSubTab === "conditions" || exploreSubTab === "details" ? (
+                    <ConditionsDashboard
+                        peak={peak}
+                        challenges={peakChallenges}
+                    />
+                ) : exploreSubTab === "myActivity" ? (
                     isAuthenticated ? (
                         <PeakUserActivity
                             highlightedActivityId={highlightedActivityId}
@@ -196,11 +201,6 @@ export const ExplorePeakContent = ({
                             </Button>
                         </div>
                     )
-                ) : exploreSubTab === "details" ? (
-                    <PeakDetailsTab
-                        peak={peak}
-                        challenges={peakChallenges}
-                    />
                 ) : (
                     <PeakCommunity />
                 )}

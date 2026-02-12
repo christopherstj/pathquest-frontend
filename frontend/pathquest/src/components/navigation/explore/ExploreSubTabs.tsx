@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { BarChart3, BookOpen, Info, Mountain, Trophy, Users } from "lucide-react";
+import { BarChart3, BookOpen, Cloud, Mountain, Trophy, Users } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ExploreContentType } from "@/hooks/use-explore-route";
 import { ExploreSubTab } from "@/store/tabStore";
@@ -44,6 +44,12 @@ export const ExploreSubTabs = ({ contentType, exploreSubTab, onChangeSubTab }: E
         return (
             <div className="flex gap-0.5 bg-muted/50 p-0.5 rounded-lg">
                 <SubTabButton
+                    icon={<Cloud className="w-3.5 h-3.5" />}
+                    label="Conditions"
+                    isActive={exploreSubTab === "conditions"}
+                    onClick={() => onChangeSubTab("conditions")}
+                />
+                <SubTabButton
                     icon={<Users className="w-3.5 h-3.5" />}
                     label="Community"
                     isActive={exploreSubTab === "community"}
@@ -54,12 +60,6 @@ export const ExploreSubTabs = ({ contentType, exploreSubTab, onChangeSubTab }: E
                     label="Journal"
                     isActive={exploreSubTab === "myActivity"}
                     onClick={() => onChangeSubTab("myActivity")}
-                />
-                <SubTabButton
-                    icon={<Info className="w-3.5 h-3.5" />}
-                    label="Details"
-                    isActive={exploreSubTab === "details"}
-                    onClick={() => onChangeSubTab("details")}
                 />
             </div>
         );

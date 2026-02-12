@@ -7,7 +7,7 @@ import metersToFt from "@/helpers/metersToFt";
 import Peak from "@/typeDefs/Peak";
 import Challenge from "@/typeDefs/Challenge";
 import Summit from "@/typeDefs/Summit";
-import EnhancedConditions from "@/components/peaks/EnhancedConditions";
+import ConditionsDashboard from "@/components/peaks/ConditionsDashboard";
 import DiscoveryChallengesList from "@/components/discovery/discovery-challenges-list";
 import ChallengeProgress from "@/typeDefs/ChallengeProgress";
 import { useRouter } from "next/navigation";
@@ -109,7 +109,7 @@ const PeakDetailsMobile = ({
             </div>
 
             {/* Conditions */}
-            <EnhancedConditions peakId={peak.id} />
+            <ConditionsDashboard peak={peak} variant="inline" />
 
             {/* Actions */}
             <div className="flex gap-2">

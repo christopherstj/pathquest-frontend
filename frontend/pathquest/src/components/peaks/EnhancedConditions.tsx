@@ -8,6 +8,14 @@ import SummitWindowStrip from "./conditions/SummitWindowStrip";
 import CurrentWeatherSection from "./conditions/CurrentWeatherSection";
 import RecentWeatherSection from "./conditions/RecentWeatherSection";
 import ForecastSection from "./conditions/ForecastSection";
+import AlertsBanner from "./conditions/AlertsBanner";
+import AvalancheSection from "./conditions/AvalancheSection";
+import SnowpackSection from "./conditions/SnowpackSection";
+import AirQualitySection from "./conditions/AirQualitySection";
+import FireSection from "./conditions/FireSection";
+import AccessSection from "./conditions/AccessSection";
+import StreamFlowSection from "./conditions/StreamFlowSection";
+import GearSection from "./conditions/GearSection";
 
 interface EnhancedConditionsProps {
     peakId: string;
@@ -38,6 +46,11 @@ const EnhancedConditions = ({ peakId, className }: EnhancedConditionsProps) => {
     return (
         <div className={className}>
             <div className="space-y-4">
+                {/* Safety alerts first */}
+                {conditions.nwsAlerts && conditions.nwsAlerts.activeCount > 0 && (
+                    <AlertsBanner alerts={conditions.nwsAlerts} />
+                )}
+
                 {/* Current Weather */}
                 {conditions.weather?.current && (
                     <CurrentWeatherSection current={conditions.weather.current} />
@@ -46,6 +59,32 @@ const EnhancedConditions = ({ peakId, className }: EnhancedConditionsProps) => {
                 {/* Summit Window Strip */}
                 {conditions.summitWindow && (
                     <SummitWindowStrip summitWindow={conditions.summitWindow} />
+                )}
+
+                {/* Avalanche */}
+                {conditions.avalanche && (
+                    <AvalancheSection avalanche={conditions.avalanche} />
+                )}
+
+                {/* Snowpack */}
+                {conditions.snotel && (
+                    <SnowpackSection snotel={conditions.snotel} />
+                )}
+
+                {/* Air Quality - only show if notable */}
+                {conditions.airQuality && (conditions.airQuality.current.aqi > 50 || conditions.airQuality.smokeImpact !== "none") && (
+                    <AirQualitySection airQuality={conditions.airQuality} />
+                )}
+
+                {/* Fire Proximity */}
+                {conditions.fireProximity && conditions.fireProximity.nearbyFires.length > 0 && (
+                    <FireSection fireProximity={conditions.fireProximity} />
+                )}
+
+                {/* Access */}
+                {((conditions.roadAccess && (conditions.roadAccess.anyClosures || conditions.roadAccess.anyChainLaw)) ||
+                  (conditions.trailConditions && conditions.trailConditions.activeAlertCount > 0)) && (
+                    <AccessSection roadAccess={conditions.roadAccess} trailConditions={conditions.trailConditions} />
                 )}
 
                 {/* Recent Weather Summary */}
@@ -61,6 +100,16 @@ const EnhancedConditions = ({ peakId, className }: EnhancedConditionsProps) => {
                         </h4>
                         <ForecastSection daily={conditions.weather.daily} />
                     </div>
+                )}
+
+                {/* Stream Flow - only if crossing alert */}
+                {conditions.streamFlow && conditions.streamFlow.crossingAlert && (
+                    <StreamFlowSection streamFlow={conditions.streamFlow} />
+                )}
+
+                {/* Gear Recommendations */}
+                {conditions.gearRecommendations && conditions.gearRecommendations.items.length > 0 && (
+                    <GearSection gear={conditions.gearRecommendations} />
                 )}
 
                 {/* Updated timestamp */}
