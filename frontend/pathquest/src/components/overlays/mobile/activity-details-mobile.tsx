@@ -21,6 +21,7 @@ import metersToFt from "@/helpers/metersToFt";
 import StatsGrid from "@/components/ui/stats-grid";
 import StatCard from "@/components/ui/stat-card";
 import ActivityElevationProfile from "@/components/app/activities/ActivityElevationProfile";
+import ActivityReportEditor from "@/components/app/activities/ActivityReportEditor";
 import { cn } from "@/lib/utils";
 import { convertSummitsToPeaks } from "@/helpers/convertSummitsToPeaks";
 
@@ -32,6 +33,8 @@ interface ActivityDetailsMobileProps {
     onClose: () => void;
     onShowOnMap: () => void;
     onHover?: (coords: [number, number] | null) => void;
+    isOwner?: boolean;
+    onReportSaved?: () => void;
 }
 
 // Convert meters to miles
@@ -119,11 +122,18 @@ const ActivityDetailsMobile = ({
     onClose,
     onShowOnMap,
     onHover,
+    isOwner = false,
+    onReportSaved,
 }: ActivityDetailsMobileProps) => {
     const [copied, setCopied] = useState(false);
     
     // Convert summits to peaks for elevation profile
     const peakSummits = useMemo(() => convertSummitsToPeaks(summits), [summits]);
+    
+    // Extract peak names for report editor
+    const peakNames = useMemo(() => {
+        return summits.filter(s => s.peak?.name).map(s => s.peak.name);
+    }, [summits]);
 
     // Calculate duration from time_stream
     const duration = activity?.time_stream && activity.time_stream.length > 0
@@ -236,6 +246,16 @@ const ActivityDetailsMobile = ({
                     </div>
                 )}
             </div>
+
+            {/* Activity Trip Report Section - for owners with summits */}
+            {isOwner && summits.length > 0 && (
+                <ActivityReportEditor
+                    activity={activity}
+                    peakNames={peakNames}
+                    isOwner={isOwner}
+                    onReportSaved={onReportSaved}
+                />
+            )}
 
             {/* Content */}
             <div className="space-y-4">

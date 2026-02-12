@@ -9,8 +9,10 @@ import Challenge from "@/typeDefs/Challenge";
 import { PeakActivityIndicator } from "@/components/peaks";
 import PeakUserActivity from "@/components/overlays/PeakUserActivity";
 import PeakCommunity from "@/components/overlays/PeakCommunity";
-import PeakDetailsTab from "@/components/overlays/PeakDetailsTab";
+import ConditionsDashboard from "@/components/peaks/ConditionsDashboard";
 import { ExploreSubTab } from "@/store/tabStore";
+import { useManualSummitStore } from "@/providers/ManualSummitProvider";
+import { useMapStore } from "@/providers/MapProvider";
 
 /**
  * Notable public land types that warrant a badge in the header
@@ -70,6 +72,9 @@ export const ExplorePeakContent = ({
     highlightedActivityId,
     setHighlightedActivityId,
 }: ExplorePeakContentProps) => {
+    const openManualSummit = useManualSummitStore((state) => state.openManualSummit);
+    const selectedPeakUserData = useMapStore((state) => state.selectedPeakUserData);
+
     // Show loading state if peak data isn't ready yet
     if (!peak) {
         return (
@@ -83,6 +88,20 @@ export const ExplorePeakContent = ({
     const hasUnreportedSummits = peak.ascents?.some(
         (a) => !a.notes && !a.difficulty && !a.experience_rating
     );
+
+    const handleLogSummit = () => {
+        if (!isAuthenticated) {
+            requireAuth(() => {});
+            return;
+        }
+        // Use data from selectedPeakUserData if available, otherwise fall back to peak data
+        const coords = selectedPeakUserData?.peakCoords ?? peak.location_coords ?? [0, 0];
+        openManualSummit({
+            peakId: peak.id,
+            peakName: peak.name || "Unknown Peak",
+            peakCoords: coords,
+        });
+    };
 
     return (
         <div className="flex flex-col h-full">
@@ -141,11 +160,26 @@ export const ExplorePeakContent = ({
                         </button>
                     )}
                 </div>
+
+                {/* Log Summit Button - Always visible */}
+                <Button
+                    onClick={handleLogSummit}
+                    className="mt-3 w-full gap-2 bg-green-600 hover:bg-green-700 text-white"
+                    size="sm"
+                >
+                    <Plus className="w-4 h-4" />
+                    Log Summit
+                </Button>
             </div>
 
             {/* Tab Content */}
             <div className="flex-1 overflow-y-auto px-2">
-                {exploreSubTab === "myActivity" ? (
+                {exploreSubTab === "conditions" || exploreSubTab === "details" ? (
+                    <ConditionsDashboard
+                        peak={peak}
+                        challenges={peakChallenges}
+                    />
+                ) : exploreSubTab === "myActivity" ? (
                     isAuthenticated ? (
                         <PeakUserActivity
                             highlightedActivityId={highlightedActivityId}
@@ -167,11 +201,6 @@ export const ExplorePeakContent = ({
                             </Button>
                         </div>
                     )
-                ) : exploreSubTab === "details" ? (
-                    <PeakDetailsTab
-                        peak={peak}
-                        challenges={peakChallenges}
-                    />
                 ) : (
                     <PeakCommunity />
                 )}

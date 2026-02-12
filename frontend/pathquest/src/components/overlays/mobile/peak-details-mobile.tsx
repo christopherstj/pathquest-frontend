@@ -1,16 +1,18 @@
 "use client";
 
 import React from "react";
-import { Mountain, CheckCircle, Navigation, MapPin } from "lucide-react";
+import { Mountain, Plus, Navigation, MapPin } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import metersToFt from "@/helpers/metersToFt";
 import Peak from "@/typeDefs/Peak";
 import Challenge from "@/typeDefs/Challenge";
 import Summit from "@/typeDefs/Summit";
-import CurrentConditions from "../../app/peaks/CurrentConditions";
+import ConditionsDashboard from "@/components/peaks/ConditionsDashboard";
 import DiscoveryChallengesList from "@/components/discovery/discovery-challenges-list";
 import ChallengeProgress from "@/typeDefs/ChallengeProgress";
 import { useRouter } from "next/navigation";
+import useRequireAuth, { useIsAuthenticated } from "@/hooks/useRequireAuth";
+import { useManualSummitStore } from "@/providers/ManualSummitProvider";
 
 interface PeakDetailsMobileProps {
     peak: Peak;
@@ -27,7 +29,22 @@ const PeakDetailsMobile = ({
     onFlyToPeak,
 }: PeakDetailsMobileProps) => {
     const router = useRouter();
+    const { isAuthenticated } = useIsAuthenticated();
+    const requireAuth = useRequireAuth();
+    const openManualSummit = useManualSummitStore((state) => state.openManualSummit);
     const location = [peak.county, peak.state, peak.country].filter(Boolean).join(", ");
+
+    const handleLogSummit = () => {
+        if (!isAuthenticated) {
+            requireAuth(() => {});
+            return;
+        }
+        openManualSummit({
+            peakId: peak.id,
+            peakName: peak.name || "Unknown Peak",
+            peakCoords: peak.location_coords || [0, 0],
+        });
+    };
 
     // Convert Challenge[] to ChallengeProgress[] for DiscoveryChallengesList
     // The API returns num_completed for logged-in users, but it's not in the Challenge type
@@ -91,18 +108,16 @@ const PeakDetailsMobile = ({
                 </div>
             </div>
 
-            {/* Current Conditions */}
-            {peak.location_coords && (
-                <CurrentConditions
-                    lat={peak.location_coords[1]}
-                    lng={peak.location_coords[0]}
-                />
-            )}
+            {/* Conditions */}
+            <ConditionsDashboard peak={peak} variant="inline" />
 
             {/* Actions */}
             <div className="flex gap-2">
-                <Button className="flex-1 bg-primary text-primary-foreground hover:bg-primary/90 gap-2 h-9 text-sm">
-                    <CheckCircle className="w-3.5 h-3.5" />
+                <Button 
+                    onClick={handleLogSummit}
+                    className="flex-1 bg-green-600 hover:bg-green-700 text-white gap-2 h-9 text-sm"
+                >
+                    <Plus className="w-3.5 h-3.5" />
                     Log Summit
                 </Button>
                 <Button

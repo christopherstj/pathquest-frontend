@@ -85,7 +85,7 @@ export function useExploreRoute(): ExploreRouteParams {
 export function getDefaultSubTab(contentType: ExploreContentType): string {
     switch (contentType) {
         case "peak":
-            return "community";
+            return "conditions";
         case "challenge":
         case "userChallenge":
             return "progress";
