@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import {
     Cloud,
@@ -87,8 +88,6 @@ const getManagerDisplayName = (manager: string): string => {
     return managerMap[manager] || manager;
 };
 
-/** Notable land types already shown in header badge */
-const NOTABLE_LAND_TYPES = ["NP", "NM", "WILD", "WSA"];
 
 // --- Loading Skeleton ---
 const ConditionsLoadingSkeleton = () => (
@@ -137,8 +136,8 @@ const ConditionsDashboard = ({
     } = useQuery({
         queryKey: ["peakConditions", peak.id],
         queryFn: () => getPeakConditions(peak.id),
-        staleTime: 15 * 60 * 1000,
-        gcTime: 60 * 60 * 1000,
+        staleTime: 2 * 60 * 60 * 1000,
+        gcTime: 4 * 60 * 60 * 1000,
     });
 
     const handleFlagForReview = async () => {
@@ -187,11 +186,7 @@ const ConditionsDashboard = ({
         conditions?.gearRecommendations &&
         conditions.gearRecommendations.items.length > 0;
 
-    // Non-notable public land (notable ones are in the header badge)
-    const showPublicLand =
-        variant === "full" &&
-        peak.publicLand &&
-        !NOTABLE_LAND_TYPES.includes(peak.publicLand.type);
+    const showPublicLand = variant === "full" && peak.publicLand;
 
     return (
         <div className="space-y-4 py-3">
@@ -363,7 +358,7 @@ const ConditionsDashboard = ({
             {/* --- Full variant footer sections --- */}
             {variant === "full" && (
                 <>
-                    {/* Public Land (non-notable only) */}
+                    {/* Public Land */}
                     {showPublicLand && peak.publicLand && (
                         <div className="border-t border-border/40 pt-3 space-y-2">
                             <h3 className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider flex items-center gap-2">
@@ -388,7 +383,16 @@ const ConditionsDashboard = ({
                                     </div>
                                     <div className="flex-1 min-w-0">
                                         <h4 className="font-semibold text-foreground leading-tight">
-                                            {peak.publicLand.name}
+                                            {peak.publicLand.objectId ? (
+                                                <Link
+                                                    href={`/lands/${peak.publicLand.objectId}`}
+                                                    className="hover:text-primary transition-colors"
+                                                >
+                                                    {peak.publicLand.name}
+                                                </Link>
+                                            ) : (
+                                                peak.publicLand.name
+                                            )}
                                         </h4>
                                         <div className="flex flex-wrap items-center gap-2 mt-1.5">
                                             <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-primary/10 text-primary border border-primary/20">

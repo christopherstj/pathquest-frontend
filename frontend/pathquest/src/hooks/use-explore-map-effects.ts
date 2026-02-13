@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useCallback } from "react";
 import mapboxgl from "mapbox-gl";
 import Peak from "@/typeDefs/Peak";
 import Summit from "@/typeDefs/Summit";
@@ -14,6 +14,47 @@ import convertActivitiesToGeoJSON from "@/helpers/convertActivitiesToGeoJSON";
 import { waitForMapSource, waitForMapSources, clearMapSource, clearMapSources } from "@/lib/map/waitForMapSource";
 import { useActivityMapEffects } from "@/hooks/use-activity-map-effects";
 import { useProfileMapEffects } from "@/hooks/use-profile-map-effects";
+import type { FireDetail, AvalancheZoneDetail, PublicLandDetail } from "@pathquest/shared/types";
+
+/** Extract LngLatBounds from a GeoJSON geometry. */
+function boundsFromGeometry(geojson: any): mapboxgl.LngLatBounds | null {
+    const bounds = new mapboxgl.LngLatBounds();
+    let count = 0;
+
+    const extendRing = (coords: number[][]) => {
+        for (const c of coords) {
+            bounds.extend([c[0], c[1]] as [number, number]);
+            count++;
+        }
+    };
+
+    const processGeometry = (g: any) => {
+        if (!g?.type) return;
+        if (g.type === "Polygon") {
+            for (const ring of g.coordinates) extendRing(ring);
+        } else if (g.type === "MultiPolygon") {
+            for (const poly of g.coordinates)
+                for (const ring of poly) extendRing(ring);
+        } else if (g.type === "GeometryCollection" && g.geometries) {
+            for (const sub of g.geometries) processGeometry(sub);
+        }
+    };
+
+    try {
+        processGeometry(geojson);
+    } catch {
+        return null;
+    }
+
+    return count > 0 ? bounds : null;
+}
+
+/** Wrap a raw GeoJSON geometry in a Feature so Mapbox always gets a valid object. */
+function toFeature(geometry: any): any {
+    if (!geometry) return geometry;
+    if (geometry.type === "Feature" || geometry.type === "FeatureCollection") return geometry;
+    return { type: "Feature", properties: {}, geometry };
+}
 
 interface UseExploreMapEffectsParams {
     contentType: ExploreContentType;
@@ -44,6 +85,15 @@ interface UseExploreMapEffectsParams {
     // Profile
     userId: string | null;
     profilePeaksForMap: Peak[];
+
+    // Fire
+    fireDetail: FireDetail | null;
+
+    // Avalanche Zone
+    avalancheZoneDetail: AvalancheZoneDetail | null;
+
+    // Public Land
+    publicLandDetail: PublicLandDetail | null;
 }
 
 export function useExploreMapEffects(params: UseExploreMapEffectsParams) {
@@ -76,6 +126,9 @@ export function useExploreMapEffects(params: UseExploreMapEffectsParams) {
         activityHoverCoords,
         userId,
         profilePeaksForMap,
+        fireDetail,
+        avalancheZoneDetail,
+        publicLandDetail,
     } = params;
 
     // Activity map effects
@@ -155,8 +208,6 @@ export function useExploreMapEffects(params: UseExploreMapEffectsParams) {
         map.flyTo({
             center: peak.location_coords,
             zoom: 13,
-            pitch: 50,
-            bearing: 20,
             essential: true,
         });
     }, [peakId, peak?.location_coords, map]);
@@ -292,8 +343,242 @@ export function useExploreMapEffects(params: UseExploreMapEffectsParams) {
         };
     }, [map, userChallengePeaks, userChallengeUserId, userChallengeChallengeId, contentType]);
 
+    // Fire detail: highlight perimeter and fit to bounds
+    useEffect(() => {
+        if (!map || contentType !== "fire" || !fireDetail?.geometry) return;
+
+        const sourceId = "fire-highlight";
+        const layerId = "fire-highlight-fill";
+        let cancelled = false;
+        let hasFitBounds = false;
+
+        const addLayers = () => {
+            if (cancelled) return;
+            try {
+                if (!map.getSource(sourceId)) {
+                    map.addSource(sourceId, {
+                        type: "geojson",
+                        data: toFeature(fireDetail.geometry),
+                    });
+                }
+                if (!map.getLayer(layerId)) {
+                    map.addLayer({
+                        id: layerId,
+                        type: "fill",
+                        source: sourceId,
+                        paint: { "fill-color": "#ef4444", "fill-opacity": 0.25 },
+                    });
+                }
+                if (!map.getLayer(`${layerId}-outline`)) {
+                    map.addLayer({
+                        id: `${layerId}-outline`,
+                        type: "line",
+                        source: sourceId,
+                        paint: { "line-color": "#ef4444", "line-width": 2, "line-opacity": 0.7 },
+                    });
+                }
+            } catch {
+                return; // Map not ready — will retry via style.load or idle
+            }
+
+            if (!hasFitBounds) {
+                hasFitBounds = true;
+                const geoBounds = boundsFromGeometry(fireDetail.geometry);
+                if (geoBounds) {
+                    map.fitBounds(geoBounds, { padding: 60, maxZoom: 14, essential: true });
+                } else {
+                    const zoom = fireDetail.acres && fireDetail.acres > 50000 ? 9 :
+                                  fireDetail.acres && fireDetail.acres > 10000 ? 10 :
+                                  fireDetail.acres && fireDetail.acres > 1000 ? 11 : 12;
+                    map.flyTo({ center: fireDetail.centroid, zoom, essential: true });
+                }
+            }
+        };
+
+        if (map.isStyleLoaded()) addLayers();
+        map.on("style.load", addLayers);
+        map.once("idle", addLayers);
+
+        return () => {
+            cancelled = true;
+            map.off("style.load", addLayers);
+            map.off("idle", addLayers);
+            if (map.getLayer(`${layerId}-outline`)) map.removeLayer(`${layerId}-outline`);
+            if (map.getLayer(layerId)) map.removeLayer(layerId);
+            if (map.getSource(sourceId)) map.removeSource(sourceId);
+        };
+    }, [map, contentType, fireDetail]);
+
+    // Avalanche zone: highlight zone and fit to bounds
+    useEffect(() => {
+        if (!map || contentType !== "avalancheZone" || !avalancheZoneDetail?.geometry) return;
+
+        const sourceId = "avy-zone-highlight";
+        const layerId = "avy-zone-highlight-fill";
+        let cancelled = false;
+        let hasFitBounds = false;
+
+        const todayDanger = avalancheZoneDetail.danger?.[0];
+        const maxDanger = todayDanger
+            ? Math.max(todayDanger.upper, todayDanger.middle, todayDanger.lower)
+            : 0;
+        const fillColor = maxDanger >= 4 ? "#ef4444" :
+                          maxDanger >= 3 ? "#f97316" :
+                          maxDanger >= 2 ? "#eab308" :
+                          maxDanger >= 1 ? "#22c55e" : "#6b7280";
+
+        const addLayers = () => {
+            if (cancelled) return;
+            try {
+                if (!map.getSource(sourceId)) {
+                    map.addSource(sourceId, {
+                        type: "geojson",
+                        data: toFeature(avalancheZoneDetail.geometry),
+                    });
+                }
+                if (!map.getLayer(layerId)) {
+                    map.addLayer({
+                        id: layerId,
+                        type: "fill",
+                        source: sourceId,
+                        paint: { "fill-color": fillColor, "fill-opacity": 0.2 },
+                    });
+                }
+                if (!map.getLayer(`${layerId}-outline`)) {
+                    map.addLayer({
+                        id: `${layerId}-outline`,
+                        type: "line",
+                        source: sourceId,
+                        paint: { "line-color": fillColor, "line-width": 2, "line-opacity": 0.6 },
+                    });
+                }
+            } catch {
+                return; // Map not ready — will retry via style.load or idle
+            }
+
+            if (!hasFitBounds) {
+                hasFitBounds = true;
+                const geoBounds = boundsFromGeometry(avalancheZoneDetail.geometry);
+                if (geoBounds) {
+                    map.fitBounds(geoBounds, { padding: 60, maxZoom: 12, essential: true });
+                } else if (avalancheZoneDetail.centroid) {
+                    map.flyTo({ center: avalancheZoneDetail.centroid, zoom: 9, essential: true });
+                }
+            }
+        };
+
+        if (map.isStyleLoaded()) addLayers();
+        map.on("style.load", addLayers);
+        map.once("idle", addLayers);
+
+        return () => {
+            cancelled = true;
+            map.off("style.load", addLayers);
+            map.off("idle", addLayers);
+            if (map.getLayer(`${layerId}-outline`)) map.removeLayer(`${layerId}-outline`);
+            if (map.getLayer(layerId)) map.removeLayer(layerId);
+            if (map.getSource(sourceId)) map.removeSource(sourceId);
+        };
+    }, [map, contentType, avalancheZoneDetail]);
+
+    // Public land: highlight boundary and fit to bounds
+    useEffect(() => {
+        if (!map || contentType !== "publicLand" || !publicLandDetail?.geometry) return;
+
+        const sourceId = "public-land-highlight";
+        const layerId = "public-land-highlight-fill";
+        let cancelled = false;
+        let hasFitBounds = false;
+
+        const addLayers = () => {
+            if (cancelled) return;
+            try {
+                if (!map.getSource(sourceId)) {
+                    map.addSource(sourceId, {
+                        type: "geojson",
+                        data: toFeature(publicLandDetail.geometry),
+                    });
+                }
+                if (!map.getLayer(layerId)) {
+                    map.addLayer({
+                        id: layerId,
+                        type: "fill",
+                        source: sourceId,
+                        paint: { "fill-color": "#059669", "fill-opacity": 0.2 },
+                    });
+                }
+                if (!map.getLayer(`${layerId}-outline`)) {
+                    map.addLayer({
+                        id: `${layerId}-outline`,
+                        type: "line",
+                        source: sourceId,
+                        paint: { "line-color": "#059669", "line-width": 2, "line-opacity": 0.7 },
+                    });
+                }
+            } catch {
+                return; // Map not ready — will retry via style.load or idle
+            }
+
+            if (!hasFitBounds) {
+                hasFitBounds = true;
+                const geoBounds = boundsFromGeometry(publicLandDetail.geometry);
+                if (geoBounds) {
+                    map.fitBounds(geoBounds, { padding: 60, maxZoom: 14, essential: true });
+                } else if (publicLandDetail.centroid) {
+                    map.flyTo({ center: publicLandDetail.centroid, zoom: 10, essential: true });
+                }
+            }
+        };
+
+        if (map.isStyleLoaded()) addLayers();
+        map.on("style.load", addLayers);
+        map.once("idle", addLayers);
+
+        return () => {
+            cancelled = true;
+            map.off("style.load", addLayers);
+            map.off("idle", addLayers);
+            if (map.getLayer(`${layerId}-outline`)) map.removeLayer(`${layerId}-outline`);
+            if (map.getLayer(layerId)) map.removeLayer(layerId);
+            if (map.getSource(sourceId)) map.removeSource(sourceId);
+        };
+    }, [map, contentType, publicLandDetail]);
+
+    const recenterFire = useCallback(() => {
+        if (!map || !fireDetail?.geometry) return;
+        const geoBounds = boundsFromGeometry(fireDetail.geometry);
+        if (geoBounds) {
+            map.fitBounds(geoBounds, { padding: 60, maxZoom: 14, essential: true });
+        } else {
+            map.flyTo({ center: fireDetail.centroid, essential: true });
+        }
+    }, [map, fireDetail]);
+
+    const recenterAvalancheZone = useCallback(() => {
+        if (!map || !avalancheZoneDetail?.geometry) return;
+        const geoBounds = boundsFromGeometry(avalancheZoneDetail.geometry);
+        if (geoBounds) {
+            map.fitBounds(geoBounds, { padding: 60, maxZoom: 12, essential: true });
+        } else if (avalancheZoneDetail.centroid) {
+            map.flyTo({ center: avalancheZoneDetail.centroid, zoom: 9, essential: true });
+        }
+    }, [map, avalancheZoneDetail]);
+
+    const recenterPublicLand = useCallback(() => {
+        if (!map || !publicLandDetail?.geometry) return;
+        const geoBounds = boundsFromGeometry(publicLandDetail.geometry);
+        if (geoBounds) {
+            map.fitBounds(geoBounds, { padding: 60, maxZoom: 14, essential: true });
+        } else if (publicLandDetail.centroid) {
+            map.flyTo({ center: publicLandDetail.centroid, zoom: 10, essential: true });
+        }
+    }, [map, publicLandDetail]);
+
     return {
         flyToActivity,
+        recenterFire,
+        recenterAvalancheZone,
+        recenterPublicLand,
     };
 }
 

@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import Link from "next/link";
 import { Flame } from "lucide-react";
 import type { FireProximity, NearbyFire } from "@pathquest/shared/types";
 import { cn } from "@/lib/utils";
@@ -22,7 +23,16 @@ const FireCard = ({ fire }: { fire: NearbyFire }) => (
         <Flame className="w-3.5 h-3.5 text-orange-400 mt-0.5 shrink-0" />
         <div className="flex-1 min-w-0">
             <div className="flex items-center justify-between gap-2">
-                <span className="text-xs font-medium text-foreground truncate">{fire.name}</span>
+                {fire.incidentId ? (
+                    <Link
+                        href={`/fires/${fire.incidentId}`}
+                        className="text-xs font-medium text-foreground truncate hover:text-primary transition-colors"
+                    >
+                        {fire.name}
+                    </Link>
+                ) : (
+                    <span className="text-xs font-medium text-foreground truncate">{fire.name}</span>
+                )}
                 <span className="text-[10px] text-muted-foreground shrink-0">
                     {fire.distanceKm.toFixed(1)} km {fire.direction}
                 </span>
