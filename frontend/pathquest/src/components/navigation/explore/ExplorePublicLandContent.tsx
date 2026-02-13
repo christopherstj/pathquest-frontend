@@ -91,7 +91,9 @@ export const ExplorePublicLandContent = ({
                     <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-primary/10 text-primary border border-primary/20">
                         {typeName}
                     </span>
-                    <span className="text-xs text-muted-foreground">{managerName}</span>
+                    {detail.manager !== "UNK" && (
+                        <span className="text-xs text-muted-foreground">{managerName}</span>
+                    )}
                     {conditions && (
                         <span className="text-xs text-muted-foreground">
                             &middot; {conditions.peakCount} peaks tracked
@@ -223,27 +225,29 @@ export const ExplorePublicLandContent = ({
                         Active Alerts ({conditions.nwsAlerts.totalActiveAlerts})
                     </h3>
                     <div className="space-y-1.5">
-                        {conditions.nwsAlerts.events.map((event, i) => (
-                            <div
-                                key={i}
-                                className={cn(
-                                    "flex items-center gap-2 px-3 py-2 rounded-lg border",
-                                    conditions.nwsAlerts!.maxSeverity === "Extreme"
-                                        ? "bg-red-500/8 border-red-500/20"
-                                        : conditions.nwsAlerts!.maxSeverity === "Severe"
-                                        ? "bg-orange-500/8 border-orange-500/20"
-                                        : "bg-yellow-500/8 border-yellow-500/20"
-                                )}
-                            >
-                                <AlertTriangle className={cn(
-                                    "w-3.5 h-3.5 shrink-0",
-                                    conditions.nwsAlerts!.maxSeverity === "Extreme" ? "text-red-400" :
-                                    conditions.nwsAlerts!.maxSeverity === "Severe" ? "text-orange-400" :
-                                    "text-yellow-400"
-                                )} />
-                                <span className="text-xs font-medium text-foreground">{event}</span>
-                            </div>
-                        ))}
+                        {(conditions.nwsAlerts.alerts ?? conditions.nwsAlerts.events.map(e => ({ event: e, severity: conditions.nwsAlerts!.maxSeverity, headline: null }))).map((alert, i) => {
+                            const sevColor = alert.severity === "Extreme" ? "text-red-400" :
+                                alert.severity === "Severe" ? "text-orange-400" : "text-yellow-400";
+                            const sevBg = alert.severity === "Extreme" ? "bg-red-500/8 border-red-500/20" :
+                                alert.severity === "Severe" ? "bg-orange-500/8 border-orange-500/20" :
+                                "bg-yellow-500/8 border-yellow-500/20";
+                            return (
+                                <div
+                                    key={i}
+                                    className={cn("px-3 py-2 rounded-lg border", sevBg)}
+                                >
+                                    <div className="flex items-center gap-2">
+                                        <AlertTriangle className={cn("w-3.5 h-3.5 shrink-0", sevColor)} />
+                                        <span className="text-xs font-medium text-foreground">{alert.event}</span>
+                                    </div>
+                                    {alert.headline && (
+                                        <p className="text-[11px] text-foreground/70 mt-1 ml-5.5 leading-relaxed">
+                                            {alert.headline}
+                                        </p>
+                                    )}
+                                </div>
+                            );
+                        })}
                     </div>
                 </div>
             )}

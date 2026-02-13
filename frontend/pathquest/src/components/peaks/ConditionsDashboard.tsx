@@ -398,11 +398,13 @@ const ConditionsDashboard = ({
                                             <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-primary/10 text-primary border border-primary/20">
                                                 {peak.publicLand.typeName}
                                             </span>
-                                            <span className="text-xs text-muted-foreground">
-                                                {getManagerDisplayName(
-                                                    peak.publicLand.manager
-                                                )}
-                                            </span>
+                                            {peak.publicLand.manager !== "UNK" && (
+                                                <span className="text-xs text-muted-foreground">
+                                                    {getManagerDisplayName(
+                                                        peak.publicLand.manager
+                                                    )}
+                                                </span>
+                                            )}
                                         </div>
                                     </div>
                                 </div>
