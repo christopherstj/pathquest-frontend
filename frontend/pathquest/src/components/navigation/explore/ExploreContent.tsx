@@ -16,10 +16,14 @@ import { ExploreUserChallengeContent } from "@/components/navigation/explore/Exp
 import { ExploreActivityContent } from "@/components/navigation/explore/ExploreActivityContent";
 import { ExploreProfileContent } from "@/components/navigation/explore/ExploreProfileContent";
 import { ExploreEmptyContent } from "@/components/navigation/explore/ExploreEmptyContent";
+import { ExploreFireContent } from "@/components/navigation/explore/ExploreFireContent";
+import { ExploreAvalancheZoneContent } from "@/components/navigation/explore/ExploreAvalancheZoneContent";
+import { ExplorePublicLandContent } from "@/components/navigation/explore/ExplorePublicLandContent";
 import { ChallengeProgressInfo as ChallengeProgressInfoAuthenticated } from "@/actions/challenges/getChallengeDetails";
 import { NextPeakSuggestion } from "@/actions/challenges/getNextPeakSuggestion";
 import { ChallengeActivity } from "@/actions/challenges/getChallengeActivity";
 import { ChallengePeakWithSummit, ChallengeProgressInfo as UserChallengeProgressInfo } from "@/actions/users/getUserChallengeProgress";
+import type { FireDetail, AvalancheZoneDetail, PublicLandDetail, PublicLandConditions } from "@pathquest/shared/types";
 
 interface ExploreContentProps {
     isLoading: boolean;
@@ -77,6 +81,21 @@ interface ExploreContentProps {
     userId: string | null;
     profileUser: User | null;
     profileStats: any | null;
+
+    // Fire
+    fireDetail: FireDetail | null;
+
+    // Avalanche Zone
+    avalancheZoneDetail: AvalancheZoneDetail | null;
+
+    // Public Land
+    publicLandDetail: PublicLandDetail | null;
+    publicLandConditions: PublicLandConditions | null;
+
+    // Recenter callbacks
+    onRecenterFire: () => void;
+    onRecenterAvalancheZone: () => void;
+    onRecenterPublicLand: () => void;
 }
 
 export const ExploreContent = (props: ExploreContentProps) => {
@@ -177,6 +196,37 @@ export const ExploreContent = (props: ExploreContentProps) => {
                 profileStats={props.profileStats}
                 exploreSubTab={props.exploreSubTab}
                 onBack={props.onBack}
+            />
+        );
+    }
+
+    if (props.contentType === "fire" && props.fireDetail) {
+        return (
+            <ExploreFireContent
+                fireDetail={props.fireDetail}
+                onPeakClick={(id) => props.onPeakClick(id)}
+                onRecenter={props.onRecenterFire}
+            />
+        );
+    }
+
+    if (props.contentType === "avalancheZone" && props.avalancheZoneDetail) {
+        return (
+            <ExploreAvalancheZoneContent
+                avalancheZoneDetail={props.avalancheZoneDetail}
+                onPeakClick={(id) => props.onPeakClick(id)}
+                onRecenter={props.onRecenterAvalancheZone}
+            />
+        );
+    }
+
+    if (props.contentType === "publicLand" && props.publicLandDetail) {
+        return (
+            <ExplorePublicLandContent
+                publicLandDetail={props.publicLandDetail}
+                publicLandConditions={props.publicLandConditions ?? null}
+                onPeakClick={(id) => props.onPeakClick(id)}
+                onRecenter={props.onRecenterPublicLand}
             />
         );
     }

@@ -39,6 +39,7 @@ export type MapState = {
     selectedPeakCommunityData: SelectedPeakCommunityData;
     selectedChallengeData: SelectedChallengeData;
     hoveredPeakId: string | null;
+    activeLayers: string[];
 };
 
 export type MapActions = {
@@ -54,6 +55,7 @@ export type MapActions = {
     setSelectedPeakCommunityData: (data: SelectedPeakCommunityData) => void;
     setSelectedChallengeData: (data: SelectedChallengeData) => void;
     setHoveredPeakId: (peakId: string | null) => void;
+    toggleLayer: (layerId: string) => void;
 };
 
 export type MapStore = MapState & MapActions;
@@ -72,6 +74,7 @@ export const createMapStore = (
         selectedPeakCommunityData: null,
         selectedChallengeData: null,
         hoveredPeakId: null,
+        activeLayers: [],
     }
 ) => {
     return createStore<MapStore>((set) => ({
@@ -88,5 +91,11 @@ export const createMapStore = (
         setSelectedPeakCommunityData: (selectedPeakCommunityData) => set({ selectedPeakCommunityData }),
         setSelectedChallengeData: (selectedChallengeData) => set({ selectedChallengeData }),
         setHoveredPeakId: (hoveredPeakId) => set({ hoveredPeakId }),
+        toggleLayer: (layerId) =>
+            set((state) => ({
+                activeLayers: state.activeLayers.includes(layerId)
+                    ? state.activeLayers.filter((id) => id !== layerId)
+                    : [...state.activeLayers, layerId],
+            })),
     }));
 };

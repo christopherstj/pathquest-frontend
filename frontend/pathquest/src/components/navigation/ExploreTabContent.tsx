@@ -49,6 +49,10 @@ const ExploreTabContent = ({ isActive }: ExploreTabContentProps) => {
         userId,
         userChallengeUserId,
         userChallengeChallengeId,
+        publicLandObjectId,
+        avalancheCenterId,
+        avalancheZoneId,
+        fireIncidentId,
         hasDetail,
     } = useExploreRoute();
 
@@ -101,6 +105,10 @@ const ExploreTabContent = ({ isActive }: ExploreTabContentProps) => {
         userChallengeProgress,
         userChallengePeaks,
         userChallengeUser,
+        fireDetail,
+        avalancheZoneDetail,
+        publicLandDetail,
+        publicLandConditions,
         invalidateChallengeDetails,
         invalidateFavoriteChallenges,
     } = useExploreData({
@@ -112,9 +120,13 @@ const ExploreTabContent = ({ isActive }: ExploreTabContentProps) => {
         userId,
         userChallengeUserId,
         userChallengeChallengeId,
+        publicLandObjectId,
+        avalancheCenterId,
+        avalancheZoneId,
+        fireIncidentId,
     });
 
-    const { flyToActivity } = useExploreMapEffects({
+    const { flyToActivity, recenterFire, recenterAvalancheZone, recenterPublicLand } = useExploreMapEffects({
         contentType,
         exploreSubTab,
         isAuthenticated,
@@ -133,6 +145,9 @@ const ExploreTabContent = ({ isActive }: ExploreTabContentProps) => {
         activityHoverCoords,
         userId,
         profilePeaksForMap,
+        fireDetail,
+        avalancheZoneDetail,
+        publicLandDetail,
     });
 
     // Navigation handlers
@@ -142,7 +157,6 @@ const ExploreTabContent = ({ isActive }: ExploreTabContentProps) => {
             map.flyTo({
                 center: coords,
                 zoom: 14,
-                pitch: 60,
                 essential: true,
             });
         }
@@ -282,6 +296,13 @@ const ExploreTabContent = ({ isActive }: ExploreTabContentProps) => {
                             userId={userId}
                             profileUser={profileUser}
                             profileStats={profileStats}
+                            fireDetail={fireDetail}
+                            avalancheZoneDetail={avalancheZoneDetail}
+                            publicLandDetail={publicLandDetail}
+                            publicLandConditions={publicLandConditions}
+                            onRecenterFire={recenterFire}
+                            onRecenterAvalancheZone={recenterAvalancheZone}
+                            onRecenterPublicLand={recenterPublicLand}
                         />
                     </motion.div>
                 </AnimatePresence>

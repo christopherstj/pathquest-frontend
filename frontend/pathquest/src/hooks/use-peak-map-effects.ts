@@ -35,8 +35,6 @@ export function usePeakMapEffects({
             map.flyTo({
                 center: peak.location_coords,
                 zoom: 13,
-                pitch: 50,
-                bearing: 20,
                 padding: padding,
                 essential: true,
             });
@@ -87,8 +85,6 @@ export function usePeakMapEffects({
             map.flyTo({
                 center: peak.location_coords,
                 zoom: 14,
-                pitch: 60,
-                bearing: 30,
                 padding: padding,
                 essential: true,
             });

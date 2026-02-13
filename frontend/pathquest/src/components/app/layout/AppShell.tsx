@@ -3,6 +3,7 @@
 import React, { Suspense } from "react";
 import { usePathname } from "next/navigation";
 import MapBackground from "@/components/map/MapBackground";
+import MapLayersControl from "@/components/map/MapLayersControl";
 import MapControls from "@/components/map/MapControls";
 import GlobalNavigation from "@/components/app/layout/GlobalNavigation";
 import UrlOverlayManager from "@/components/overlays/UrlOverlayManager";
@@ -62,8 +63,20 @@ const AppShell = ({ children }: AppShellProps) => {
             <Suspense fallback={<div className="absolute inset-0 bg-background" />}>
                 <MapBackground />
             </Suspense>
-            <MapControls />
             <GlobalNavigation />
+            {/* Map controls — z-30 so they slide under bottom sheet (z-40) and tab bar (z-50) */}
+            <div className="fixed top-[68px] md:top-[80px] left-0 w-full z-30 pointer-events-none px-4 md:px-6 flex items-start justify-between gap-4">
+                {/* Spacer matching logo area (hidden on mobile, visible on desktop) */}
+                <div className="hidden md:block w-[140px] shrink-0" />
+                <div className="flex-1 max-w-lg flex flex-col items-start md:items-end">
+                    <div className="flex flex-col md:flex-row gap-1.5 pointer-events-auto">
+                        <MapLayersControl />
+                        <MapControls />
+                    </div>
+                </div>
+                {/* Spacer matching login area */}
+                <div className="w-[100px] shrink-0" />
+            </div>
             {/* URL-driven overlay manager - renders discovery drawer (desktop) or bottom sheet (mobile) and detail panels */}
             <UrlOverlayManager />
             {/* SEO content from static pages (hidden from view, visible to crawlers) */}

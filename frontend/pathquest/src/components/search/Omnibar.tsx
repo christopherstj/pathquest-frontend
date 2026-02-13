@@ -221,17 +221,15 @@ const Omnibar = () => {
                     const [minLng, minLat, maxLng, maxLat] = result.data.bbox;
                     map.fitBounds(
                         [[minLng, minLat], [maxLng, maxLat]],
-                        { 
-                            padding: 50, 
-                            pitch: zoom > 10 ? 60 : 0,
-                            duration: 2000 
+                        {
+                            padding: 50,
+                            duration: 2000
                         }
                     );
                 } else {
                     map.flyTo({
                         center: result.coords,
                         zoom,
-                        pitch: zoom > 10 ? 60 : 0,
                         duration: 2000,
                         essential: true
                     });

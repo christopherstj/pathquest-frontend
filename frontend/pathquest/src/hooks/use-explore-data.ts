@@ -13,6 +13,10 @@ import getChallengeActivity from "@/actions/challenges/getChallengeActivity";
 import getActivityDetails from "@/actions/activities/getActivityDetails";
 import getUserProfile from "@/actions/users/getUserProfile";
 import getUserChallengeProgress from "@/actions/users/getUserChallengeProgress";
+import getFireDetailAction from "@/actions/conditions/getFireDetail";
+import getAvalancheZoneDetailAction from "@/actions/conditions/getAvalancheZoneDetail";
+import getPublicLandDetailAction from "@/actions/conditions/getPublicLandDetail";
+import getPublicLandConditionsAction from "@/actions/conditions/getPublicLandConditions";
 
 export interface UseExploreDataParams {
     isActive: boolean;
@@ -23,6 +27,10 @@ export interface UseExploreDataParams {
     userId: string | null;
     userChallengeUserId: string | null;
     userChallengeChallengeId: string | null;
+    publicLandObjectId: string | null;
+    avalancheCenterId: string | null;
+    avalancheZoneId: string | null;
+    fireIncidentId: string | null;
 }
 
 export function useExploreData(params: UseExploreDataParams) {
@@ -35,6 +43,10 @@ export function useExploreData(params: UseExploreDataParams) {
         userId,
         userChallengeUserId,
         userChallengeChallengeId,
+        publicLandObjectId,
+        avalancheCenterId,
+        avalancheZoneId,
+        fireIncidentId,
     } = params;
 
     const queryClient = useQueryClient();
@@ -130,6 +142,50 @@ export function useExploreData(params: UseExploreDataParams) {
         placeholderData: (previousData) => previousData,
     });
 
+    // Fire detail query
+    const { data: fireDetailData, isLoading: fireLoading } = useQuery({
+        queryKey: ["fireDetail", fireIncidentId],
+        queryFn: async () => {
+            if (!fireIncidentId) return null;
+            return await getFireDetailAction(fireIncidentId);
+        },
+        enabled: Boolean(fireIncidentId) && isActive,
+        placeholderData: (previousData) => previousData,
+    });
+
+    // Avalanche zone detail query
+    const { data: avalancheZoneData, isLoading: avalancheZoneLoading } = useQuery({
+        queryKey: ["avalancheZoneDetail", avalancheCenterId, avalancheZoneId],
+        queryFn: async () => {
+            if (!avalancheCenterId || !avalancheZoneId) return null;
+            return await getAvalancheZoneDetailAction(avalancheCenterId, avalancheZoneId);
+        },
+        enabled: Boolean(avalancheCenterId && avalancheZoneId) && isActive,
+        placeholderData: (previousData) => previousData,
+    });
+
+    // Public land detail query
+    const { data: publicLandDetailData, isLoading: publicLandLoading } = useQuery({
+        queryKey: ["publicLandDetail", publicLandObjectId],
+        queryFn: async () => {
+            if (!publicLandObjectId) return null;
+            return await getPublicLandDetailAction(publicLandObjectId);
+        },
+        enabled: Boolean(publicLandObjectId) && isActive,
+        placeholderData: (previousData) => previousData,
+    });
+
+    // Public land conditions query
+    const { data: publicLandConditionsData } = useQuery({
+        queryKey: ["publicLandConditions", publicLandObjectId],
+        queryFn: async () => {
+            if (!publicLandObjectId) return null;
+            return await getPublicLandConditionsAction(publicLandObjectId);
+        },
+        enabled: Boolean(publicLandObjectId) && isActive,
+        placeholderData: (previousData) => previousData,
+    });
+
     // Refetch queries when tab becomes active again
     // This ensures data is fresh when returning to the Explore tab
     useEffect(() => {
@@ -151,7 +207,16 @@ export function useExploreData(params: UseExploreDataParams) {
         if (userChallengeUserId && userChallengeChallengeId) {
             queryClient.refetchQueries({ queryKey: ["userChallengeProgress", userChallengeUserId, userChallengeChallengeId] });
         }
-    }, [isActive, peakId, challengeId, activityId, userId, userChallengeUserId, userChallengeChallengeId, queryClient]);
+        if (fireIncidentId) {
+            queryClient.refetchQueries({ queryKey: ["fireDetail", fireIncidentId] });
+        }
+        if (avalancheCenterId && avalancheZoneId) {
+            queryClient.refetchQueries({ queryKey: ["avalancheZoneDetail", avalancheCenterId, avalancheZoneId] });
+        }
+        if (publicLandObjectId) {
+            queryClient.refetchQueries({ queryKey: ["publicLandDetail", publicLandObjectId] });
+        }
+    }, [isActive, peakId, challengeId, activityId, userId, userChallengeUserId, userChallengeChallengeId, fireIncidentId, avalancheCenterId, avalancheZoneId, publicLandObjectId, queryClient]);
 
     // Extract data from queries
     const peak = peakData?.success ? peakData.data?.peak : null;
@@ -187,7 +252,10 @@ export function useExploreData(params: UseExploreDataParams) {
         || (challengeId && challengeLoading)
         || (activityId && activityLoading)
         || (userId && profileLoading)
-        || (userChallengeUserId && userChallengeLoading);
+        || (userChallengeUserId && userChallengeLoading)
+        || (fireIncidentId && fireLoading)
+        || (avalancheCenterId && avalancheZoneLoading)
+        || (publicLandObjectId && publicLandLoading);
 
     const invalidateChallengeDetails = useCallback((id: number) => {
         queryClient.invalidateQueries({ queryKey: ["challengeDetails", id] });
@@ -226,9 +294,12 @@ export function useExploreData(params: UseExploreDataParams) {
         userChallengePeaks,
         userChallengeUser,
 
+        fireDetail: fireDetailData ?? null,
+        avalancheZoneDetail: avalancheZoneData ?? null,
+        publicLandDetail: publicLandDetailData ?? null,
+        publicLandConditions: publicLandConditionsData ?? null,
+
         invalidateChallengeDetails,
         invalidateFavoriteChallenges,
     };
 }
-
-
