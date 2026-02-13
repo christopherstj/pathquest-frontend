@@ -65,7 +65,10 @@ const isExploreDetailPath = (path: string): boolean => {
         path.startsWith("/peaks/") ||
         path.startsWith("/challenges/") ||
         path.startsWith("/activities/") ||
-        path.startsWith("/users/")
+        path.startsWith("/users/") ||
+        path.startsWith("/fires/") ||
+        path.startsWith("/avalanche/") ||
+        path.startsWith("/lands/")
     );
 };
 

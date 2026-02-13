@@ -5,6 +5,7 @@ import mapboxgl from "mapbox-gl";
 import "mapbox-gl/dist/mapbox-gl.css";
 import { useMapStore } from "@/providers/MapProvider";
 import getNewData from "@/helpers/getNewData";
+import getTrailData from "@/helpers/getTrailData";
 import { useRouter, useSearchParams } from "next/navigation";
 import { searchChallengesClient } from "@/lib/client/searchChallengesClient";
 import { useRouterRef } from "@/hooks/use-stable-ref";
@@ -357,6 +358,32 @@ const MapBackground = () => {
                 }
             }
 
+            // Trailheads Source + Layer (added BEFORE peaks so they render underneath)
+            // Trails and roads are rendered by Mapbox's outdoors-v12 style
+            if (!newMap.getSource("trailheads")) {
+                newMap.addSource("trailheads", {
+                    type: "geojson",
+                    data: { type: "FeatureCollection", features: [] }
+                });
+            }
+
+            // Trailheads Layer (green dots, visible at zoom 11+)
+            if (!newMap.getLayer("trailheads")) {
+                newMap.addLayer({
+                    id: "trailheads",
+                    type: "circle",
+                    source: "trailheads",
+                    minzoom: 11,
+                    paint: {
+                        "circle-color": "#22c55e",
+                        "circle-radius": 5,
+                        "circle-stroke-width": 1.5,
+                        "circle-stroke-color": "#fff",
+                        "circle-opacity": 0.85
+                    }
+                });
+            }
+
             // Peaks Source
             if (!newMap.getSource("peaks")) {
                 newMap.addSource("peaks", {
@@ -584,12 +611,13 @@ const MapBackground = () => {
             }
             
             // Trigger initial fetch
-            // We need to wait for map to be ready, which style.load implies, 
-            // but fetching logic uses map instance which is set in state later? 
+            // We need to wait for map to be ready, which style.load implies,
+            // but fetching logic uses map instance which is set in state later?
             // Actually getNewData uses the map instance passed to it.
             // We can call it here using newMap.
             getNewData("", true, setVisiblePeaksRef.current, newMap);
             fetchVisibleChallenges(newMap);
+            getTrailData(newMap);
         });
 
         // Interactions - click opens popup, not direct navigation
@@ -643,6 +671,37 @@ const MapBackground = () => {
             newMap.getCanvas().style.cursor = "";
         });
 
+        // Fire perimeter click -> open fire detail
+        newMap.on("click", "active-fires-fill", (e) => {
+            const feature = e.features?.[0];
+            const incidentId = feature?.properties?.incident_id;
+            if (incidentId) {
+                routerRef.current.push(`/fires/${incidentId}`);
+            }
+        });
+        newMap.on("mouseenter", "active-fires-fill", () => {
+            newMap.getCanvas().style.cursor = "pointer";
+        });
+        newMap.on("mouseleave", "active-fires-fill", () => {
+            newMap.getCanvas().style.cursor = "";
+        });
+
+        // Avalanche zone click -> open zone detail
+        newMap.on("click", "avalanche-zones-fill", (e) => {
+            const feature = e.features?.[0];
+            const centerId = feature?.properties?.center_id;
+            const zoneId = feature?.properties?.zone_id;
+            if (centerId && zoneId) {
+                routerRef.current.push(`/avalanche/${centerId}/${zoneId}`);
+            }
+        });
+        newMap.on("mouseenter", "avalanche-zones-fill", () => {
+            newMap.getCanvas().style.cursor = "pointer";
+        });
+        newMap.on("mouseleave", "avalanche-zones-fill", () => {
+            newMap.getCanvas().style.cursor = "";
+        });
+
         // Debounced data fetching to prevent excessive API calls during map movement
         const debouncedFetchData = debounce(() => {
             const zoom = newMap.getZoom();
@@ -651,6 +710,7 @@ const MapBackground = () => {
             
             getNewData("", true, setVisiblePeaksRef.current, newMap);
             fetchVisibleChallenges(newMap);
+            getTrailData(newMap);
         }, 300);
 
         // Debounced URL update (separate from data fetching for better UX)

@@ -271,6 +271,15 @@ Photo upload and management actions (Stage 4):
 - `getPeakPhotos.ts` - Gets public photos for a peak with cursor-based pagination (community gallery, no auth). Supports `cursor` and `limit` params.
 - `getPublicSummitPhotos.ts` - Gets public photos for a specific summit (community section, no auth). Used by `PublicSummitPhotoStrip`.
 
+#### Trails (`actions/trails/`)
+- `searchTrails.ts` - Fetches trail GeoJSON within bbox (no auth). Returns FeatureCollection of LineString features.
+- `searchTrailheads.ts` - Fetches trailhead GeoJSON within bbox (no auth). Returns FeatureCollection of Point features.
+- `searchAccessRoads.ts` - Fetches access road GeoJSON within bbox (no auth). Returns FeatureCollection of LineString features.
+
+#### Map (`actions/map/`)
+- `getMapAvalanches.ts` - Fetches avalanche zone GeoJSON within bbox (no auth). Returns FeatureCollection of Polygon features with danger levels.
+- `getMapFires.ts` - Fetches active fire GeoJSON within bbox (no auth). Returns FeatureCollection of Polygon features with containment %.
+
 #### Root Actions
 - `searchNearestPeaks.ts` - Searches peaks nearest to coordinates
 - `getTimezoneFromCoords.ts` - Gets IANA timezone string for given coordinates (uses geo-tz library)
@@ -533,6 +542,7 @@ Custom shared UI components:
 ### Helpers (`src/helpers/`)
 Utility functions for common operations.
 
+- `getTrailData.ts` - Fetches trails, trailheads, and access roads for the current map viewport. Called on map `moveend` alongside peak/challenge fetching. Zoom-gated: trails at zoom >= 10, trailheads at zoom >= 11, access roads at zoom >= 12. Clears source data when below the minimum zoom threshold. Updates Mapbox GeoJSON sources (`trails`, `trailheads`, `access-roads`) with FeatureCollection responses from the API.
 - `peaksSearchState.ts` - Module-level state for disabling peaks search (used when viewing challenge details to prevent general peaks from loading)
 - `getAuthHeaders.ts` - Gets authentication headers (Bearer token + x-user-* headers) for backend API calls. Used by several challenge actions.
 - `checkEmail.ts` - Email validation
@@ -817,6 +827,13 @@ Next.js middleware for legacy route redirects:
 - Topo-friendly base style (`outdoors-v12`)
 
 ### Map Layers (render order bottom to top)
+- **Toggleable overlay layers** (managed by `MapLayersControl`):
+  - `snow-depth` - NOHRSC snow depth raster tiles (opacity 0.6)
+  - `avalanche-zones` - Avalanche zone polygons colored by max danger level (fill 0.3 opacity + border lines). Data fetched from `/api/map/avalanche` bbox endpoint, re-fetched on pan/zoom with 500ms debounce.
+  - `active-fires` - Fire perimeter polygons (red fill, opacity scaled by containment %). Data fetched from `/api/map/fires` bbox endpoint, re-fetched on pan/zoom with 500ms debounce.
+- `access-roads` - Access road lines (gray #888, dashed, minzoom 12). Data fetched via `getTrailData` helper.
+- `trails` - Trail lines (earthy brown #8B6914, dashed, minzoom 10). Data fetched via `getTrailData` helper.
+- `trailheads` - Trailhead point markers (green #22c55e, white stroke, minzoom 11). Data fetched via `getTrailData` helper.
 - `activities` - GPX track lines (orange #c9915a)
 - `activityStarts` - Activity start point markers (green #22c55e)
 - `peaks-point` - Discovery peaks (individual unclustered markers) with unified summit-based coloring:

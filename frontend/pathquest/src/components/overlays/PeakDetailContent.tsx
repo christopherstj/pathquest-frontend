@@ -64,8 +64,6 @@ const PeakDetailContent = ({ peak, publicSummits, challenges, activities }: Prop
             map.flyTo({
                 center: peak.location_coords,
                 zoom: 13,
-                pitch: 50,
-                bearing: 20,
                 essential: true,
             });
         }
@@ -76,8 +74,6 @@ const PeakDetailContent = ({ peak, publicSummits, challenges, activities }: Prop
             map.flyTo({
                 center: peak.location_coords,
                 zoom: 14,
-                pitch: 60,
-                bearing: 30,
                 essential: true,
             });
         }
