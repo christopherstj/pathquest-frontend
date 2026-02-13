@@ -36,7 +36,10 @@ const MobileNavLayout = () => {
             pathname.startsWith("/peaks/") ||
             pathname.startsWith("/challenges/") ||
             pathname.startsWith("/activities/") ||
-            pathname.startsWith("/users/")
+            pathname.startsWith("/users/") ||
+            pathname.startsWith("/fires/") ||
+            pathname.startsWith("/avalanche/") ||
+            pathname.startsWith("/lands/")
         ) {
             return "explore";
         }

@@ -14,7 +14,7 @@ const loadMapDefaults = (
     imagesToLoad: "markers" | "challenges" | "all" = "markers"
 ) => {
     if (isFirstLoad)
-        map.addControl(new mapboxgl.NavigationControl(), "bottom-left");
+        map.addControl(new mapboxgl.NavigationControl(), "bottom-right");
 
     map.addLayer({
         id: "countours",

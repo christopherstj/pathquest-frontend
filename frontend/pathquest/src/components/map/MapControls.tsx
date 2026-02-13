@@ -6,36 +6,33 @@ import { useMapStore } from "@/providers/MapProvider";
 import { cn } from "@/lib/utils";
 
 /**
- * MapControls - Floating controls for map view options
- * 
- * Provides a 2D/3D toggle button positioned in the bottom-left corner
- * near the default Mapbox navigation controls.
+ * MapControls - 2D/3D toggle button for the map.
+ *
+ * Rendered inline (not absolutely positioned) so it can be placed
+ * inside GlobalNavigation beneath the search bar.
  */
 const MapControls = () => {
     const is3D = useMapStore((state) => state.is3D);
     const setIs3D = useMapStore((state) => state.setIs3D);
 
     return (
-        <div className="absolute bottom-24 left-3 z-10 flex flex-col gap-2">
-            {/* 2D/3D Toggle */}
-            <button
-                onClick={() => setIs3D(!is3D)}
-                className={cn(
-                    "w-[30px] h-[30px] rounded-md flex items-center justify-center",
-                    "bg-white shadow-md border border-gray-200",
-                    "hover:bg-gray-50 transition-colors",
-                    "focus:outline-none focus:ring-2 focus:ring-primary/50"
-                )}
-                title={is3D ? "Switch to 2D view" : "Switch to 3D view"}
-                aria-label={is3D ? "Switch to 2D view" : "Switch to 3D view"}
-            >
-                {is3D ? (
-                    <Map className="w-4 h-4 text-gray-700" />
-                ) : (
-                    <Mountain className="w-4 h-4 text-gray-700" />
-                )}
-            </button>
-        </div>
+        <button
+            onClick={() => setIs3D(!is3D)}
+            className={cn(
+                "w-[30px] h-[30px] rounded-lg flex items-center justify-center",
+                "bg-card/80 backdrop-blur-md border border-border shadow-lg",
+                "hover:border-primary/30 transition-colors",
+                "focus:outline-none focus:ring-2 focus:ring-ring"
+            )}
+            title={is3D ? "Switch to 2D view" : "Switch to 3D view"}
+            aria-label={is3D ? "Switch to 2D view" : "Switch to 3D view"}
+        >
+            {is3D ? (
+                <Map className="w-4 h-4 text-muted-foreground" />
+            ) : (
+                <Mountain className="w-4 h-4 text-muted-foreground" />
+            )}
+        </button>
     );
 };
 
