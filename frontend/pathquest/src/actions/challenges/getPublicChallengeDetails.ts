@@ -1,7 +1,6 @@
 "use server";
 
 import getBackendUrl from "@/helpers/getBackendUrl";
-import getSessionToken from "@/auth/getSessionToken";
 import { createApiClient, endpoints } from "@pathquest/shared/api";
 import type { Activity, Challenge, Peak, ServerActionResult } from "@pathquest/shared/types";
 import { ChallengeProgressInfo } from "./getChallengeDetails";
@@ -10,10 +9,10 @@ const backendUrl = getBackendUrl();
 
 /**
  * Gets challenge details for PUBLIC/STATIC pages only (SEO, metadata, static generation).
- * 
+ *
  * This function does NOT use useAuth() or access cookies/headers, making it safe
  * for static generation (ISR) without triggering DYNAMIC_SERVER_USAGE errors.
- * 
+ *
  * For authenticated challenge details (with user-specific data), use getChallengeDetails() instead.
  */
 const getPublicChallengeDetails = async (
@@ -29,18 +28,9 @@ const getPublicChallengeDetails = async (
         }[];
     }>
 > => {
-    const token = await getSessionToken().catch((err) => {
-        console.error("[getPublicChallengeDetails] Failed to get Google ID token:", err);
-        return null;
-    });
-
     const client = createApiClient({
         baseUrl: backendUrl,
-        getAuthHeaders: async () => {
-            const headers: Record<string, string> = {};
-            if (token) headers.Authorization = `Bearer ${token}`;
-            return headers;
-        },
+        getAuthHeaders: async () => ({}),
     });
 
     let data: any;
