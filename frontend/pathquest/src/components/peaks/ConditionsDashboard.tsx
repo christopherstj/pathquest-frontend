@@ -23,6 +23,7 @@ import Challenge from "@/typeDefs/Challenge";
 import { useIsAuthenticated } from "@/hooks/useRequireAuth";
 import ChallengeLinkItem from "@/components/lists/challenge-link-item";
 import flagPeakForReview from "@/actions/peaks/flagPeakForReview";
+import { MANAGER_NAMES } from "@/lib/public-land-utils";
 import ConditionsSectionGroup from "./conditions/ConditionsSectionGroup";
 
 // Condition components
@@ -71,22 +72,6 @@ const getPublicLandIcon = (type: string) => {
     }
 };
 
-/**
- * Get a friendly short name for the land manager
- */
-const getManagerDisplayName = (manager: string): string => {
-    const managerMap: Record<string, string> = {
-        NPS: "National Park Service",
-        USFS: "US Forest Service",
-        BLM: "Bureau of Land Management",
-        FWS: "US Fish & Wildlife Service",
-        USACE: "US Army Corps of Engineers",
-        DOD: "Dept. of Defense",
-        TVA: "Tennessee Valley Authority",
-        USBR: "Bureau of Reclamation",
-    };
-    return managerMap[manager] || manager;
-};
 
 
 // --- Loading Skeleton ---
@@ -400,9 +385,7 @@ const ConditionsDashboard = ({
                                             </span>
                                             {peak.publicLand.manager !== "UNK" && (
                                                 <span className="text-xs text-muted-foreground">
-                                                    {getManagerDisplayName(
-                                                        peak.publicLand.manager
-                                                    )}
+                                                    {MANAGER_NAMES[peak.publicLand.manager] || peak.publicLand.manager}
                                                 </span>
                                             )}
                                         </div>

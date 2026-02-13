@@ -11,4 +11,8 @@ export const MANAGER_NAMES: Record<string, string> = {
     USFS: "US Forest Service",
     BLM: "Bureau of Land Management",
     FWS: "US Fish & Wildlife Service",
+    USACE: "US Army Corps of Engineers",
+    DOD: "Dept. of Defense",
+    TVA: "Tennessee Valley Authority",
+    USBR: "Bureau of Reclamation",
 };
