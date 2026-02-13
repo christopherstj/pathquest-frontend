@@ -8,14 +8,7 @@ import type { AvalancheZoneDetail } from "@pathquest/shared/types";
 import type { AvalancheDangerLevel } from "@pathquest/shared/types";
 import { cn } from "@/lib/utils";
 import { dangerConfig, stripHtml } from "@/lib/avalanche-utils";
-
-const DESIGNATION_NAMES: Record<string, string> = {
-    NP: "National Park", NM: "National Monument", WILD: "Wilderness Area",
-    WSA: "Wilderness Study Area", NRA: "National Recreation Area",
-    NCA: "National Conservation Area", NWR: "National Wildlife Refuge",
-    NF: "National Forest", NG: "National Grassland", SP: "State Park",
-    SW: "State Wilderness", SRA: "State Recreation Area", SF: "State Forest",
-};
+import { DESIGNATION_NAMES } from "@/lib/public-land-utils";
 
 interface ExploreAvalancheZoneContentProps {
     avalancheZoneDetail: AvalancheZoneDetail;

@@ -386,7 +386,7 @@ export function useExploreMapEffects(params: UseExploreMapEffectsParams) {
                 const geoBounds = boundsFromGeometry(fireDetail.geometry);
                 if (geoBounds) {
                     map.fitBounds(geoBounds, { padding: 60, maxZoom: 14, essential: true });
-                } else {
+                } else if (fireDetail.centroid) {
                     const zoom = fireDetail.acres && fireDetail.acres > 50000 ? 9 :
                                   fireDetail.acres && fireDetail.acres > 10000 ? 10 :
                                   fireDetail.acres && fireDetail.acres > 1000 ? 11 : 12;
@@ -549,7 +549,7 @@ export function useExploreMapEffects(params: UseExploreMapEffectsParams) {
         const geoBounds = boundsFromGeometry(fireDetail.geometry);
         if (geoBounds) {
             map.fitBounds(geoBounds, { padding: 60, maxZoom: 14, essential: true });
-        } else {
+        } else if (fireDetail.centroid) {
             map.flyTo({ center: fireDetail.centroid, essential: true });
         }
     }, [map, fireDetail]);

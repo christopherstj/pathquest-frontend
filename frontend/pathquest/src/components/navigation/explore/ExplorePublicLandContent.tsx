@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import {
     Trees, MapPin, ChevronLeft, ChevronRight, LocateFixed,
@@ -15,6 +15,7 @@ import getPublicLandPeaks from "@/actions/conditions/getPublicLandPeaks";
 import metersToFt from "@/helpers/metersToFt";
 import { cn } from "@/lib/utils";
 import { dangerConfig } from "@/lib/avalanche-utils";
+import { DESIGNATION_NAMES, MANAGER_NAMES } from "@/lib/public-land-utils";
 
 interface ExplorePublicLandContentProps {
     publicLandDetail: PublicLandDetail;
@@ -22,21 +23,6 @@ interface ExplorePublicLandContentProps {
     onPeakClick: (id: string) => void;
     onRecenter: () => void;
 }
-
-const DESIGNATION_NAMES: Record<string, string> = {
-    NP: "National Park", NM: "National Monument", WILD: "Wilderness Area",
-    WSA: "Wilderness Study Area", NRA: "National Recreation Area",
-    NCA: "National Conservation Area", NWR: "National Wildlife Refuge",
-    NF: "National Forest", NG: "National Grassland", SP: "State Park",
-    SW: "State Wilderness", SRA: "State Recreation Area", SF: "State Forest",
-};
-
-const MANAGER_NAMES: Record<string, string> = {
-    NPS: "National Park Service",
-    USFS: "US Forest Service",
-    BLM: "Bureau of Land Management",
-    FWS: "US Fish & Wildlife Service",
-};
 
 const cToF = (c: number) => Math.round(c * 9 / 5 + 32);
 const kmhToMph = (k: number) => Math.round(k * 0.621371);
@@ -70,6 +56,9 @@ export const ExplorePublicLandContent = ({
     const [page, setPage] = useState(1);
     const detail = publicLandDetail;
     const conditions = publicLandConditions;
+
+    // Reset page when switching between public lands
+    useEffect(() => { setPage(1); }, [detail.objectId]);
 
     const { data: peaksData } = useQuery({
         queryKey: ["publicLandPeaks", detail.objectId, page],
